@@ -1,0 +1,908 @@
+openapi: 3.1.0
+info:
+  title: IdentiMar Backend API
+  version: "3"
+  summary: >-
+    API REST para el registro trazable de observaciones de rayas en el Urabá
+    antioqueño.
+  description: >
+    Contrato de integración v1.0 entre los tres equipos del proyecto IdentiMar
+    (INVEMAR).
+
+
+    Este backend recibe observaciones desde la aplicación móvil (Equipo 1),
+
+    orquesta la inferencia contra el módulo de visión artificial (Equipo 2),
+
+    y gestiona la cola de validación experta. Almacena metadatos alineados
+
+    con el estándar Darwin Core.
+
+
+    **Equipo responsable:** Equipo 3 (Backend) — Proyecto Integrador I — UdeA.
+  contact:
+    name: Equipo 3 — Backend IdentiMar
+    email: mateo.reyesu@udea.edu.co
+  license:
+    name: Uso académico UdeA
+servers:
+  - url: https://api.identimar.udea.edu.co/api/v1
+    description: Producción (Render + Supabase)
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+tags:
+  - name: Autenticación
+    description: Registro, login y gestión de sesión.
+  - name: Observaciones
+    description: Registro y consulta de observaciones de rayas.
+  - name: Validación experta
+    description: Cola de pendientes y decisiones del experto.
+  - name: Catálogos
+    description: Especies, familias, tipos de ambiente y demás vocabularios controlados.
+security:
+  - bearerAuth: []
+paths:
+  /auth/registro:
+    post:
+      tags:
+        - Autenticación
+      summary: Registrar un nuevo usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistroRequest"
+            examples:
+              usuarioComun:
+                summary: Registro de un usuario común
+                value:
+                  nombre_completo: Ana María Torres
+                  correo: ana.torres@ejemplo.co
+                  password: MiClaveSegura123!
+                  telefono: "+573001234567"
+      responses:
+        "201":
+          description: Usuario creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioPublico"
+        "400":
+          $ref: "#/components/responses/ErrorValidacion"
+        "409":
+          description: El correo ya está registrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Iniciar sesión y obtener token JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              login:
+                value:
+                  correo: ana.torres@ejemplo.co
+                  password: MiClaveSegura123!
+      responses:
+        "200":
+          description: Autenticación exitosa. Retorna el token JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/CredencialesInvalidas"
+  /auth/refresh:
+    post:
+      tags:
+        - Autenticación
+      summary: Renovar token de acceso usando un refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: Nuevo par de tokens emitido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /auth/perfil:
+    get:
+      tags:
+        - Autenticación
+      summary: Obtener el perfil del usuario autenticado
+      responses:
+        "200":
+          description: Datos del usuario en sesión.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioPublico"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /observaciones:
+    post:
+      tags:
+        - Observaciones
+      summary: Registrar una nueva observación con imagen
+      description: >
+        Endpoint principal usado por la aplicación móvil. Recibe la fotografía
+
+        del organismo junto con los metadatos de captura. La respuesta es
+        inmediata;
+
+        la inferencia se ejecuta de forma asíncrona.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - datos
+                - imagen
+              properties:
+                datos:
+                  $ref: "#/components/schemas/ObservacionInput"
+                imagen:
+                  type: string
+                  format: binary
+                  description: Imagen JPEG o PNG, lado mayor >= 1280 px.
+      responses:
+        "201":
+          description: Observación creada. La inferencia se ejecuta en segundo plano.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservacionResumen"
+        "400":
+          $ref: "#/components/responses/ErrorValidacion"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "413":
+          description: Imagen demasiado grande.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      tags:
+        - Observaciones
+      summary: Listar observaciones del usuario autenticado
+      description: |
+        Devuelve las observaciones del usuario en sesión.
+        Los usuarios con rol `administrador` pueden ver todas.
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            $ref: "#/components/schemas/EstadoObservacion"
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: tamano
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Listado paginado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservacionesPagina"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /observaciones/{id}:
+    get:
+      tags:
+        - Observaciones
+      summary: Consultar el detalle de una observación
+      description: |
+        Devuelve el registro completo, incluyendo predicción original,
+        validación experta (si existe) e historial de estados.
+      parameters:
+        - $ref: "#/components/parameters/observacionId"
+      responses:
+        "200":
+          description: Detalle completo del registro.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservacionDetalle"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /observaciones/pendientes:
+    get:
+      tags:
+        - Validación experta
+      summary: Cola de observaciones pendientes de validación
+      description: |
+        Solo accesible para usuarios con rol `experto` o `administrador`.
+        Devuelve observaciones en estado `pendiente_experto` o `no_concluyente`.
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: tamano
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Cola paginada de observaciones pendientes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservacionesPagina"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+  /observaciones/{id}/validacion:
+    post:
+      tags:
+        - Validación experta
+      summary: Registrar la decisión de un experto sobre una observación
+      description: >
+        Solo accesible para `experto` o `administrador`.
+
+        La predicción original del modelo NO se sobrescribe: se conserva
+        íntegra.
+      parameters:
+        - $ref: "#/components/parameters/observacionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidacionInput"
+            examples:
+              confirmada:
+                summary: El experto confirma la predicción del modelo
+                value:
+                  decision: confirmada
+                  especie_final_codigo: URO_MICR
+                  comentario: Coincide con las manchas y forma del disco.
+              corregida:
+                summary: El experto corrige la especie
+                value:
+                  decision: corregida
+                  especie_final_codigo: DASYA_AME
+                  comentario: >-
+                    Es Dasyatis americana, no Urotrygon. Aleta caudal
+                    característica.
+              rechazada:
+                summary: La imagen no permite identificación
+                value:
+                  decision: rechazada
+                  especie_final_codigo: null
+                  comentario: >-
+                    Fotografía muy borrosa, no es posible identificar la
+                    especie.
+      responses:
+        "200":
+          description: Validación registrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservacionDetalle"
+        "400":
+          $ref: "#/components/responses/ErrorValidacion"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+        "409":
+          description: La observación no está en un estado que admita validación.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /catalogos/especies:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar el catálogo de especies
+      security: []
+      responses:
+        "200":
+          description: Catálogo completo de especies acordado con Visión Artificial.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Especie"
+  /catalogos/familias:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar familias taxonómicas
+      security: []
+      responses:
+        "200":
+          description: Familias con sus especies asociadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Familia"
+  /catalogos/tipos-ambiente:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar tipos de ambiente
+      security: []
+      responses:
+        "200":
+          description: Vocabulario controlado de ambientes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogoItem"
+  /catalogos/condiciones-organismo:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar condiciones posibles del organismo
+      security: []
+      responses:
+        "200":
+          description: Vocabulario controlado.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogoItem"
+  /catalogos/estados:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar estados posibles de una observación
+      security: []
+      responses:
+        "200":
+          description: Máquina de estados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/CatalogoItem"
+                    - type: object
+                      properties:
+                        es_terminal:
+                          type: boolean
+                        orden:
+                          type: integer
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Token JWT emitido por `/auth/login`. Enviar en `Authorization: Bearer
+        <token>`.
+  parameters:
+    observacionId:
+      name: id
+      in: path
+      required: true
+      description: UUID de la observación.
+      schema:
+        type: string
+        format: uuid
+        example: 7f3a2c4e-9b1d-4f6a-8e5c-2d7b1a3f9e4c
+  schemas:
+    Rol:
+      type: string
+      enum:
+        - usuario
+        - experto
+        - administrador
+    EstadoObservacion:
+      type: string
+      enum:
+        - recibido
+        - procesando
+        - identificado
+        - no_concluyente
+        - pendiente_experto
+        - validado
+        - corregido
+      description: >
+        Máquina de estados de una observación:
+
+        `recibido` → `procesando` → (`identificado` | `no_concluyente` |
+        `pendiente_experto`)
+
+        → (`validado` | `corregido`) [terminales].
+    DecisionValidacion:
+      type: string
+      enum:
+        - confirmada
+        - corregida
+        - rechazada
+    TipoAmbiente:
+      type: string
+      description: Código del tipo de ambiente (consultar `/catalogos/tipos-ambiente`).
+      example: marino
+    CondicionOrganismo:
+      type: string
+      description: Código de la condición del organismo.
+      example: vivo
+    RegistroRequest:
+      type: object
+      required:
+        - nombre_completo
+        - correo
+        - password
+      properties:
+        nombre_completo:
+          type: string
+          minLength: 3
+          maxLength: 200
+        correo:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        telefono:
+          type: string
+          nullable: true
+    LoginRequest:
+      type: object
+      required:
+        - correo
+        - password
+      properties:
+        correo:
+          type: string
+          format: email
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - expires_in
+        - usuario
+      properties:
+        access_token:
+          type: string
+          description: JWT de acceso.
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Segundos hasta la expiración del access token.
+          example: 3600
+        usuario:
+          $ref: "#/components/schemas/UsuarioPublico"
+    UsuarioPublico:
+      type: object
+      required:
+        - id
+        - nombre_completo
+        - correo
+        - rol
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre_completo:
+          type: string
+        correo:
+          type: string
+          format: email
+        rol:
+          $ref: "#/components/schemas/Rol"
+        activo:
+          type: boolean
+        creado_en:
+          type: string
+          format: date-time
+    ObservacionInput:
+      type: object
+      required:
+        - fecha_hora_evento
+        - latitud
+        - longitud
+        - tipo_ambiente
+        - condicion_organismo
+      properties:
+        fecha_hora_evento:
+          type: string
+          format: date-time
+          description: dwc:eventDate en ISO 8601.
+          example: "2026-09-20T14:35:00-05:00"
+        latitud:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: dwc:decimalLatitude
+          example: 8.7476
+        longitud:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: dwc:decimalLongitude
+          example: -76.6414
+        precision_gps_metros:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          example: 5
+        tipo_ambiente:
+          $ref: "#/components/schemas/TipoAmbiente"
+        condicion_organismo:
+          $ref: "#/components/schemas/CondicionOrganismo"
+        observaciones_usuario:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Texto libre del usuario. dwc:occurrenceRemarks.
+          example: Capturada accidentalmente cerca de la desembocadura del río Atrato.
+    ObservacionResumen:
+      type: object
+      required:
+        - id
+        - estado
+        - creado_en
+      properties:
+        id:
+          type: string
+          format: uuid
+        estado:
+          $ref: "#/components/schemas/EstadoObservacion"
+        creado_en:
+          type: string
+          format: date-time
+        fecha_hora_evento:
+          type: string
+          format: date-time
+        imagen_url:
+          type: string
+          format: uri
+          description: URL firmada temporal para visualizar la imagen.
+        especie_aceptada:
+          $ref: "#/components/schemas/Especie"
+          nullable: true
+        confianza:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+    ObservacionDetalle:
+      allOf:
+        - $ref: "#/components/schemas/ObservacionResumen"
+        - type: object
+          properties:
+            usuario:
+              $ref: "#/components/schemas/UsuarioPublico"
+            latitud:
+              type: number
+            longitud:
+              type: number
+            precision_gps_metros:
+              type: number
+              nullable: true
+            tipo_ambiente:
+              $ref: "#/components/schemas/CatalogoItem"
+            condicion_organismo:
+              $ref: "#/components/schemas/CatalogoItem"
+            observaciones_usuario:
+              type: string
+              nullable: true
+            prediccion_original:
+              $ref: "#/components/schemas/Prediccion"
+              nullable: true
+            validacion_experta:
+              $ref: "#/components/schemas/ValidacionExperta"
+              nullable: true
+            historial_estados:
+              type: array
+              items:
+                $ref: "#/components/schemas/TransicionEstado"
+    ObservacionesPagina:
+      type: object
+      required:
+        - items
+        - pagina
+        - tamano
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObservacionResumen"
+        pagina:
+          type: integer
+        tamano:
+          type: integer
+        total:
+          type: integer
+    Prediccion:
+      type: object
+      required:
+        - id
+        - especie_propuesta
+        - confianza
+        - version_modelo
+        - creado_en
+      properties:
+        id:
+          type: string
+          format: uuid
+        especie_propuesta:
+          $ref: "#/components/schemas/Especie"
+        confianza:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.87
+        version_modelo:
+          type: string
+          example: 1.0.0
+        creado_en:
+          type: string
+          format: date-time
+    ValidacionInput:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          $ref: "#/components/schemas/DecisionValidacion"
+        especie_final_codigo:
+          type: string
+          nullable: true
+          description: Requerido si decision = confirmada o corregida. Null si rechazada.
+          example: URO_MICR
+        comentario:
+          type: string
+          nullable: true
+          maxLength: 2000
+    ValidacionExperta:
+      type: object
+      required:
+        - id
+        - decision
+        - experto
+        - creado_en
+      properties:
+        id:
+          type: string
+          format: uuid
+        decision:
+          $ref: "#/components/schemas/DecisionValidacion"
+        especie_final:
+          $ref: "#/components/schemas/Especie"
+          nullable: true
+        comentario:
+          type: string
+          nullable: true
+        experto:
+          $ref: "#/components/schemas/UsuarioPublico"
+        creado_en:
+          type: string
+          format: date-time
+    TransicionEstado:
+      type: object
+      required:
+        - estado_nuevo
+        - creado_en
+      properties:
+        estado_anterior:
+          $ref: "#/components/schemas/EstadoObservacion"
+          nullable: true
+        estado_nuevo:
+          $ref: "#/components/schemas/EstadoObservacion"
+        actor:
+          type: string
+          nullable: true
+          description: >-
+            Nombre del usuario que provocó la transición. Null si fue el
+            sistema.
+        motivo:
+          type: string
+          nullable: true
+        creado_en:
+          type: string
+          format: date-time
+    CatalogoItem:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre_visible
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+          example: marino
+        nombre_visible:
+          type: string
+          example: Marino
+        descripcion:
+          type: string
+          nullable: true
+    Familia:
+      type: object
+      required:
+        - id
+        - nombre_cientifico
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre_cientifico:
+          type: string
+          example: Dasyatidae
+        descripcion:
+          type: string
+          nullable: true
+    Especie:
+      type: object
+      required:
+        - id
+        - codigo
+        - nombre_cientifico
+        - grupo
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+          example: URO_MICR
+          description: dwc:taxonID
+        nombre_cientifico:
+          type: string
+          example: Urotrygon microphthalmum
+        nombre_comun:
+          type: string
+          nullable: true
+          example: Raya redonda de ojo pequeño
+        familia:
+          $ref: "#/components/schemas/Familia"
+        grupo:
+          type: string
+          enum:
+            - raya
+            - tiburon
+        descripcion:
+          type: string
+          nullable: true
+        url_imagen_referencia:
+          type: string
+          format: uri
+          nullable: true
+    Error:
+      type: object
+      required:
+        - codigo
+        - mensaje
+      properties:
+        codigo:
+          type: string
+          description: Código interno del error (kebab-case).
+          example: recurso-no-encontrado
+        mensaje:
+          type: string
+          example: La observación solicitada no existe.
+        detalles:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              problema:
+                type: string
+  responses:
+    ErrorValidacion:
+      description: Datos de entrada inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: validacion-fallida
+            mensaje: Uno o más campos no cumplen las restricciones.
+            detalles:
+              - campo: latitud
+                problema: Debe estar entre -90 y 90.
+    NoAutenticado:
+      description: Falta el token o es inválido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: no-autenticado
+            mensaje: Se requiere autenticación para acceder a este recurso.
+    CredencialesInvalidas:
+      description: Correo o contraseña incorrectos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: credenciales-invalidas
+            mensaje: Correo o contraseña incorrectos.
+    SinPermiso:
+      description: El rol del usuario no permite esta operación.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: sin-permiso
+            mensaje: Se requiere rol de experto o administrador.
+    NoEncontrado:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: recurso-no-encontrado
+            mensaje: La observación solicitada no existe.

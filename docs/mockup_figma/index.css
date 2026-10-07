@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-ocean: #0284C7;
+  --color-ocean-dark: #0369A1;
+  --color-ocean-light: #BAE6FD;
+  --color-slate-deep: #1E293B;
+  --color-slate-mid: #475569;
+  --color-slate-light: #94A3B8;
+  --color-surface: #F4F6F8;
+  --color-card: #FFFFFF;
+  --color-ochre: #FCD34D;
+  --color-ochre-dark: #F59E0B;
+  --color-success: #22C55E;
+  --color-warning: #F97316;
+  --color-danger: #EF4444;
+
+  --font-nunito: 'Nunito', sans-serif;
+  --font-source: 'Source Sans 3', sans-serif;
+
+  --radius-app: 1.25rem;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: #0369A1;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Hide scrollbars by default */
+.scrollable {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollable::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 0.3; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+@keyframes scan-line {
+  0% { top: 20%; }
+  50% { top: 75%; }
+  100% { top: 20%; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.6); }
+  50% { transform: scaleY(1.4); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out forwards;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+.animate-scan-line {
+  position: absolute;
+  animation: scan-line 2.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+.wave-bar {
+  animation: wave 1s ease-in-out infinite;
+}
