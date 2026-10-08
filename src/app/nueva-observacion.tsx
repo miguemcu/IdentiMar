@@ -1,6 +1,6 @@
-import { Card, ScreenHeader } from "@/components/ui";
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScreenHeader, Card } from '@/components/ui';
 
 export default function NuevaObservacionScreen() {
   const router = useRouter();
@@ -18,8 +18,7 @@ export default function NuevaObservacionScreen() {
             — Pantalla en construcción —
           </Text>
           <Text className="font-source text-sm text-slate-mid">
-            Aquí se implementará el formulario de registro de observación con
-            foto, ubicación GPS, tipo de ambiente y condición del organismo.
+            Aquí se implementará el formulario de registro de observación con foto, ubicación GPS, tipo de ambiente y condición del organismo.
           </Text>
         </Card>
       </View>

@@ -1,29 +1,29 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import {
-  Badge,
+  ScreenHeader,
   Button,
   Card,
-  EstadoBadge,
   Input,
-  ScreenHeader,
-} from "@/components/ui";
-import type { EstadoObservacion } from "@/types";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+  Badge,
+  EstadoBadge,
+} from '@/components/ui';
+import type { EstadoObservacion } from '@/types';
 
 export default function DemoComponentesScreen() {
   const router = useRouter();
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState('');
   const [contador, setContador] = useState(0);
 
   const estados: EstadoObservacion[] = [
-    "recibido",
-    "procesando",
-    "identificado",
-    "no_concluyente",
-    "pendiente_experto",
-    "validado",
-    "corregido",
+    'recibido',
+    'procesando',
+    'identificado',
+    'no_concluyente',
+    'pendiente_experto',
+    'validado',
+    'corregido',
   ];
 
   return (
@@ -47,8 +47,7 @@ export default function DemoComponentesScreen() {
         </Text>
         <Card className="mb-5">
           <Text className="font-source text-xs text-slate-mid mb-3">
-            Mapeo de los 7 valores de EstadoObservacion a texto y colores en
-            español:
+            Mapeo de los 7 valores de EstadoObservacion a texto y colores en español:
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {estados.map((est) => (
@@ -147,8 +146,7 @@ export default function DemoComponentesScreen() {
             <Badge label="Interactiva" variant="ocre" size="sm" />
           </View>
           <Text className="font-source text-sm text-slate-mid">
-            Esta tarjeta responde a pulsaciones táctiles con feedback visual.
-            Contador: {contador}.
+            Esta tarjeta responde a pulsaciones táctiles con feedback visual. Contador: {contador}.
           </Text>
         </Card>
       </ScrollView>

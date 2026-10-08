@@ -1,22 +1,22 @@
-import React from "react";
+import React from 'react';
 import {
-  ActivityIndicator,
   Pressable,
-  type PressableProps,
   Text,
+  ActivityIndicator,
+  type PressableProps,
   View,
-} from "react-native";
+} from 'react-native';
 
 export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | "danger";
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'ghost'
+  | 'danger';
 
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
-export interface ButtonProps extends Omit<PressableProps, "children"> {
+export interface ButtonProps extends Omit<PressableProps, 'children'> {
   title?: string;
   children?: React.ReactNode;
   variant?: ButtonVariant;
@@ -31,54 +31,54 @@ export interface ButtonProps extends Omit<PressableProps, "children"> {
 export function Button({
   title,
   children,
-  variant = "primary",
-  size = "md",
+  variant = 'primary',
+  size = 'md',
   loading = false,
   disabled = false,
   leftIcon,
   rightIcon,
-  className = "",
+  className = '',
   onPress,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  const baseStyles = "flex-row items-center justify-center rounded-xl";
+  const baseStyles = 'flex-row items-center justify-center rounded-xl';
 
   const sizeStyles = {
-    sm: "min-h-[44px] px-3 py-2",
-    md: "min-h-[48px] px-5 py-3",
-    lg: "min-h-[56px] px-6 py-4",
+    sm: 'min-h-[44px] px-3 py-2',
+    md: 'min-h-[48px] px-5 py-3',
+    lg: 'min-h-[56px] px-6 py-4',
   }[size];
 
   const variantStyles = {
-    primary: "bg-ocean active:bg-ocean-dark",
-    secondary: "bg-ocre active:bg-ocre-dark",
-    outline: "bg-transparent border border-ocean active:bg-ocean-light/20",
-    ghost: "bg-transparent active:bg-slate-light/20",
-    danger: "bg-danger active:opacity-90",
+    primary: 'bg-ocean active:bg-ocean-dark',
+    secondary: 'bg-ocre active:bg-ocre-dark',
+    outline: 'bg-transparent border border-ocean active:bg-ocean-light/20',
+    ghost: 'bg-transparent active:bg-slate-light/20',
+    danger: 'bg-danger active:opacity-90',
   }[variant];
 
   const textVariantStyles = {
-    primary: "text-white font-nunito-bold",
-    secondary: "text-slate-deep font-nunito-bold",
-    outline: "text-ocean font-nunito-bold",
-    ghost: "text-slate-deep font-nunito-semibold",
-    danger: "text-white font-nunito-bold",
+    primary: 'text-white font-nunito-bold',
+    secondary: 'text-slate-deep font-nunito-bold',
+    outline: 'text-ocean font-nunito-bold',
+    ghost: 'text-slate-deep font-nunito-semibold',
+    danger: 'text-white font-nunito-bold',
   }[variant];
 
   const textSizeStyles = {
-    sm: "text-sm",
-    md: "text-base",
-    lg: "text-lg",
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
   }[size];
 
   const spinnerColor = {
-    primary: "#FFFFFF",
-    secondary: "#1E293B",
-    outline: "#0284C7",
-    ghost: "#1E293B",
-    danger: "#FFFFFF",
+    primary: '#FFFFFF',
+    secondary: '#1E293B',
+    outline: '#0284C7',
+    ghost: '#1E293B',
+    danger: '#FFFFFF',
   }[variant];
 
   return (
@@ -88,7 +88,7 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       className={`${baseStyles} ${sizeStyles} ${variantStyles} ${
-        isDisabled ? "opacity-50" : "active:scale-[0.98]"
+        isDisabled ? 'opacity-50' : 'active:scale-[0.98]'
       } ${className}`}
       {...rest}
     >

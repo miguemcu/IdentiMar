@@ -2,23 +2,19 @@
  * Tipos de observaciones e inferencia según contrato_integracion.yaml
  */
 
-import type {
-  CatalogoItem,
-  CondicionOrganismo,
-  TipoAmbiente,
-} from "./catalogo";
-import type { Especie } from "./especie";
-import type { UsuarioPublico } from "./usuario";
-import type { ValidacionExperta } from "./validacion";
+import type { UsuarioPublico } from './usuario';
+import type { Especie } from './especie';
+import type { CatalogoItem, TipoAmbiente, CondicionOrganismo } from './catalogo';
+import type { ValidacionExperta } from './validacion';
 
 export type EstadoObservacion =
-  | "recibido"
-  | "procesando"
-  | "identificado"
-  | "no_concluyente"
-  | "pendiente_experto"
-  | "validado"
-  | "corregido";
+  | 'recibido'
+  | 'procesando'
+  | 'identificado'
+  | 'no_concluyente'
+  | 'pendiente_experto'
+  | 'validado'
+  | 'corregido';
 
 export interface Prediccion {
   id: string;
