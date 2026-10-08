@@ -1,5 +1,5 @@
-import { View, Text } from 'react-native';
-import { ScreenHeader } from '@/components/ui';
+import { ScreenHeader } from "@/components/ui";
+import { Text, View } from "react-native";
 
 export default function EspeciesScreen() {
   return (

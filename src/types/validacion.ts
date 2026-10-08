@@ -2,10 +2,10 @@
  * Tipos de validación experta según contrato_integracion.yaml
  */
 
-import type { UsuarioPublico } from './usuario';
-import type { Especie } from './especie';
+import type { Especie } from "./especie";
+import type { UsuarioPublico } from "./usuario";
 
-export type DecisionValidacion = 'confirmada' | 'corregida' | 'rechazada';
+export type DecisionValidacion = "confirmada" | "corregida" | "rechazada";
 
 export interface ValidacionInput {
   decision: DecisionValidacion;

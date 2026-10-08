@@ -1,5 +1,10 @@
-import React from 'react';
-import { View, Pressable, type ViewProps, type PressableProps } from 'react-native';
+import React from "react";
+import {
+  Pressable,
+  View,
+  type PressableProps,
+  type ViewProps,
+} from "react-native";
 
 export interface CardProps extends ViewProps {
   children: React.ReactNode;
@@ -10,13 +15,12 @@ export interface CardProps extends ViewProps {
 
 export function Card({
   children,
-  className = '',
+  className = "",
   onPress,
   accessibilityLabel,
   ...rest
 }: CardProps) {
-  const baseStyles =
-    'bg-card rounded-2xl p-4 border border-slate-light/25';
+  const baseStyles = "bg-card rounded-2xl p-4 border border-slate-light/25";
 
   if (onPress) {
     return (

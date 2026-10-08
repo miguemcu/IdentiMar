@@ -1,11 +1,8 @@
-import type {
-  ValidacionInput,
-  ObservacionDetalle,
-} from '../types';
+import type { ObservacionDetalle, ValidacionInput } from "../types";
 
 export interface IValidacionService {
   validarObservacion(
     id: string,
-    validacion: ValidacionInput
+    validacion: ValidacionInput,
   ): Promise<ObservacionDetalle>;
 }

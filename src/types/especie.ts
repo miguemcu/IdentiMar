@@ -1,8 +1,9 @@
 /**
  * Tipos de especies y taxonomía según contrato_integracion.yaml
+ * TODO: Este archivo se eliminará en futuras versiones, debido al alcance del proyecto.
  */
 
-export type GrupoEspecie = 'raya' | 'tiburon';
+export type GrupoEspecie = "raya" | "tiburon";
 
 export interface Familia {
   id: string;
