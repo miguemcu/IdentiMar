@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import { Button, Card, Input, ScreenHeader } from "@/components/ui";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/auth-context';
-import { Button, Card, Input, ScreenHeader } from '@/components/ui';
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 export default function RegistroScreen() {
   const router = useRouter();
   const { registro } = useAuth();
 
-  const [nombreCompleto, setNombreCompleto] = useState('');
-  const [correo, setCorreo] = useState('');
-  const [password, setPassword] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const [nombreCompleto, setNombreCompleto] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [password, setPassword] = useState("");
+  const [telefono, setTelefono] = useState("");
 
   const [errores, setErrores] = useState<{
     nombre_completo?: string;
@@ -34,24 +34,29 @@ export default function RegistroScreen() {
 
     // Nombre completo: entre 3 y 200 caracteres según contrato
     if (!nombreCompleto.trim()) {
-      nuevosErrores.nombre_completo = 'El nombre completo es requerido.';
-    } else if (nombreCompleto.trim().length < 3 || nombreCompleto.trim().length > 200) {
-      nuevosErrores.nombre_completo = 'El nombre debe tener entre 3 y 200 caracteres.';
+      nuevosErrores.nombre_completo = "El nombre completo es requerido.";
+    } else if (
+      nombreCompleto.trim().length < 3 ||
+      nombreCompleto.trim().length > 200
+    ) {
+      nuevosErrores.nombre_completo =
+        "El nombre debe tener entre 3 y 200 caracteres.";
     }
 
     // Correo: formato válido requerido
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!correo.trim()) {
-      nuevosErrores.correo = 'El correo electrónico es requerido.';
+      nuevosErrores.correo = "El correo electrónico es requerido.";
     } else if (!emailRegex.test(correo.trim())) {
-      nuevosErrores.correo = 'El formato del correo electrónico no es válido.';
+      nuevosErrores.correo = "El formato del correo electrónico no es válido.";
     }
 
     // Contraseña: entre 8 y 128 caracteres
     if (!password) {
-      nuevosErrores.password = 'La contraseña es requerida.';
+      nuevosErrores.password = "La contraseña es requerida.";
     } else if (password.length < 8 || password.length > 128) {
-      nuevosErrores.password = 'La contraseña debe tener entre 8 y 128 caracteres.';
+      nuevosErrores.password =
+        "La contraseña debe tener entre 8 y 128 caracteres.";
     }
 
     setErrores(nuevosErrores);
@@ -62,7 +67,7 @@ export default function RegistroScreen() {
     setErrorGeneral(null);
 
     if (!validarFormulario()) {
-      setErrorGeneral('Uno o más campos no cumplen las restricciones.');
+      setErrorGeneral("Uno o más campos no cumplen las restricciones.");
       return;
     }
 
@@ -77,7 +82,7 @@ export default function RegistroScreen() {
       // El SessionProvider actualiza el usuario y redirige automáticamente
     } catch {
       // 409 según contrato si ya está registrado
-      setErrorGeneral('El correo ya está registrado.');
+      setErrorGeneral("El correo ya está registrado.");
     } finally {
       setCargando(false);
     }
@@ -85,7 +90,7 @@ export default function RegistroScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-surface"
     >
       <ScreenHeader
@@ -170,12 +175,9 @@ export default function RegistroScreen() {
 
           <View className="flex-row items-center justify-center mt-5">
             <Text className="text-sm font-source text-slate-mid">
-              ¿Ya tienes cuenta?{' '}
+              ¿Ya tienes cuenta?{" "}
             </Text>
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityRole="button"
-            >
+            <Pressable onPress={() => router.back()} accessibilityRole="button">
               <Text className="text-sm font-nunito-bold text-ocean">
                 Inicia sesión
               </Text>

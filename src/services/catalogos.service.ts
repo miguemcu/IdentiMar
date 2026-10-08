@@ -1,9 +1,9 @@
 import type {
+  CatalogoEstadoItem,
+  CatalogoItem,
   Especie,
   Familia,
-  CatalogoItem,
-  CatalogoEstadoItem,
-} from '../types';
+} from "../types";
 
 export interface ICatalogosService {
   obtenerEspecies(): Promise<Especie[]>;

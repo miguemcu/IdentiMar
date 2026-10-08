@@ -1,9 +1,9 @@
 import type {
-  RegistroRequest,
   LoginRequest,
   LoginResponse,
+  RegistroRequest,
   UsuarioPublico,
-} from '../types';
+} from "../types";
 
 export interface IAuthService {
   registro(datos: RegistroRequest): Promise<UsuarioPublico>;

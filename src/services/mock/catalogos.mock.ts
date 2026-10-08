@@ -1,18 +1,18 @@
-import type { ICatalogosService } from '../catalogos.service';
 import type {
+  CatalogoEstadoItem,
+  CatalogoItem,
   Especie,
   Familia,
-  CatalogoItem,
-  CatalogoEstadoItem,
-} from '../../types';
-import { simularRetardo } from './delay';
+} from "../../types";
+import type { ICatalogosService } from "../catalogos.service";
+import { simularRetardo } from "./delay";
 import {
+  MOCK_CONDICIONES_ORGANISMO,
   MOCK_ESPECIES,
+  MOCK_ESTADOS,
   MOCK_FAMILIAS,
   MOCK_TIPOS_AMBIENTE,
-  MOCK_CONDICIONES_ORGANISMO,
-  MOCK_ESTADOS,
-} from './mockData';
+} from "./mockData";
 
 export class CatalogosMockService implements ICatalogosService {
   async obtenerEspecies(): Promise<Especie[]> {

@@ -1,10 +1,5 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  type TextInputProps,
-} from 'react-native';
+import React, { useState } from "react";
+import { Text, TextInput, View, type TextInputProps } from "react-native";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -21,8 +16,8 @@ export function Input({
   helperText,
   leftIcon,
   rightIcon,
-  containerClassName = '',
-  className = '',
+  containerClassName = "",
+  className = "",
   onFocus,
   onBlur,
   ...rest
@@ -30,10 +25,10 @@ export function Input({
   const [isFocused, setIsFocused] = useState(false);
 
   const borderColor = error
-    ? 'border-danger'
+    ? "border-danger"
     : isFocused
-    ? 'border-ocean'
-    : 'border-slate-light/40';
+      ? "border-ocean"
+      : "border-slate-light/40";
 
   return (
     <View className={`w-full mb-3 ${containerClassName}`}>
@@ -66,9 +61,7 @@ export function Input({
       </View>
 
       {error ? (
-        <Text className="font-source text-xs text-danger mt-1">
-          {error}
-        </Text>
+        <Text className="font-source text-xs text-danger mt-1">{error}</Text>
       ) : helperText ? (
         <Text className="font-source text-xs text-slate-mid mt-1">
           {helperText}

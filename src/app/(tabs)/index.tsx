@@ -1,12 +1,12 @@
-import { View, Text, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/auth-context';
-import { Badge, Card, ScreenHeader, EstadoBadge } from '@/components/ui';
+import { Badge, Card, EstadoBadge, ScreenHeader } from "@/components/ui";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 
 const ROL_ETIQUETA: Record<string, string> = {
-  usuario: 'Observador',
-  experto: 'Experto validador',
-  administrador: 'Administrador',
+  usuario: "Observador",
+  experto: "Experto validador",
+  administrador: "Administrador",
 };
 
 export default function InicioScreen() {
@@ -17,12 +17,22 @@ export default function InicioScreen() {
     <View className="flex-1 bg-surface">
       <ScreenHeader
         title="Inicio"
-        subtitle={usuario ? `Bienvenido, ${usuario.nombre_completo.split(' ')[0]}` : 'IdentiMar'}
+        subtitle={
+          usuario
+            ? `Bienvenido, ${usuario.nombre_completo.split(" ")[0]}`
+            : "IdentiMar"
+        }
         rightElement={
           rol ? (
             <Badge
               label={ROL_ETIQUETA[rol] ?? rol}
-              variant={rol === 'experto' ? 'ocre' : rol === 'administrador' ? 'danger' : 'ocean'}
+              variant={
+                rol === "experto"
+                  ? "ocre"
+                  : rol === "administrador"
+                    ? "danger"
+                    : "ocean"
+              }
               size="sm"
             />
           ) : undefined
@@ -36,7 +46,11 @@ export default function InicioScreen() {
           </Text>
           <Text className="font-source text-sm text-slate-mid">
             Registro e identificación de batoideos en colaboración con INVEMAR.
-            Rol activo: <Text className="font-nunito-bold text-ocean">{ROL_ETIQUETA[rol ?? 'usuario']}</Text>.
+            Rol activo:{" "}
+            <Text className="font-nunito-bold text-ocean">
+              {ROL_ETIQUETA[rol ?? "usuario"]}
+            </Text>
+            .
           </Text>
         </Card>
 
@@ -46,16 +60,24 @@ export default function InicioScreen() {
             Estados de observación:
           </Text>
           <View className="flex-row flex-wrap gap-2">
-            {(['recibido', 'procesando', 'identificado', 'no_concluyente', 'pendiente_experto', 'validado', 'corregido'] as const).map(
-              (estado) => (
-                <EstadoBadge key={estado} estado={estado} size="sm" />
-              )
-            )}
+            {(
+              [
+                "recibido",
+                "procesando",
+                "identificado",
+                "no_concluyente",
+                "pendiente_experto",
+                "validado",
+                "corregido",
+              ] as const
+            ).map((estado) => (
+              <EstadoBadge key={estado} estado={estado} size="sm" />
+            ))}
           </View>
         </Card>
 
         <Pressable
-          onPress={() => router.push('/demo-componentes' as any)}
+          onPress={() => router.push("/demo-componentes" as any)}
           className="active:opacity-80"
           accessibilityRole="button"
           accessibilityLabel="Ver galería de componentes"
