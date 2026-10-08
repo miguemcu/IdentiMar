@@ -72,3 +72,13 @@ conocidas están en docs/discrepancias.md.
 - Botones táctiles de al menos 44x44 pt y buen contraste (uso en exteriores).
 - No agregues dependencias sin justificarlas.
 - Antes de dar una tarea por terminada ejecuta `npx tsc --noEmit`.
+
+## Reglas de trabajo
+
+- Una tarea por commit (convención de nombres tomada de
+  https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13), confirmaciones pequeñas.
+- No editar archivos compartidos (rutas raíz, tipos, tema, services) fuera de
+  tu tarea; si hace falta un cambio, descríbelo en el PR.
+- Antes de escribir código: proponer un plan y esperar confirmación.
+- Antes de dar algo por terminado: `npx tsc --noEmit` sin errores.
+- No agregar dependencias sin avisar.
