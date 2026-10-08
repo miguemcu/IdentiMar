@@ -1,5 +1,5 @@
-import { ScreenHeader } from "@/components/ui";
-import { Text, View } from "react-native";
+import { View, Text } from 'react-native';
+import { ScreenHeader } from '@/components/ui';
 
 export default function RegistrosScreen() {
   return (

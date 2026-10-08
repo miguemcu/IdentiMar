@@ -1,12 +1,12 @@
+import type { IAuthService } from '../auth.service';
 import type {
+  RegistroRequest,
   LoginRequest,
   LoginResponse,
-  RegistroRequest,
   UsuarioPublico,
-} from "../../types";
-import type { IAuthService } from "../auth.service";
-import { simularRetardo } from "./delay";
-import { MOCK_USUARIOS } from "./mockData";
+} from '../../types';
+import { simularRetardo } from './delay';
+import { MOCK_USUARIOS } from './mockData';
 
 export class AuthMockService implements IAuthService {
   private usuarioActual: UsuarioPublico = MOCK_USUARIOS.usuario;
@@ -17,7 +17,7 @@ export class AuthMockService implements IAuthService {
       id: `u1a-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       nombre_completo: datos.nombre_completo,
       correo: datos.correo,
-      rol: "usuario",
+      rol: 'usuario',
       activo: true,
       creado_en: new Date().toISOString(),
     };
@@ -29,9 +29,9 @@ export class AuthMockService implements IAuthService {
     await simularRetardo();
 
     // Si coincide con correo de experto o admin, asignamos ese rol
-    if (datos.correo.includes("experto") || datos.correo.includes("invemar")) {
+    if (datos.correo.includes('experto') || datos.correo.includes('invemar')) {
       this.usuarioActual = MOCK_USUARIOS.experto;
-    } else if (datos.correo.includes("admin")) {
+    } else if (datos.correo.includes('admin')) {
       this.usuarioActual = MOCK_USUARIOS.administrador;
     } else {
       this.usuarioActual = {

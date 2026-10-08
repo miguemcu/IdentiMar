@@ -2,7 +2,7 @@
  * Tipos de usuario y autenticación según contrato_integracion.yaml
  */
 
-export type Rol = "usuario" | "experto" | "administrador";
+export type Rol = 'usuario' | 'experto' | 'administrador';
 
 export interface UsuarioPublico {
   id: string;

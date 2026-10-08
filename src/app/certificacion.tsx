@@ -1,6 +1,6 @@
-import { Card, ScreenHeader } from "@/components/ui";
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScreenHeader, Card } from '@/components/ui';
 
 export default function CertificacionScreen() {
   const router = useRouter();
@@ -18,8 +18,7 @@ export default function CertificacionScreen() {
             — Pantalla en construcción —
           </Text>
           <Text className="font-source text-sm text-slate-mid">
-            Aquí se implementará el flujo de solicitud de certificación como
-            experto validador (pendiente de acordar endpoint con el Equipo 3).
+            Aquí se implementará el flujo de solicitud de certificación como experto validador (pendiente de acordar endpoint con el Equipo 3).
           </Text>
         </Card>
       </View>

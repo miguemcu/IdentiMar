@@ -1,10 +1,10 @@
 import type {
-  EstadoObservacion,
-  ObservacionDetalle,
-  ObservacionesPagina,
   ObservacionInput,
   ObservacionResumen,
-} from "../types";
+  ObservacionDetalle,
+  ObservacionesPagina,
+  EstadoObservacion,
+} from '../types';
 
 export interface FiltrosListadoObservaciones {
   estado?: EstadoObservacion;
@@ -15,13 +15,13 @@ export interface FiltrosListadoObservaciones {
 export interface IObservacionesService {
   crearObservacion(
     datos: ObservacionInput,
-    imagenUri?: string,
+    imagenUri?: string
   ): Promise<ObservacionResumen>;
   listarObservaciones(
-    filtros?: FiltrosListadoObservaciones,
+    filtros?: FiltrosListadoObservaciones
   ): Promise<ObservacionesPagina>;
   obtenerObservacion(id: string): Promise<ObservacionDetalle>;
   listarPendientes(
-    filtros?: Omit<FiltrosListadoObservaciones, "estado">,
+    filtros?: Omit<FiltrosListadoObservaciones, 'estado'>
   ): Promise<ObservacionesPagina>;
 }

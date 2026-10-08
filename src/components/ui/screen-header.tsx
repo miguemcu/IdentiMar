@@ -1,7 +1,7 @@
-import { SymbolView } from "expo-symbols";
-import React from "react";
-import { Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 
 export interface ScreenHeaderProps {
   title: string;
@@ -16,7 +16,7 @@ export function ScreenHeader({
   subtitle,
   onBack,
   rightElement,
-  className = "",
+  className = '',
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
@@ -36,11 +36,7 @@ export function ScreenHeader({
               className="min-w-[44px] min-h-[44px] justify-center items-start active:opacity-70 mr-1"
             >
               <SymbolView
-                name={{
-                  ios: "chevron.left",
-                  android: "arrow_back",
-                  web: "arrow_back",
-                }}
+                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
                 size={22}
                 weight="bold"
                 tintColor="#1E293B"

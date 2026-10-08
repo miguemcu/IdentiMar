@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { authService } from "../services";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services';
 import type {
+  UsuarioPublico,
+  Rol,
   LoginRequest,
   RegistroRequest,
-  Rol,
-  UsuarioPublico,
-} from "../types";
+} from '../types';
 
 interface AuthContextType {
   usuario: UsuarioPublico | null;
@@ -70,18 +70,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cambiarRolMock = async (nuevoRol: Rol) => {
-    if (nuevoRol === "experto") {
-      await login({
-        correo: "carlos.mendoza@invemar.org.co",
-        password: "password123",
-      });
-    } else if (nuevoRol === "administrador") {
-      await login({
-        correo: "admin@identimar.udea.edu.co",
-        password: "password123",
-      });
+    if (nuevoRol === 'experto') {
+      await login({ correo: 'carlos.mendoza@invemar.org.co', password: 'password123' });
+    } else if (nuevoRol === 'administrador') {
+      await login({ correo: 'admin@identimar.udea.edu.co', password: 'password123' });
     } else {
-      await login({ correo: "ana.torres@ejemplo.co", password: "password123" });
+      await login({ correo: 'ana.torres@ejemplo.co', password: 'password123' });
     }
   };
 
@@ -106,7 +100,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth debe ser utilizado dentro de un SessionProvider");
+    throw new Error('useAuth debe ser utilizado dentro de un SessionProvider');
   }
   return context;
 }
