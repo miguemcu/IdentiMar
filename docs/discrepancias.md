@@ -47,11 +47,11 @@ Comparación entre el mockup de Figma (`docs/mockup/`) y el contrato OpenAPI del
 
 ## 5. Especies
 
-| #   | Tema               | Mockup                                                                   | Contrato                                                                                                  | Acción en la app                                                          | Estado    |
-| --- | ------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------- |
-| 20  | Campos de la ficha | `habitat`, `depth`, `size`, estado de conservación, `regionCount`, color | `codigo`, `nombre_cientifico`, `nombre_comun`, `familia`, `grupo`, `descripcion`, `url_imagen_referencia` | Quitar los extras del mockup o pedirlos al E3                             | pendiente |
-| 21  | Identificadores    | Numéricos                                                                | UUID, más `codigo` taxonómico (ej. `URO_MICR`)                                                            | Usar `id` UUID y `codigo`                                                 | pendiente |
-| 22  | Grupo              | Solo rayas                                                               | `grupo`: `raya` o `tiburon`                                                                               | Preguntar si la app mostrará tiburones; el README habla solo de batoideos | pendiente |
+| #   | Tema               | Mockup                                                                   | Contrato                                                                                                  | Acción en la app                                                                                   | Estado             |
+| --- | ------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------ |
+| 20  | Campos de la ficha | `habitat`, `depth`, `size`, estado de conservación, `regionCount`, color | `codigo`, `nombre_cientifico`, `nombre_comun`, `familia`, `grupo`, `descripcion`, `url_imagen_referencia` | Quitar los extras del mockup o pedirlos al E3                                                      | pendiente          |
+| 21  | Identificadores    | Numéricos                                                                | UUID, más `codigo` taxonómico (ej. `URO_MICR`)                                                            | Usar `id` UUID y `codigo`                                                                          | pendiente          |
+| 22  | Grupo              | Solo rayas                                                               | `grupo`: `raya` o `tiburon`                                                                               | La app solo trabaja con rayas (batoideos) según alcance del proyecto UdeA. No se requiere en la UI | resuelto en la app |
 
 ## Prioridades
 
@@ -62,9 +62,13 @@ Comparación entre el mockup de Figma (`docs/mockup/`) y el contrato OpenAPI del
 
 ## Preguntas para el Equipo 3
 
-- ¿Qué códigos tiene cada catálogo (`tipos-ambiente`, `condiciones-organismo`, `estados`)?
-- ¿Habrá endpoint para la solicitud de certificación como experto? ¿Quién la aprueba?
-- ¿Habrá un listado de observaciones de otros usuarios para la pestaña "Todos"?
-- ¿Se guarda la profundidad? ¿En qué campo?
-- ¿La app debe mostrar tiburones además de rayas?
-- ¿Cuál es la versión vigente del contrato?
+- Qué códigos tiene cada catálogo (`tipos-ambiente`, `condiciones-organismo`, `estados`)?
+  - Es decir, hay "opciones" para esas categorías, o será libre?
+- Habrá endpoint para la solicitud de certificación como experto?
+  - Necesitamos ver eso porque tenemos usuarios expertos, pero quién es experto? como llega uno "nuevo"
+- Habrá un listado de observaciones de otros usuarios para la pestaña "Todos"?
+- Contemplamos la posibilidad de registrar observaciones / consultar otras sin necesidad de crear una cuenta?
+  - Esto sería muy útil para pescadores que poco y nada conocen acerca de sesiones y cuentas.
+- Recordemos que el alcance se limitó solo a tiburones, la variable `grupo` no tiene sentido en nuestro caso.
+
+Todo esto tambien hay que ver como lo ha contemplado el equipo de Visión Artificial, hay que encontrar un equilibrio entre lo que le sirve al usuario y lo que le sirve al modelo para dar buenas clasificaciones.
