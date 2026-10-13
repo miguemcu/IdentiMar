@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/contexts/auth-context';
 import { Badge, Card, ScreenHeader, EstadoBadge } from '@/components/ui';
 
@@ -30,6 +31,24 @@ export default function InicioScreen() {
       />
 
       <View className="flex-1 p-4 gap-4">
+        <Pressable
+          onPress={() => router.push('/nueva-observacion')}
+          className="active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel="Nueva observación"
+        >
+          <Card className="min-h-[44px] flex-row items-center gap-3 border border-ocean/25 bg-ocean/5">
+            <SymbolView
+              name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
+              size={24}
+              tintColor="#1E293B"
+            />
+            <Text className="font-nunito-bold text-ocean text-sm">
+              Nueva observación
+            </Text>
+          </Card>
+        </Pressable>
+
         <Card className="border border-ocean/20">
           <Text className="font-nunito-bold text-base text-slate-deep mb-1">
             IdentiMar – Urabá Antioqueño
