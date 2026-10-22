@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   AppState,
   Image,
   Linking,
@@ -16,7 +17,14 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Input, ScreenHeader } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
-import { catalogosService } from '@/services';
+import { useAuth } from '@/contexts/auth-context';
+import {
+  catalogosService,
+  ErrorServicio,
+  mensajeError,
+  observacionesService,
+  type ImagenObservacion,
+} from '@/services';
 import type { CatalogoItem } from '@/types';
 
 type TemporaryCoordinates = {
@@ -42,6 +50,18 @@ function errorCoordenada(
   if (valor === null) return 'Escribe un número, por ejemplo 8.123456';
   const max = RANGO_COORDENADA[field];
   return Math.abs(valor) > max ? `Debe estar entre -${max} y ${max}` : undefined;
+}
+
+function imagenParaEnvio(asset: ImagePicker.ImagePickerAsset): ImagenObservacion {
+  // validateImageAsset ya garantizó JPEG o PNG.
+  const mimeType =
+    asset.mimeType?.toLowerCase() === 'image/png' ? 'image/png' : 'image/jpeg';
+  const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+  return {
+    uri: asset.uri,
+    mimeType,
+    nombre: asset.fileName ?? `observacion.${extension}`,
+  };
 }
 
 function Opciones({
@@ -109,6 +129,7 @@ function validateImageAsset(asset: ImagePicker.ImagePickerAsset) {
 export default function NuevaObservacionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { logout } = useAuth();
   const [imageAsset, setImageAsset] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -136,6 +157,8 @@ export default function NuevaObservacionScreen() {
   const [tipoAmbiente, setTipoAmbiente] = useState<string | null>(null);
   const [condicion, setCondicion] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const previousAppState = useRef(AppState.currentState);
 
   const cargarCatalogos = useCallback(async () => {
@@ -157,6 +180,61 @@ export default function NuevaObservacionScreen() {
       void cargarCatalogos();
     });
   }, [cargarCatalogos]);
+
+  const ubicacionValida =
+    coordinates.latitud !== null &&
+    coordinates.longitud !== null &&
+    !errorCoordenada('latitud', coordinateInputs.latitud, coordinates.latitud) &&
+    !errorCoordenada('longitud', coordinateInputs.longitud, coordinates.longitud);
+
+  const faltantes = [
+    !ubicacionValida && 'la ubicación',
+    fechaFutura && 'una fecha válida',
+    !tipoAmbiente && 'dónde estaba',
+    !condicion && 'cómo estaba el animal',
+  ].filter((faltante): faltante is string => typeof faltante === 'string');
+
+  async function enviar() {
+    if (
+      !imageAsset ||
+      !tipoAmbiente ||
+      !condicion ||
+      coordinates.latitud === null ||
+      coordinates.longitud === null
+    ) {
+      return;
+    }
+
+    setEnviando(true);
+    setErrorEnvio(null);
+    const notasLimpias = notas.trim();
+
+    try {
+      const resumen = await observacionesService.crearObservacion(
+        {
+          fecha_hora_evento: fechaIsoLocal(fechaEvento),
+          latitud: coordinates.latitud,
+          longitud: coordinates.longitud,
+          precision_gps_metros: precisionGps,
+          tipo_ambiente: tipoAmbiente,
+          condicion_organismo: condicion,
+          observaciones_usuario: notasLimpias === '' ? null : notasLimpias,
+        },
+        imagenParaEnvio(imageAsset),
+      );
+      router.replace(`/observaciones/${resumen.id}` as any);
+    } catch (error) {
+      if (error instanceof ErrorServicio && error.status === 401) {
+        Alert.alert('Sesión expirada', mensajeError(error), [
+          { text: 'Iniciar sesión', onPress: () => void logout() },
+        ]);
+      } else {
+        setErrorEnvio(mensajeError(error));
+      }
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   function cambiarFecha(nuevaFecha: Date) {
     // En Android el selector es un diálogo que se cierra al elegir.
@@ -542,6 +620,30 @@ export default function NuevaObservacionScreen() {
             </View>
           ) : null}
         </Card>
+        {imageAsset ? (
+          <View className="mt-4 w-full">
+            {faltantes.length > 0 ? (
+              <Text className="mb-2 text-center font-source text-sm text-slate-mid">
+                Para enviar falta: {faltantes.join(', ')}.
+              </Text>
+            ) : null}
+            {errorEnvio ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                className="mb-2 text-center font-source text-sm text-danger"
+              >
+                {errorEnvio}
+              </Text>
+            ) : null}
+            <Button
+              title="Enviar observación"
+              size="lg"
+              loading={enviando}
+              disabled={faltantes.length > 0}
+              onPress={() => void enviar()}
+            />
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
