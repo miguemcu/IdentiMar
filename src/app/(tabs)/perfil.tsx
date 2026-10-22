@@ -119,7 +119,7 @@ export default function PerfilScreen() {
             </Text>
             <Text className="mt-0.5 font-source text-sm text-white">
               {esValidador
-                ? 'Puedes revisar las observaciones que el modelo no pudo confirmar.'
+                ? 'Puedes revisar las observaciones que la app no pudo reconocer.'
                 : 'Para certificarte como experto, comunícate con el administrador de IdentiMar.'}
             </Text>
           </View>

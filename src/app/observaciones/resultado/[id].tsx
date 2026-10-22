@@ -68,12 +68,11 @@ function Resultado({
           <NombreEspecie obs={obs} />
           {confianza ? (
             <Text className="mt-2 font-source text-base text-slate-deep">
-              Confianza del modelo: {confianza}
+              Qué tan segura está la app: {confianza}
             </Text>
           ) : null}
           <Text className="mt-3 font-source text-sm text-slate-mid">
-            Es una sugerencia automática del modelo, no una identificación
-            definitiva.
+            Es una sugerencia de la app, no una identificación definitiva.
           </Text>
         </>
       );
@@ -95,7 +94,7 @@ function Resultado({
             En revisión por un experto
           </Text>
           <Text className="mt-2 font-source text-base text-slate-mid">
-            El modelo no está seguro de la especie. Un experto revisará tu foto
+            La app no está segura de qué raya es. Un experto revisará tu foto
             y verás su decisión en Registros.
           </Text>
         </>

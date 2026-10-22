@@ -56,7 +56,7 @@ export default function EspeciesScreen() {
             No pudimos cargar el catálogo
           </Text>
           <Text className="font-source text-sm text-slate-mid text-center mt-2">
-            Revisa tu conexión e inténtalo de nuevo.
+            Revisa que tengas internet e inténtalo de nuevo.
           </Text>
           <View className="w-full mt-5">
             <Button title="Reintentar" variant="primary" onPress={cargar} />

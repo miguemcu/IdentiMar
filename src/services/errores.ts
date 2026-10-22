@@ -36,7 +36,7 @@ export function mensajeError(error: unknown): string {
 
   switch (error.status) {
     case 0:
-      return 'No hay conexión a internet. Revisa tu señal e inténtalo de nuevo.';
+      return 'No tienes internet en este momento. Inténtalo de nuevo cuando tengas señal.';
     case 400: {
       const problemas = (error.cuerpo.detalles ?? [])
         .filter((d) => d.problema)
@@ -50,6 +50,6 @@ export function mensajeError(error: unknown): string {
     case 413:
       return 'La foto pesa demasiado. Toma otra o elige una más liviana.';
     default:
-      return 'No pudimos completar la operación. Inténtalo más tarde.';
+      return 'Algo falló de nuestro lado. Inténtalo más tarde.';
   }
 }

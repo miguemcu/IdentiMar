@@ -125,7 +125,7 @@ export default function InicioScreen() {
             </Text>
             <Text className="mt-1 font-source text-sm text-slate-deep">
               Toma la foto con la cámara de tu teléfono y súbela desde la
-              galería cuando tengas conexión.
+              galería cuando tengas internet.
             </Text>
           </View>
         </Card>

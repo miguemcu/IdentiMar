@@ -147,7 +147,7 @@ export default function DetalleRegistroScreen() {
             No pudimos cargar este registro
           </Text>
           <Text className="font-source text-sm text-slate-mid text-center mt-2">
-            Revisa tu conexión e inténtalo de nuevo.
+            Revisa que tengas internet e inténtalo de nuevo.
           </Text>
           <View className="w-full mt-5">
             <Button title="Reintentar" variant="primary" onPress={cargar} />
@@ -221,33 +221,33 @@ export default function DetalleRegistroScreen() {
             </Seccion>
           ) : null}
 
-          <Seccion titulo="Predicción del modelo">
+          <Seccion titulo="Sugerencia de la app">
             {obs.prediccion_original ? (
               <>
                 <Fila
-                  etiqueta="Especie propuesta"
+                  etiqueta="Especie sugerida"
                   valor={
                     obs.prediccion_original.especie_propuesta.nombre_comun ??
                     obs.prediccion_original.especie_propuesta.nombre_cientifico
                   }
                 />
                 <Fila
-                  etiqueta="Confianza"
+                  etiqueta="Qué tan segura está"
                   valor={formatearConfianza(obs.prediccion_original.confianza) ?? 'No disponible'}
                 />
                 <Fila
-                  etiqueta="Versión del modelo"
+                  etiqueta="Versión de la app de identificación"
                   valor={obs.prediccion_original.version_modelo}
                 />
                 {obs.validacion_experta ? (
                   <Text className="font-source text-sm text-slate-mid mt-2">
-                    Es la sugerencia original del modelo. La decisión del
+                    Es lo que sugirió la app al principio. La decisión del
                     experto aparece abajo.
                   </Text>
                 ) : null}
               </>
             ) : (
-              <Vacio texto="Aún no hay una predicción del modelo para este registro." />
+              <Vacio texto="La app todavía no ha sugerido una especie para este registro." />
             )}
           </Seccion>
 
@@ -282,7 +282,7 @@ export default function DetalleRegistroScreen() {
                   />
                 </>
               ) : (
-                <Vacio texto="Un experto revisará esta foto porque el modelo no pudo confirmar la especie." />
+                <Vacio texto="Un experto revisará esta foto porque la app no pudo reconocer la especie." />
               )}
             </Seccion>
           ) : null}
