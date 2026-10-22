@@ -1,7 +1,14 @@
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Card, EstadoBadge, ScreenHeader } from '@/components/ui';
+import {
+  Button,
+  Card,
+  EstadoBadge,
+  Icono,
+  ScreenHeader,
+  type NombreIcono,
+} from '@/components/ui';
 import { formatearConfianza } from '@/constants/formato';
 import {
   estaEnCurso,
@@ -9,6 +16,17 @@ import {
 } from '@/hooks/use-seguimiento-observacion';
 import { mensajeError } from '@/services';
 import type { EstadoObservacion, ObservacionDetalle } from '@/types';
+
+/** Ícono y fondo que acompañan al texto de cada resultado (nunca solo color). */
+const ICONO_RESULTADO: Partial<
+  Record<EstadoObservacion, { icono: NombreIcono; fondo: string; color: string }>
+> = {
+  identificado: { icono: 'verificado', fondo: 'bg-emerald-100', color: 'text-emerald-800' },
+  validado: { icono: 'verificado', fondo: 'bg-emerald-100', color: 'text-emerald-800' },
+  corregido: { icono: 'verificado', fondo: 'bg-sky-100', color: 'text-sky-900' },
+  pendiente_experto: { icono: 'info', fondo: 'bg-amber-100', color: 'text-amber-900' },
+  no_concluyente: { icono: 'camara', fondo: 'bg-orange-100', color: 'text-orange-800' },
+};
 
 const TEXTO_EN_CURSO: Partial<Record<EstadoObservacion, string>> = {
   recibido: 'Recibimos tu foto',
@@ -50,12 +68,11 @@ function Resultado({
           <NombreEspecie obs={obs} />
           {confianza ? (
             <Text className="mt-2 font-source text-base text-slate-deep">
-              Confianza del modelo: {confianza}
+              Qué tan segura está la app: {confianza}
             </Text>
           ) : null}
           <Text className="mt-3 font-source text-sm text-slate-mid">
-            Es una sugerencia automática. Un experto puede revisarla más
-            adelante.
+            Es una sugerencia de la app, no una identificación definitiva.
           </Text>
         </>
       );
@@ -77,7 +94,7 @@ function Resultado({
             En revisión por un experto
           </Text>
           <Text className="mt-2 font-source text-base text-slate-mid">
-            El modelo no está seguro de la especie. Un experto revisará tu foto
+            La app no está segura de qué raya es. Un experto revisará tu foto
             y verás su decisión en Registros.
           </Text>
         </>
@@ -127,13 +144,28 @@ export default function ResultadoObservacionScreen() {
           <Image
             source={{ uri: obs.imagen_url }}
             accessibilityLabel="Foto enviada"
-            className="h-56 w-full rounded-2xl bg-slate-light/20"
+            className="h-64 w-full rounded-3xl bg-slate-light/20"
             resizeMode="cover"
           />
         ) : null}
 
         <Card>
-          {obs ? <EstadoBadge estado={obs.estado} /> : null}
+          <View className="flex-row items-center gap-3">
+            {obs && ICONO_RESULTADO[obs.estado] ? (
+              <View
+                className={`h-12 w-12 items-center justify-center rounded-2xl ${
+                  ICONO_RESULTADO[obs.estado]!.fondo
+                }`}
+              >
+                <Icono
+                  nombre={ICONO_RESULTADO[obs.estado]!.icono}
+                  size={26}
+                  className={ICONO_RESULTADO[obs.estado]!.color}
+                />
+              </View>
+            ) : null}
+            {obs ? <EstadoBadge estado={obs.estado} /> : null}
+          </View>
 
           {error ? (
             <View className="mt-3">

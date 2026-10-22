@@ -15,8 +15,10 @@ export function Card({
   accessibilityLabel,
   ...rest
 }: CardProps) {
+  // El fondo debe ser opaco (bg-white, bg-amber-50…): en Android la sombra
+  // se ve a través de un fondo translúcido (bg-ocre/15) y deja un marco oscuro.
   const baseStyles =
-    'bg-card rounded-2xl p-4 border border-slate-light/25';
+    'bg-card rounded-3xl p-4 border border-slate-light/20 shadow-sm';
 
   if (onPress) {
     return (

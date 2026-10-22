@@ -28,7 +28,7 @@ type Estado = 'cargando' | 'listo' | 'error';
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <View className="py-2 border-b border-slate-light/20">
-      <Text className="font-nunito-bold text-xs text-slate-mid">{etiqueta}</Text>
+      <Text className="font-nunito-bold text-sm text-slate-mid">{etiqueta}</Text>
       <Text className="font-source text-base text-slate-deep mt-0.5">{valor}</Text>
     </View>
   );
@@ -37,7 +37,9 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <Card>
-      <Text className="font-nunito-bold text-base text-slate-deep mb-2">{titulo}</Text>
+      <Text accessibilityRole="header" className="font-nunito-extrabold text-lg text-slate-deep mb-2">
+        {titulo}
+      </Text>
       {children}
     </Card>
   );
@@ -145,7 +147,7 @@ export default function DetalleRegistroScreen() {
             No pudimos cargar este registro
           </Text>
           <Text className="font-source text-sm text-slate-mid text-center mt-2">
-            Revisa tu conexión e inténtalo de nuevo.
+            Revisa que tengas internet e inténtalo de nuevo.
           </Text>
           <View className="w-full mt-5">
             <Button title="Reintentar" variant="primary" onPress={cargar} />
@@ -158,7 +160,7 @@ export default function DetalleRegistroScreen() {
           {obs.imagen_url ? (
             <Image
               source={{ uri: obs.imagen_url }}
-              className="w-full h-56 rounded-2xl bg-slate-light/20"
+              className="w-full h-64 rounded-3xl bg-slate-light/20"
               resizeMode="cover"
             />
           ) : null}
@@ -219,65 +221,74 @@ export default function DetalleRegistroScreen() {
             </Seccion>
           ) : null}
 
-          <Seccion titulo="Predicción del modelo">
+          <Seccion titulo="Sugerencia de la app">
             {obs.prediccion_original ? (
               <>
                 <Fila
-                  etiqueta="Especie propuesta"
+                  etiqueta="Especie sugerida"
                   valor={
                     obs.prediccion_original.especie_propuesta.nombre_comun ??
                     obs.prediccion_original.especie_propuesta.nombre_cientifico
                   }
                 />
                 <Fila
-                  etiqueta="Confianza"
+                  etiqueta="Qué tan segura está"
                   valor={formatearConfianza(obs.prediccion_original.confianza) ?? 'No disponible'}
                 />
                 <Fila
-                  etiqueta="Versión del modelo"
+                  etiqueta="Versión de la app de identificación"
                   valor={obs.prediccion_original.version_modelo}
                 />
-                <Text className="font-source text-xs text-slate-mid mt-2">
-                  Esta predicción se conserva aunque un experto la corrija.
-                </Text>
+                {obs.validacion_experta ? (
+                  <Text className="font-source text-sm text-slate-mid mt-2">
+                    Es lo que sugirió la app al principio. La decisión del
+                    experto aparece abajo.
+                  </Text>
+                ) : null}
               </>
             ) : (
-              <Vacio texto="Aún no hay una predicción del modelo para este registro." />
+              <Vacio texto="La app todavía no ha sugerido una especie para este registro." />
             )}
           </Seccion>
 
-          <Seccion titulo="Validación experta">
-            {obs.validacion_experta ? (
-              <>
-                <Fila
-                  etiqueta="Decisión"
-                  valor={ETIQUETA_DECISION[obs.validacion_experta.decision]}
-                />
-                {obs.validacion_experta.especie_final ? (
+          {/* El experto solo revisa lo que el modelo no pudo confirmar
+              (pendiente_experto y no_concluyente); en identificado no aplica. */}
+          {obs.validacion_experta ||
+          obs.estado === 'pendiente_experto' ||
+          obs.estado === 'no_concluyente' ? (
+            <Seccion titulo="Validación experta">
+              {obs.validacion_experta ? (
+                <>
                   <Fila
-                    etiqueta="Especie final"
-                    valor={
-                      obs.validacion_experta.especie_final.nombre_comun ??
-                      obs.validacion_experta.especie_final.nombre_cientifico
-                    }
+                    etiqueta="Decisión"
+                    valor={ETIQUETA_DECISION[obs.validacion_experta.decision]}
                   />
-                ) : null}
-                {obs.validacion_experta.comentario ? (
-                  <Fila etiqueta="Comentario" valor={obs.validacion_experta.comentario} />
-                ) : null}
-                <Fila etiqueta="Experto" valor={obs.validacion_experta.experto.nombre_completo} />
-                <Fila
-                  etiqueta="Fecha de validación"
-                  valor={formatearFechaEvento(obs.validacion_experta.creado_en)}
-                />
-              </>
-            ) : (
-              <Vacio texto="Esta observación aún no tiene validación experta." />
-            )}
-          </Seccion>
+                  {obs.validacion_experta.especie_final ? (
+                    <Fila
+                      etiqueta="Especie final"
+                      valor={
+                        obs.validacion_experta.especie_final.nombre_comun ??
+                        obs.validacion_experta.especie_final.nombre_cientifico
+                      }
+                    />
+                  ) : null}
+                  {obs.validacion_experta.comentario ? (
+                    <Fila etiqueta="Comentario" valor={obs.validacion_experta.comentario} />
+                  ) : null}
+                  <Fila etiqueta="Experto" valor={obs.validacion_experta.experto.nombre_completo} />
+                  <Fila
+                    etiqueta="Fecha de validación"
+                    valor={formatearFechaEvento(obs.validacion_experta.creado_en)}
+                  />
+                </>
+              ) : (
+                <Vacio texto="Un experto revisará esta foto porque la app no pudo reconocer la especie." />
+              )}
+            </Seccion>
+          ) : null}
 
           {puedeSimularExperto ? (
-            <Card className="border border-ocre-dark/40 bg-ocre/10">
+            <Card className="border-amber-200 bg-amber-50">
               <Text className="font-nunito-bold text-base text-slate-deep">
                 Simular decisión del experto
               </Text>
@@ -386,7 +397,7 @@ export default function DetalleRegistroScreen() {
                       {transicion.motivo}
                     </Text>
                   ) : null}
-                  <Text className="font-source text-xs text-slate-mid mt-0.5">
+                  <Text className="font-source text-sm text-slate-mid mt-0.5">
                     {transicion.actor ?? 'Sistema'} · {formatearFechaEvento(transicion.creado_en)}
                   </Text>
                 </View>

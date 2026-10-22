@@ -260,13 +260,18 @@ export const MOCK_ESTADOS: CatalogoEstadoItem[] = [
   },
 ];
 
+/** Las observaciones de ejemplo muestran la foto real de la raya de su especie. */
+function imagenDeEspecie(indice: number): string | undefined {
+  return MOCK_ESPECIES[indice].url_imagen_referencia ?? undefined;
+}
+
 export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
   {
     id: "o1a10001-0000-4000-a000-000000000001",
     estado: "validado",
     creado_en: "2026-09-20T14:35:00-05:00",
     fecha_hora_evento: "2026-09-20T14:30:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5",
+    imagen_url: imagenDeEspecie(0),
     especie_aceptada: MOCK_ESPECIES[0],
     confianza: 0.94,
     usuario: MOCK_USUARIOS.usuario,
@@ -328,7 +333,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "corregido",
     creado_en: "2026-09-22T09:12:00-05:00",
     fecha_hora_evento: "2026-09-22T08:50:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1518837695005-2083093ee35b",
+    imagen_url: imagenDeEspecie(1),
     especie_aceptada: MOCK_ESPECIES[1],
     confianza: 0.62,
     usuario: MOCK_USUARIOS.usuario,
@@ -390,7 +395,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "pendiente_experto",
     creado_en: "2026-10-01T11:00:00-05:00",
     fecha_hora_evento: "2026-10-01T10:40:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1559827291-72ee739d0d9a",
+    imagen_url: imagenDeEspecie(2),
     especie_aceptada: null,
     confianza: 0.58,
     usuario: MOCK_USUARIOS.usuario,
@@ -438,7 +443,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "no_concluyente",
     creado_en: "2026-10-02T16:20:00-05:00",
     fecha_hora_evento: "2026-10-02T16:00:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1574781330855-d0db8cc6a79c",
+    imagen_url: imagenDeEspecie(3),
     especie_aceptada: null,
     confianza: 0.31,
     usuario: MOCK_USUARIOS.usuario,
@@ -485,7 +490,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "identificado",
     creado_en: "2026-10-05T08:15:00-05:00",
     fecha_hora_evento: "2026-10-05T08:00:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1582967788606-a171c1080cb0",
+    imagen_url: imagenDeEspecie(4),
     especie_aceptada: MOCK_ESPECIES[4],
     confianza: 0.91,
     usuario: MOCK_USUARIOS.usuario,
@@ -532,7 +537,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "procesando",
     creado_en: "2026-10-07T21:45:00-05:00",
     fecha_hora_evento: "2026-10-07T21:30:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5",
+    imagen_url: imagenDeEspecie(1),
     especie_aceptada: null,
     confianza: null,
     usuario: MOCK_USUARIOS.usuario,
@@ -566,7 +571,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "recibido",
     creado_en: "2026-10-07T22:00:00-05:00",
     fecha_hora_evento: "2026-10-07T21:55:00-05:00",
-    imagen_url: "https://images.unsplash.com/photo-1518837695005-2083093ee35b",
+    imagen_url: imagenDeEspecie(2),
     especie_aceptada: null,
     confianza: null,
     usuario: MOCK_USUARIOS.usuario,

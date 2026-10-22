@@ -3,6 +3,7 @@ import type { ObservacionResumen } from '@/types';
 import { Image, Text, View } from 'react-native';
 import { Card } from './card';
 import { EstadoBadge } from './estado-badge';
+import { Icono } from './icono';
 
 export interface ObservacionCardProps {
   observacion: ObservacionResumen;
@@ -12,9 +13,10 @@ export interface ObservacionCardProps {
 export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) {
   const especie = observacion.especie_aceptada;
   const nombre =
-    especie?.nombre_comun ?? especie?.nombre_cientifico ?? 'Sin especie asignada';
+    especie?.nombre_comun ?? especie?.nombre_cientifico ?? 'Especie por identificar';
   const mostrarCientifico = !!especie?.nombre_comun && !!especie?.nombre_cientifico;
-  const confianza = formatearConfianza(observacion.confianza);
+  // El porcentaje solo acompaña a una especie aceptada (no a "En revisión").
+  const confianza = especie ? formatearConfianza(observacion.confianza) : null;
   const fecha = observacion.fecha_hora_evento
     ? formatearFechaEvento(observacion.fecha_hora_evento)
     : null;
@@ -23,47 +25,50 @@ export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) 
     <Card
       onPress={() => onPress(observacion.id)}
       accessibilityLabel={`${nombre}${fecha ? `, ${fecha}` : ''}. Ver detalle`}
-      className="flex-row gap-3 min-h-[44px]"
+      className="flex-row gap-4 p-3"
     >
       {observacion.imagen_url ? (
         <Image
           source={{ uri: observacion.imagen_url }}
-          className="w-20 h-20 rounded-xl bg-slate-light/20"
+          className="h-24 w-24 rounded-2xl bg-slate-light/20"
           resizeMode="cover"
         />
       ) : (
-        <View className="w-20 h-20 rounded-xl bg-slate-light/20 items-center justify-center">
-          <Text className="font-source text-xs text-slate-mid">Sin foto</Text>
+        <View className="h-24 w-24 items-center justify-center rounded-2xl bg-slate-light/20">
+          <Icono nombre="camara" size={28} className="text-slate-mid" />
         </View>
       )}
 
-      <View className="flex-1 justify-between">
-        <View>
-          <Text
-            numberOfLines={1}
-            className={`font-nunito-bold text-base ${
-              especie ? 'text-slate-deep' : 'text-slate-mid'
-            }`}
-          >
-            {nombre}
+      <View className="flex-1 justify-center">
+        <Text
+          numberOfLines={1}
+          className={`font-nunito-bold text-lg ${
+            especie ? 'text-slate-deep' : 'text-slate-mid'
+          }`}
+        >
+          {nombre}
+        </Text>
+        {mostrarCientifico ? (
+          <Text numberOfLines={1} className="font-source text-sm italic text-slate-mid">
+            {especie?.nombre_cientifico}
           </Text>
-          {mostrarCientifico ? (
-            <Text numberOfLines={1} className="font-source text-xs italic text-slate-mid">
-              {especie?.nombre_cientifico}
+        ) : null}
+
+        {fecha ? (
+          <View className="mt-1 flex-row items-center gap-1">
+            <Icono nombre="calendario" size={14} className="text-slate-mid" />
+            <Text className="font-source text-sm text-slate-mid">{fecha}</Text>
+          </View>
+        ) : null}
+
+        <View className="mt-2 flex-row items-center gap-2">
+          <EstadoBadge estado={observacion.estado} size="sm" />
+          {confianza ? (
+            <Text className="font-source-semibold text-sm text-slate-deep">
+              {confianza}
             </Text>
           ) : null}
         </View>
-
-        <View className="flex-row items-center justify-between mt-2">
-          <EstadoBadge estado={observacion.estado} size="sm" />
-          {confianza ? (
-            <Text className="font-source text-xs text-slate-mid">{confianza}</Text>
-          ) : null}
-        </View>
-
-        {fecha ? (
-          <Text className="font-source text-xs text-slate-mid mt-1">{fecha}</Text>
-        ) : null}
       </View>
     </Card>
   );

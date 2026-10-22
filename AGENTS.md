@@ -64,7 +64,6 @@ conocidas están en docs/discrepancias.md.
 - ui-ux-pro-max: úsala para revisar accesibilidad, áreas táctiles, contraste y
   safe areas con `--stack react-native` y los dominios `ux` y `web`.
   NO uses `--design-system` ni `--persist`. En Windows usa `python`, no `python3`.
-- ponytail: aplica siempre; lo mínimo que funcione, reutiliza antes de crear.
 
 ## Principios
 

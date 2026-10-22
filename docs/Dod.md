@@ -8,6 +8,8 @@
 
 Lo que el contrato no define no se implementa. Las limitaciones se registran en `docs/discrepancias.md`. La API no se modifica en este MVP.
 
+**Avance al 22 oct:** las casillas marcadas están implementadas con datos simulados y probadas en Expo Go (Android; falta iOS). El detalle está en [`estado_actual.md`](estado_actual.md).
+
 **Cambios en 1.1:** la validación experta entra al alcance, usando solo `GET /observaciones/pendientes` y `POST /observaciones/{id}/validacion`. La app no define etiquetas ni umbrales de certeza: muestra lo que entregue el backend.
 
 ---
@@ -40,22 +42,22 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 ## H0. Base técnica
 
-**Estado:** prácticamente terminado. Falta la revisión final antes de mezclar a `develop`.
+**Estado:** terminado salvo el esqueleto `api` de autenticación y catálogos, los mensajes propios para 400 y 409 en inicio de sesión y registro, y el `refresh_token` en la sesión.
 
-- [ ] Tipos derivados de los schemas del contrato, con nombres de campo en snake_case y enums como union types (`Rol`, `EstadoObservacion`, `DecisionValidacion`).
-- [ ] Capa de servicios por dominio (auth, observaciones, catálogos) con implementación `mock`.
+- [x] Tipos derivados de los schemas del contrato, con nombres de campo en snake_case y enums como union types (`Rol`, `EstadoObservacion`, `DecisionValidacion`).
+- [x] Capa de servicios por dominio (auth, observaciones, catálogos) con implementación `mock`.
 - [ ] Implementación `api` como esqueleto que lanza un error explícito si se activa.
-- [ ] Selección `mock`/`api` por variable de entorno, sin tocar pantallas.
-- [ ] Tokens de Bentos Costero en NativeWind y fuentes Nunito y Source Sans 3 cargadas.
-- [ ] Componentes base: `Button`, `Card`, `Input`, `Badge`, `ScreenHeader`, `EstadoBadge`.
-- [ ] `EstadoBadge` cubre los 7 estados del contrato con texto y color en español.
-- [ ] Navegación con grupos `(auth)` y `(tabs)`, tabs Inicio, Registros, Especies y Perfil, y stack para nueva observación.
-- [ ] Sesión con usuario y rol. Sin sesión se redirige a login.
-- [ ] Login y registro con las validaciones del contrato: nombre (3 a 200 caracteres), correo válido, contraseña (8 a 128), teléfono opcional.
+- [x] Selección `mock`/`api` por variable de entorno, sin tocar pantallas.
+- [x] Tokens de Bentos Costero en NativeWind y fuentes Nunito y Source Sans 3 cargadas.
+- [x] Componentes base: `Button`, `Card`, `Input`, `Badge`, `ScreenHeader`, `EstadoBadge`.
+- [x] `EstadoBadge` cubre los 7 estados del contrato con texto y color en español.
+- [x] Navegación con grupos `(auth)` y `(tabs)`, tabs Inicio, Registros, Especies y Perfil, y stack para nueva observación.
+- [x] Sesión con usuario y rol. Sin sesión se redirige a login.
+- [x] Login y registro con las validaciones del contrato: nombre (3 a 200 caracteres), correo válido, contraseña (8 a 128), teléfono opcional.
 - [ ] Errores 400, 401 y 409 mostrados con mensajes en español.
 - [ ] El modelo de sesión contempla access token y refresh token.
-- [ ] `AGENTS.md` y plantilla de PR existentes.
-- [ ] No hay textos ni datos de `App.tsx` (mockup web) en el código.
+- [x] `AGENTS.md`.
+- [x] No hay textos ni datos de `App.tsx` (mockup web) en el código.
 
 ---
 
@@ -65,95 +67,95 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 **Fotografía**
 
-- [ ] Captura desde cámara o desde galería.
-- [ ] Validación antes de enviar: JPEG o PNG, lado mayor ≥ 1280 px. Si no cumple, mensaje claro para volver a tomarla.
-- [ ] Vista previa con opción de repetir.
+- [x] Captura desde cámara o desde galería.
+- [x] Validación antes de enviar: JPEG o PNG, lado mayor ≥ 1280 px. Si no cumple, mensaje claro para volver a tomarla.
+- [x] Vista previa con opción de repetir.
 
 **Ubicación**
 
-- [ ] `latitud` y `longitud` obligatorias.
-- [ ] Captura con GPS (`expo-location`). Si el usuario niega el permiso, puede ingresarlas manualmente.
-- [ ] Latitud entre -90 y 90, longitud entre -180 y 180.
-- [ ] Si hay GPS, se envía `precision_gps_metros`.
+- [x] `latitud` y `longitud` obligatorias.
+- [x] Captura con GPS (`expo-location`). Si el usuario niega el permiso, puede ingresarlas manualmente.
+- [x] Latitud entre -90 y 90, longitud entre -180 y 180.
+- [x] Si hay GPS, se envía `precision_gps_metros`.
 
 **Fecha y hora**
 
-- [ ] `fecha_hora_evento` en ISO 8601 con offset.
-- [ ] Por defecto la hora del dispositivo, editable.
-- [ ] No se aceptan fechas futuras. _(Criterio interno; el contrato no lo define.)_
+- [x] `fecha_hora_evento` en ISO 8601 con offset.
+- [x] Por defecto la hora del dispositivo, editable.
+- [x] No se aceptan fechas futuras. _(Criterio interno; el contrato no lo define.)_
 
 **Datos del organismo**
 
-- [ ] `tipo_ambiente` desde `/catalogos/tipos-ambiente`. -> {dulceacuicola, marino, arrecife, estuarino, manglar, playa}
-- [ ] `condicion_organismo` desde `/catalogos/condiciones-organismo`. Obligatoria. -> {vivo, muerto, herido, muerto reciente, descompuesto}
-- [ ] `observaciones_usuario` con máximo 2000 caracteres.
-- [ ] Sin campo de profundidad propio.
+- [x] `tipo_ambiente` desde `/catalogos/tipos-ambiente`. -> {dulceacuicola, marino, arrecife, estuarino, manglar, playa}
+- [x] `condicion_organismo` desde `/catalogos/condiciones-organismo`. Obligatoria. -> {vivo, muerto, herido, muerto reciente, descompuesto}
+- [x] `observaciones_usuario` con máximo 2000 caracteres.
+- [x] Sin campo de profundidad propio.
 
 **Envío y estados**
 
-- [ ] El mock responde 201 y crea la observación en `recibido`.
-- [ ] Los estados avanzan solos con retardos simulados: `recibido` → `procesando` → (`identificado` | `no_concluyente` | `pendiente_experto`).
-- [ ] La pantalla de procesamiento muestra el estado real del registro, no pasos ficticios.
-- [ ] Errores 400 y 413 en español. El 401 lleva a login.
+- [x] El mock responde 201 y crea la observación en `recibido`.
+- [x] Los estados avanzan solos con retardos simulados: `recibido` → `procesando` → (`identificado` | `no_concluyente` | `pendiente_experto`).
+- [x] La pantalla de procesamiento muestra el estado real del registro, no pasos ficticios.
+- [x] Errores 400 y 413 en español. El 401 lleva a login.
 
 **Resultado**
 
-- [ ] `identificado`: especie aceptada y confianza convertida de 0–1 a porcentaje.
-- [ ] Sin etiquetas ni umbrales de certeza propios: la app solo muestra el `estado` y la `confianza` del backend. Si el contrato llega a incluir una etiqueta, se muestra tal cual.
-- [ ] `no_concluyente`: mensaje "No se pudo identificar" y opción de volver a fotografiar.
-- [ ] `pendiente_experto`: mensaje "En revisión por un experto", sin porcentaje final.
-- [ ] Se indica que la identificación es una sugerencia.
+- [x] `identificado`: especie aceptada y confianza convertida de 0–1 a porcentaje.
+- [x] Sin etiquetas ni umbrales de certeza propios: la app solo muestra el `estado` y la `confianza` del backend. Si el contrato llega a incluir una etiqueta, se muestra tal cual.
+- [x] `no_concluyente`: mensaje "No se pudo identificar" y opción de volver a fotografiar.
+- [x] `pendiente_experto`: mensaje "En revisión por un experto", sin porcentaje final.
+- [x] Se indica que la identificación es una sugerencia.
 
 ### Frente B. Registros y especies
 
 **Registros**
 
-- [ ] Lista solo las observaciones del usuario (`GET /observaciones`).
-- [ ] Filtro por estado con el parámetro `estado`.
-- [ ] Paginación con `pagina` y `tamano` (default 20), con carga al llegar al final.
-- [ ] Cada tarjeta muestra `EstadoBadge`.
-- [ ] Estados de carga, vacío y error.
+- [x] Lista solo las observaciones del usuario (`GET /observaciones`).
+- [x] Filtro por estado con el parámetro `estado`.
+- [x] Paginación con `pagina` y `tamano` (default 20), con carga al llegar al final.
+- [x] Cada tarjeta muestra `EstadoBadge`.
+- [x] Estados de carga, vacío y error.
 
 **Detalle** (`GET /observaciones/{id}`)
 
-- [ ] Imagen, fecha, ubicación, tipo de ambiente, condición del organismo y notas.
-- [ ] Predicción original: especie propuesta, confianza y versión del modelo.
-- [ ] Historial de estados en orden cronológico.
-- [ ] Si hay validación experta, se muestra en solo lectura: decisión, especie final y comentario.
-- [ ] Al abrir el detalle se consulta de nuevo la API, para que una validación hecha después se vea sin reinstalar ni cerrar la app.
+- [x] Imagen, fecha, ubicación, tipo de ambiente, condición del organismo y notas.
+- [x] Predicción original: especie propuesta, confianza y versión del modelo.
+- [x] Historial de estados en orden cronológico.
+- [x] Si hay validación experta, se muestra en solo lectura: decisión, especie final y comentario.
+- [x] Al abrir el detalle se consulta de nuevo la API, para que una validación hecha después se vea sin reinstalar ni cerrar la app.
 - [ ] Si la URL firmada de la imagen expiró, se vuelve a consultar el detalle.
 
 **Especies**
 
-- [ ] Lista desde `/catalogos/especies`, filtrada a `grupo: raya`.
-- [ ] Búsqueda por nombre común o científico, en el cliente.
+- [x] Lista desde `/catalogos/especies`, filtrada a `grupo: raya`.
+- [x] Búsqueda por nombre común o científico, en el cliente.
 - [ ] Ficha con nombre común, nombre científico, código, familia (desde `/catalogos/familias`), descripción e imagen de referencia (`url_imagen_referencia`).
-- [ ] Identificadores UUID, nunca numéricos.
+- [x] Identificadores UUID, nunca numéricos.
 
 ### Perfil (Frente C reducido)
 
 - [ ] Muestra los datos del usuario en sesión (`GET /auth/perfil`) y su rol.
-- [ ] Nota visible: "Para certificarte como experto, comunícate con el administrador de IdentiMar." Sin formulario ni flujo de solicitud.
-- [ ] Cierre de sesión.
+- [x] Nota visible: "Para certificarte como experto, comunícate con el administrador de IdentiMar." Sin formulario ni flujo de solicitud.
+- [x] Cierre de sesión.
 
 ### Validación experta (rol `experto` o `administrador`)
 
 - [ ] Cola "Por validar" desde `GET /observaciones/pendientes`, visible solo para `experto` y `administrador`. Con la API real es la única forma de llegar a observaciones de otros usuarios, porque `GET /observaciones` solo devuelve las propias.
-- [ ] Desde el detalle, el experto registra su decisión con `POST /observaciones/{id}/validacion`:
+- [x] Desde el detalle, el experto registra su decisión con `POST /observaciones/{id}/validacion`:
   - Confirmar la especie propuesta (`confirmada`).
   - Corregirla eligiendo otra de `/catalogos/especies`, filtrada a `grupo: raya` (`corregida`).
   - Marcar "No se puede identificar" (`rechazada`, con `especie_final_codigo` nulo).
 - [ ] Comentario opcional, máximo 2000 caracteres.
-- [ ] Los controles solo aparecen si la observación está en `pendiente_experto` o `no_concluyente` y aún no tiene validación.
-- [ ] La predicción original se muestra aparte y nunca se sobrescribe.
+- [x] Los controles solo aparecen si la observación está en `pendiente_experto` o `no_concluyente` y aún no tiene validación.
+- [x] La predicción original se muestra aparte y nunca se sobrescribe.
 - [ ] Errores 403 y 409 con mensajes en español.
-- [ ] En modo simulado, el cambio de rol del perfil permite probar todo el flujo.
+- [x] En modo simulado, el cambio de rol del perfil permite probar todo el flujo.
 
 ### Transversal H1
 
-- [ ] El mock simula latencia, error de red y 401 para probar los estados de error.
-- [ ] Botones con área táctil mínima de 44 px.
-- [ ] Contraste suficiente para leer en exteriores.
+- [x] El mock simula latencia, error de red y 401 para probar los estados de error.
+- [x] Botones con área táctil mínima de 44 px.
+- [x] Contraste suficiente para leer en exteriores.
 
 ### Offline first (parte 1: local y simulado)
 
@@ -165,9 +167,9 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 ### Criterio de cierre de H1
 
-- [ ] Un usuario inicia sesión, crea una observación, la ve pasar de `recibido` a `identificado` y la encuentra en Registros y en su detalle.
+- [x] Un usuario inicia sesión, crea una observación, la ve pasar de `recibido` a `identificado` y la encuentra en Registros y en su detalle.
 - [ ] Una observación creada sin red queda en cola y se envía al volver la conexión.
-- [ ] La app compila sin errores y corre en Expo Go.
+- [x] La app compila sin errores y corre en Expo Go.
 
 ---
 
@@ -289,7 +291,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 - **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto` en staging.
 - **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. El mock la deja en `no_concluyente`; confirmar con el Equipo 3.
 - **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe.
-- **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería.
+- **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería. _(Hecho: nota en Inicio.)_
 - **`pendiente_envio` es local:** no pertenece a `EstadoObservacion` ni aparece en el contrato.
 - **Plazo:** H2 depende del staging del Equipo 3 y del servicio de inferencia del Equipo 2. Si no están listos el 25 oct, se prioriza el flujo online y el resto queda documentado como limitación.
 
