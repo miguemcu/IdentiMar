@@ -12,6 +12,7 @@ export * from './auth.service';
 export * from './observaciones.service';
 export * from './validacion.service';
 export * from './catalogos.service';
+export * from './errores';
 
 const USE_API = process.env.EXPO_PUBLIC_USE_API === 'true';
 
