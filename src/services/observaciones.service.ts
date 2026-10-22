@@ -12,10 +12,18 @@ export interface FiltrosListadoObservaciones {
   tamano?: number;
 }
 
+/** Archivo que viaja en la parte `imagen` del multipart de POST /observaciones. */
+export interface ImagenObservacion {
+  uri: string;
+  mimeType: 'image/jpeg' | 'image/png';
+  nombre: string;
+}
+
 export interface IObservacionesService {
+  /** Lanza ErrorServicio con status 400, 401, 413 o 0 (sin conexión). */
   crearObservacion(
     datos: ObservacionInput,
-    imagenUri?: string
+    imagen: ImagenObservacion
   ): Promise<ObservacionResumen>;
   listarObservaciones(
     filtros?: FiltrosListadoObservaciones

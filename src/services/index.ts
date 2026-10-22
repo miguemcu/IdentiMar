@@ -7,11 +7,13 @@ import { AuthMockService } from './mock/auth.mock';
 import { ObservacionesMockService } from './mock/observaciones.mock';
 import { ValidacionMockService } from './mock/validacion.mock';
 import { CatalogosMockService } from './mock/catalogos.mock';
+import { ObservacionesApiService } from './api/observaciones.api';
 
 export * from './auth.service';
 export * from './observaciones.service';
 export * from './validacion.service';
 export * from './catalogos.service';
+export * from './errores';
 
 const USE_API = process.env.EXPO_PUBLIC_USE_API === 'true';
 
@@ -20,24 +22,20 @@ let observacionesServiceInstance: IObservacionesService;
 let validacionServiceInstance: IValidacionService;
 let catalogosServiceInstance: ICatalogosService;
 
+const mockObs = new ObservacionesMockService();
+
 if (USE_API) {
-  // Nota: la implementación API real se conectará cuando el backend esté integrado.
-  // Por ahora se mantiene advertencia y fallback al mock sin escribir llamadas de red.
+  // Solo observaciones tiene esqueleto API (lanza error explícito); el resto sigue en mock.
   console.warn(
-    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo, pero la implementación API real aún no existe. Utilizando capa mock.'
+    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo: observaciones usa el esqueleto API, que aún no está integrado.'
   );
-  const mockObs = new ObservacionesMockService();
-  authServiceInstance = new AuthMockService();
-  observacionesServiceInstance = mockObs;
-  validacionServiceInstance = new ValidacionMockService(mockObs);
-  catalogosServiceInstance = new CatalogosMockService();
+  observacionesServiceInstance = new ObservacionesApiService();
 } else {
-  const mockObs = new ObservacionesMockService();
-  authServiceInstance = new AuthMockService();
   observacionesServiceInstance = mockObs;
-  validacionServiceInstance = new ValidacionMockService(mockObs);
-  catalogosServiceInstance = new CatalogosMockService();
 }
+authServiceInstance = new AuthMockService();
+validacionServiceInstance = new ValidacionMockService(mockObs);
+catalogosServiceInstance = new CatalogosMockService();
 
 export const authService = authServiceInstance;
 export const observacionesService = observacionesServiceInstance;

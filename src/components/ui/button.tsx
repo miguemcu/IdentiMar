@@ -87,8 +87,10 @@ export function Button({
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${
-        isDisabled ? 'opacity-50' : 'active:scale-[0.98]'
+      // active:scale-* va siempre: usa variables CSS y NativeWind no permite
+      // agregarlas después del primer render. Deshabilitado no recibe presión.
+      className={`${baseStyles} ${sizeStyles} ${variantStyles} active:scale-[0.98] ${
+        isDisabled ? 'opacity-50' : ''
       } ${className}`}
       {...rest}
     >
