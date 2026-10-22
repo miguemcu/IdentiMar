@@ -4,7 +4,14 @@ import {
     formatearCoordenadas,
     formatearFechaEvento,
 } from '@/constants/formato';
-import { observacionesService } from '@/services';
+import { useAuth } from '@/contexts/auth-context';
+import {
+    catalogosService,
+    mensajeError,
+    MODO_SIMULADO,
+    observacionesService,
+    validacionService,
+} from '@/services';
 import type { DecisionValidacion, ObservacionDetalle } from '@/types';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -46,6 +53,9 @@ export default function DetalleRegistroScreen() {
 
   const [obs, setObs] = useState<ObservacionDetalle | null>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
+  const { rol } = useAuth();
+  const [simulando, setSimulando] = useState(false);
+  const [errorSimulacion, setErrorSimulacion] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     // Al recargar un registro ya visible no se vuelve a mostrar el indicador.
@@ -70,6 +80,40 @@ export default function DetalleRegistroScreen() {
   );
 
   const volver = () => router.back();
+
+  // Solo con datos simulados: reemplaza al experto que, con la API real, decide
+  // desde el backend (POST /observaciones/{id}/validacion). La app no valida.
+  const puedeSimularExperto =
+    MODO_SIMULADO &&
+    (rol === 'experto' || rol === 'administrador') &&
+    !obs?.validacion_experta &&
+    (obs?.estado === 'pendiente_experto' || obs?.estado === 'no_concluyente');
+
+  async function simularDecision(decision: DecisionValidacion) {
+    if (!obs) return;
+    setSimulando(true);
+    setErrorSimulacion(null);
+    try {
+      const propuesta = obs.prediccion_original?.especie_propuesta.codigo ?? null;
+      let especieFinal: string | null = null;
+      if (decision === 'confirmada') {
+        especieFinal = propuesta;
+      } else if (decision === 'corregida') {
+        const especies = await catalogosService.obtenerEspecies();
+        especieFinal = especies.find((e) => e.codigo !== propuesta)?.codigo ?? null;
+      }
+      const actualizada = await validacionService.validarObservacion(obs.id, {
+        decision,
+        especie_final_codigo: especieFinal,
+        comentario: 'Decisión simulada desde la app (modo de prueba).',
+      });
+      setObs(actualizada);
+    } catch (error) {
+      setErrorSimulacion(mensajeError(error));
+    } finally {
+      setSimulando(false);
+    }
+  }
 
   return (
     <View className="flex-1 bg-surface">
@@ -217,6 +261,43 @@ export default function DetalleRegistroScreen() {
               <Vacio texto="Esta observación aún no tiene validación experta." />
             )}
           </Seccion>
+
+          {puedeSimularExperto ? (
+            <Card className="border border-ocre-dark/40 bg-ocre/10">
+              <Text className="font-nunito-bold text-base text-slate-deep">
+                Simular decisión del experto
+              </Text>
+              <Text className="font-source text-sm text-slate-mid mt-1">
+                Solo en modo de prueba. Con el servidor real, el experto decide
+                desde el sistema del proyecto.
+              </Text>
+              {errorSimulacion ? (
+                <Text className="font-source text-sm text-danger mt-2">
+                  {errorSimulacion}
+                </Text>
+              ) : null}
+              <Button
+                title="Confirmar especie"
+                loading={simulando}
+                onPress={() => void simularDecision('confirmada')}
+                className="mt-3"
+              />
+              <Button
+                title="Corregir especie"
+                variant="outline"
+                disabled={simulando}
+                onPress={() => void simularDecision('corregida')}
+                className="mt-2"
+              />
+              <Button
+                title="No se puede identificar"
+                variant="outline"
+                disabled={simulando}
+                onPress={() => void simularDecision('rechazada')}
+                className="mt-2"
+              />
+            </Card>
+          ) : null}
 
           <Seccion titulo="Historial de estados">
             {obs.historial_estados && obs.historial_estados.length > 0 ? (
