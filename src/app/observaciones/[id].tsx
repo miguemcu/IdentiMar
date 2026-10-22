@@ -12,10 +12,10 @@ import {
     observacionesService,
     validacionService,
 } from '@/services';
-import type { DecisionValidacion, ObservacionDetalle } from '@/types';
+import type { DecisionValidacion, Especie, ObservacionDetalle } from '@/types';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
   confirmada: 'Confirmada por el experto',
@@ -56,6 +56,8 @@ export default function DetalleRegistroScreen() {
   const { rol } = useAuth();
   const [simulando, setSimulando] = useState(false);
   const [errorSimulacion, setErrorSimulacion] = useState<string | null>(null);
+  const [especiesCorreccion, setEspeciesCorreccion] = useState<Especie[] | null>(null);
+  const [especieElegida, setEspecieElegida] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     // Al recargar un registro ya visible no se vuelve a mostrar el indicador.
@@ -89,25 +91,37 @@ export default function DetalleRegistroScreen() {
     !obs?.validacion_experta &&
     (obs?.estado === 'pendiente_experto' || obs?.estado === 'no_concluyente');
 
-  async function simularDecision(decision: DecisionValidacion) {
+  const codigoPropuesto = obs?.prediccion_original?.especie_propuesta.codigo ?? null;
+
+  /** Muestra las rayas del catálogo (GET /catalogos/especies) para elegir la correcta. */
+  async function abrirCorreccion() {
+    setErrorSimulacion(null);
+    setEspecieElegida(null);
+    try {
+      const especies = await catalogosService.obtenerEspecies();
+      setEspeciesCorreccion(
+        especies.filter((e) => e.grupo === 'raya' && e.codigo !== codigoPropuesto),
+      );
+    } catch (error) {
+      setErrorSimulacion(mensajeError(error));
+    }
+  }
+
+  async function simularDecision(
+    decision: DecisionValidacion,
+    especieFinal: string | null,
+  ) {
     if (!obs) return;
     setSimulando(true);
     setErrorSimulacion(null);
     try {
-      const propuesta = obs.prediccion_original?.especie_propuesta.codigo ?? null;
-      let especieFinal: string | null = null;
-      if (decision === 'confirmada') {
-        especieFinal = propuesta;
-      } else if (decision === 'corregida') {
-        const especies = await catalogosService.obtenerEspecies();
-        especieFinal = especies.find((e) => e.codigo !== propuesta)?.codigo ?? null;
-      }
       const actualizada = await validacionService.validarObservacion(obs.id, {
         decision,
         especie_final_codigo: especieFinal,
         comentario: 'Decisión simulada desde la app (modo de prueba).',
       });
       setObs(actualizada);
+      setEspeciesCorreccion(null);
     } catch (error) {
       setErrorSimulacion(mensajeError(error));
     } finally {
@@ -276,26 +290,86 @@ export default function DetalleRegistroScreen() {
                   {errorSimulacion}
                 </Text>
               ) : null}
-              <Button
-                title="Confirmar especie"
-                loading={simulando}
-                onPress={() => void simularDecision('confirmada')}
-                className="mt-3"
-              />
-              <Button
-                title="Corregir especie"
-                variant="outline"
-                disabled={simulando}
-                onPress={() => void simularDecision('corregida')}
-                className="mt-2"
-              />
-              <Button
-                title="No se puede identificar"
-                variant="outline"
-                disabled={simulando}
-                onPress={() => void simularDecision('rechazada')}
-                className="mt-2"
-              />
+              {especiesCorreccion ? (
+                <>
+                  <Text className="font-nunito-bold text-sm text-slate-deep mt-3 mb-2">
+                    ¿Cuál es la especie correcta?
+                  </Text>
+                  <View accessibilityRole="radiogroup" className="gap-2">
+                    {especiesCorreccion.map((especie) => {
+                      const activa = especie.codigo === especieElegida;
+                      return (
+                        <Pressable
+                          key={especie.id}
+                          onPress={() => setEspecieElegida(especie.codigo)}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: activa }}
+                          className={`min-h-[44px] justify-center rounded-xl border px-4 py-2 ${
+                            activa
+                              ? 'border-ocean bg-ocean active:bg-ocean-dark'
+                              : 'border-slate-light/60 bg-white active:bg-slate-light/20'
+                          }`}
+                        >
+                          <Text
+                            className={`font-source-semibold text-base ${
+                              activa ? 'text-white' : 'text-slate-deep'
+                            }`}
+                          >
+                            {especie.nombre_comun ?? especie.nombre_cientifico}
+                          </Text>
+                          {especie.nombre_comun ? (
+                            <Text
+                              className={`font-source text-sm italic ${
+                                activa ? 'text-white' : 'text-slate-mid'
+                              }`}
+                            >
+                              {especie.nombre_cientifico}
+                            </Text>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Button
+                    title="Guardar corrección"
+                    loading={simulando}
+                    disabled={!especieElegida}
+                    onPress={() => void simularDecision('corregida', especieElegida)}
+                    className="mt-3"
+                  />
+                  <Button
+                    title="Cancelar"
+                    variant="ghost"
+                    disabled={simulando}
+                    onPress={() => setEspeciesCorreccion(null)}
+                    className="mt-2"
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    title="Confirmar especie"
+                    loading={simulando}
+                    disabled={!codigoPropuesto}
+                    onPress={() => void simularDecision('confirmada', codigoPropuesto)}
+                    className="mt-3"
+                  />
+                  <Button
+                    title="Corregir especie"
+                    variant="outline"
+                    disabled={simulando}
+                    onPress={() => void abrirCorreccion()}
+                    className="mt-2"
+                  />
+                  <Button
+                    title="No se puede identificar"
+                    variant="outline"
+                    disabled={simulando}
+                    onPress={() => void simularDecision('rechazada', null)}
+                    className="mt-2"
+                  />
+                </>
+              )}
             </Card>
           ) : null}
 
