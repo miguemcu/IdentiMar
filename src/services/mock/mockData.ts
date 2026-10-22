@@ -128,30 +128,43 @@ export const MOCK_USUARIOS: Record<
   },
 };
 
+// Códigos tomados del DoD (el contrato no los enumera). Pendiente confirmar con el Equipo 3.
 export const MOCK_TIPOS_AMBIENTE: CatalogoItem[] = [
   {
     id: "c1a10001-0000-4000-a000-000000000001",
     codigo: "marino",
-    nombre_visible: "Marino costero",
-    descripcion: "Aguas salinas abiertas y arrecifes someros",
+    nombre_visible: "Mar abierto",
+    descripcion: "Aguas saladas lejos de la orilla",
   },
   {
     id: "c1a10002-0000-4000-a000-000000000002",
     codigo: "estuarino",
     nombre_visible: "Estuario o desembocadura",
-    descripcion: "Zonas de mezcla de agua dulce y salada",
+    descripcion: "Donde el río se mezcla con el mar",
   },
   {
     id: "c1a10003-0000-4000-a000-000000000003",
     codigo: "manglar",
     nombre_visible: "Manglar",
-    descripcion: "Canales y raíces de manglar del golfo",
+    descripcion: "Canales y raíces de manglar",
   },
   {
     id: "c1a10004-0000-4000-a000-000000000004",
-    codigo: "playa_arenosa",
-    nombre_visible: "Playa arenosa / bajial",
-    descripcion: "Playas y zonas intermareales someras",
+    codigo: "playa",
+    nombre_visible: "Playa",
+    descripcion: "Orilla de arena o bajial",
+  },
+  {
+    id: "c1a10005-0000-4000-a000-000000000005",
+    codigo: "arrecife",
+    nombre_visible: "Arrecife",
+    descripcion: "Fondos de coral o roca",
+  },
+  {
+    id: "c1a10006-0000-4000-a000-000000000006",
+    codigo: "dulceacuicola",
+    nombre_visible: "Río o agua dulce",
+    descripcion: "Ríos, ciénagas y caños de agua dulce",
   },
 ];
 
@@ -160,19 +173,31 @@ export const MOCK_CONDICIONES_ORGANISMO: CatalogoItem[] = [
     id: "c2a10001-0000-4000-a000-000000000001",
     codigo: "vivo",
     nombre_visible: "Vivo",
-    descripcion: "Individuo observado en nado o libre en su medio",
+    descripcion: "Se mueve o respira",
   },
   {
     id: "c2a10002-0000-4000-a000-000000000002",
-    codigo: "muerto_fresco",
-    nombre_visible: "Muerto fresco",
-    descripcion: "Captura incidental reciente o varamiento sin descomposición",
+    codigo: "muerto_reciente",
+    nombre_visible: "Muerto reciente",
+    descripcion: "Murió hace poco, sin mal olor ni daño",
   },
   {
     id: "c2a10003-0000-4000-a000-000000000003",
-    codigo: "varado",
-    nombre_visible: "Varado",
-    descripcion: "Organismo en la orilla o bajamar",
+    codigo: "herido",
+    nombre_visible: "Herido",
+    descripcion: "Vivo, pero con heridas visibles",
+  },
+  {
+    id: "c2a10004-0000-4000-a000-000000000004",
+    codigo: "muerto",
+    nombre_visible: "Muerto",
+    descripcion: "Sin vida, sin saber hace cuánto",
+  },
+  {
+    id: "c2a10005-0000-4000-a000-000000000005",
+    codigo: "descompuesto",
+    nombre_visible: "Descompuesto",
+    descripcion: "Con mal olor o partes deshechas",
   },
 ];
 
