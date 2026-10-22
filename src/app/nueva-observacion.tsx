@@ -237,7 +237,7 @@ export default function NuevaObservacionScreen() {
         },
         imagenParaEnvio(imageAsset),
       );
-      router.replace(`/observaciones/${resumen.id}` as any);
+      router.replace(`/observaciones/resultado/${resumen.id}` as any);
     } catch (error) {
       if (error instanceof ErrorServicio && error.status === 401) {
         Alert.alert('Sesión expirada', mensajeError(error), [

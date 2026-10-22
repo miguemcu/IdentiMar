@@ -17,6 +17,9 @@ export * from './errores';
 
 const USE_API = process.env.EXPO_PUBLIC_USE_API === 'true';
 
+/** true mientras la app usa datos simulados (sin backend). */
+export const MODO_SIMULADO = !USE_API;
+
 let authServiceInstance: IAuthService;
 let observacionesServiceInstance: IObservacionesService;
 let validacionServiceInstance: IValidacionService;

@@ -4,11 +4,18 @@ import {
     formatearCoordenadas,
     formatearFechaEvento,
 } from '@/constants/formato';
-import { observacionesService } from '@/services';
-import type { DecisionValidacion, ObservacionDetalle } from '@/types';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { useAuth } from '@/contexts/auth-context';
+import {
+    catalogosService,
+    mensajeError,
+    MODO_SIMULADO,
+    observacionesService,
+    validacionService,
+} from '@/services';
+import type { DecisionValidacion, Especie, ObservacionDetalle } from '@/types';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
   confirmada: 'Confirmada por el experto',
@@ -46,9 +53,15 @@ export default function DetalleRegistroScreen() {
 
   const [obs, setObs] = useState<ObservacionDetalle | null>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
+  const { rol } = useAuth();
+  const [simulando, setSimulando] = useState(false);
+  const [errorSimulacion, setErrorSimulacion] = useState<string | null>(null);
+  const [especiesCorreccion, setEspeciesCorreccion] = useState<Especie[] | null>(null);
+  const [especieElegida, setEspecieElegida] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    setEstado('cargando');
+    // Al recargar un registro ya visible no se vuelve a mostrar el indicador.
+    setEstado((actual) => (actual === 'listo' ? actual : 'cargando'));
     try {
       const detalle = await observacionesService.obtenerObservacion(id);
       setObs(detalle);
@@ -58,13 +71,63 @@ export default function DetalleRegistroScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void cargar();
-    });
-  }, [cargar]);
+  // Se consulta de nuevo cada vez que la pantalla vuelve a estar visible, para
+  // que una validación hecha después aparezca sin reiniciar la app.
+  useFocusEffect(
+    useCallback(() => {
+      queueMicrotask(() => {
+        void cargar();
+      });
+    }, [cargar]),
+  );
 
   const volver = () => router.back();
+
+  // Solo con datos simulados: reemplaza al experto que, con la API real, decide
+  // desde el backend (POST /observaciones/{id}/validacion). La app no valida.
+  const puedeSimularExperto =
+    MODO_SIMULADO &&
+    (rol === 'experto' || rol === 'administrador') &&
+    !obs?.validacion_experta &&
+    (obs?.estado === 'pendiente_experto' || obs?.estado === 'no_concluyente');
+
+  const codigoPropuesto = obs?.prediccion_original?.especie_propuesta.codigo ?? null;
+
+  /** Muestra las rayas del catálogo (GET /catalogos/especies) para elegir la correcta. */
+  async function abrirCorreccion() {
+    setErrorSimulacion(null);
+    setEspecieElegida(null);
+    try {
+      const especies = await catalogosService.obtenerEspecies();
+      setEspeciesCorreccion(
+        especies.filter((e) => e.grupo === 'raya' && e.codigo !== codigoPropuesto),
+      );
+    } catch (error) {
+      setErrorSimulacion(mensajeError(error));
+    }
+  }
+
+  async function simularDecision(
+    decision: DecisionValidacion,
+    especieFinal: string | null,
+  ) {
+    if (!obs) return;
+    setSimulando(true);
+    setErrorSimulacion(null);
+    try {
+      const actualizada = await validacionService.validarObservacion(obs.id, {
+        decision,
+        especie_final_codigo: especieFinal,
+        comentario: 'Decisión simulada desde la app (modo de prueba).',
+      });
+      setObs(actualizada);
+      setEspeciesCorreccion(null);
+    } catch (error) {
+      setErrorSimulacion(mensajeError(error));
+    } finally {
+      setSimulando(false);
+    }
+  }
 
   return (
     <View className="flex-1 bg-surface">
@@ -212,6 +275,103 @@ export default function DetalleRegistroScreen() {
               <Vacio texto="Esta observación aún no tiene validación experta." />
             )}
           </Seccion>
+
+          {puedeSimularExperto ? (
+            <Card className="border border-ocre-dark/40 bg-ocre/10">
+              <Text className="font-nunito-bold text-base text-slate-deep">
+                Simular decisión del experto
+              </Text>
+              <Text className="font-source text-sm text-slate-mid mt-1">
+                Solo en modo de prueba. Con el servidor real, el experto decide
+                desde el sistema del proyecto.
+              </Text>
+              {errorSimulacion ? (
+                <Text className="font-source text-sm text-danger mt-2">
+                  {errorSimulacion}
+                </Text>
+              ) : null}
+              {especiesCorreccion ? (
+                <>
+                  <Text className="font-nunito-bold text-sm text-slate-deep mt-3 mb-2">
+                    ¿Cuál es la especie correcta?
+                  </Text>
+                  <View accessibilityRole="radiogroup" className="gap-2">
+                    {especiesCorreccion.map((especie) => {
+                      const activa = especie.codigo === especieElegida;
+                      return (
+                        <Pressable
+                          key={especie.id}
+                          onPress={() => setEspecieElegida(especie.codigo)}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: activa }}
+                          className={`min-h-[44px] justify-center rounded-xl border px-4 py-2 ${
+                            activa
+                              ? 'border-ocean bg-ocean active:bg-ocean-dark'
+                              : 'border-slate-light/60 bg-white active:bg-slate-light/20'
+                          }`}
+                        >
+                          <Text
+                            className={`font-source-semibold text-base ${
+                              activa ? 'text-white' : 'text-slate-deep'
+                            }`}
+                          >
+                            {especie.nombre_comun ?? especie.nombre_cientifico}
+                          </Text>
+                          {especie.nombre_comun ? (
+                            <Text
+                              className={`font-source text-sm italic ${
+                                activa ? 'text-white' : 'text-slate-mid'
+                              }`}
+                            >
+                              {especie.nombre_cientifico}
+                            </Text>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Button
+                    title="Guardar corrección"
+                    loading={simulando}
+                    disabled={!especieElegida}
+                    onPress={() => void simularDecision('corregida', especieElegida)}
+                    className="mt-3"
+                  />
+                  <Button
+                    title="Cancelar"
+                    variant="ghost"
+                    disabled={simulando}
+                    onPress={() => setEspeciesCorreccion(null)}
+                    className="mt-2"
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    title="Confirmar especie"
+                    loading={simulando}
+                    disabled={!codigoPropuesto}
+                    onPress={() => void simularDecision('confirmada', codigoPropuesto)}
+                    className="mt-3"
+                  />
+                  <Button
+                    title="Corregir especie"
+                    variant="outline"
+                    disabled={simulando}
+                    onPress={() => void abrirCorreccion()}
+                    className="mt-2"
+                  />
+                  <Button
+                    title="No se puede identificar"
+                    variant="outline"
+                    disabled={simulando}
+                    onPress={() => void simularDecision('rechazada', null)}
+                    className="mt-2"
+                  />
+                </>
+              )}
+            </Card>
+          ) : null}
 
           <Seccion titulo="Historial de estados">
             {obs.historial_estados && obs.historial_estados.length > 0 ? (
