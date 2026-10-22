@@ -239,44 +239,53 @@ export default function DetalleRegistroScreen() {
                   etiqueta="Versión del modelo"
                   valor={obs.prediccion_original.version_modelo}
                 />
-                <Text className="font-source text-sm text-slate-mid mt-2">
-                  Esta predicción se conserva aunque un experto la corrija.
-                </Text>
+                {obs.validacion_experta ? (
+                  <Text className="font-source text-sm text-slate-mid mt-2">
+                    Es la sugerencia original del modelo. La decisión del
+                    experto aparece abajo.
+                  </Text>
+                ) : null}
               </>
             ) : (
               <Vacio texto="Aún no hay una predicción del modelo para este registro." />
             )}
           </Seccion>
 
-          <Seccion titulo="Validación experta">
-            {obs.validacion_experta ? (
-              <>
-                <Fila
-                  etiqueta="Decisión"
-                  valor={ETIQUETA_DECISION[obs.validacion_experta.decision]}
-                />
-                {obs.validacion_experta.especie_final ? (
+          {/* El experto solo revisa lo que el modelo no pudo confirmar
+              (pendiente_experto y no_concluyente); en identificado no aplica. */}
+          {obs.validacion_experta ||
+          obs.estado === 'pendiente_experto' ||
+          obs.estado === 'no_concluyente' ? (
+            <Seccion titulo="Validación experta">
+              {obs.validacion_experta ? (
+                <>
                   <Fila
-                    etiqueta="Especie final"
-                    valor={
-                      obs.validacion_experta.especie_final.nombre_comun ??
-                      obs.validacion_experta.especie_final.nombre_cientifico
-                    }
+                    etiqueta="Decisión"
+                    valor={ETIQUETA_DECISION[obs.validacion_experta.decision]}
                   />
-                ) : null}
-                {obs.validacion_experta.comentario ? (
-                  <Fila etiqueta="Comentario" valor={obs.validacion_experta.comentario} />
-                ) : null}
-                <Fila etiqueta="Experto" valor={obs.validacion_experta.experto.nombre_completo} />
-                <Fila
-                  etiqueta="Fecha de validación"
-                  valor={formatearFechaEvento(obs.validacion_experta.creado_en)}
-                />
-              </>
-            ) : (
-              <Vacio texto="Esta observación aún no tiene validación experta." />
-            )}
-          </Seccion>
+                  {obs.validacion_experta.especie_final ? (
+                    <Fila
+                      etiqueta="Especie final"
+                      valor={
+                        obs.validacion_experta.especie_final.nombre_comun ??
+                        obs.validacion_experta.especie_final.nombre_cientifico
+                      }
+                    />
+                  ) : null}
+                  {obs.validacion_experta.comentario ? (
+                    <Fila etiqueta="Comentario" valor={obs.validacion_experta.comentario} />
+                  ) : null}
+                  <Fila etiqueta="Experto" valor={obs.validacion_experta.experto.nombre_completo} />
+                  <Fila
+                    etiqueta="Fecha de validación"
+                    valor={formatearFechaEvento(obs.validacion_experta.creado_en)}
+                  />
+                </>
+              ) : (
+                <Vacio texto="Un experto revisará esta foto porque el modelo no pudo confirmar la especie." />
+              )}
+            </Seccion>
+          ) : null}
 
           {puedeSimularExperto ? (
             <Card className="border-amber-200 bg-amber-50">

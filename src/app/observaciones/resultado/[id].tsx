@@ -72,8 +72,8 @@ function Resultado({
             </Text>
           ) : null}
           <Text className="mt-3 font-source text-sm text-slate-mid">
-            Es una sugerencia automática. Un experto puede revisarla más
-            adelante.
+            Es una sugerencia automática del modelo, no una identificación
+            definitiva.
           </Text>
         </>
       );
