@@ -1,12 +1,14 @@
 # Definition of Done (DoD): IdentiMar MVP
 
-- **Versión:** 1.0
-- **Fecha:** 21 oct 2026
+- **Versión:** 1.1
+- **Fecha:** 22 oct 2026
 - **Fecha objetivo del MVP:** 29 oct 2026 (demo conjunta)
-- **Alcance:** Frente A (nueva observación), Frente B (registros y especies) y el perfil con nota de certificación
+- **Alcance:** Frente A (nueva observación), Frente B (registros y especies), el perfil con nota de certificación y la validación experta con los endpoints del contrato
 - **Fuente de verdad:** `docs/contrato_integracion.yaml` (versión 3, tal como está)
 
 Lo que el contrato no define no se implementa. Las limitaciones se registran en `docs/discrepancias.md`. La API no se modifica en este MVP.
+
+**Cambios en 1.1:** la validación experta entra al alcance, usando solo `GET /observaciones/pendientes` y `POST /observaciones/{id}/validacion`. La app no define etiquetas ni umbrales de certeza: muestra lo que entregue el backend.
 
 ---
 
@@ -96,7 +98,8 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 **Resultado**
 
-- [ ] `identificado`: especie aceptada y confianza convertida de 0–1 a porcentaje, con etiqueta de certeza.
+- [ ] `identificado`: especie aceptada y confianza convertida de 0–1 a porcentaje.
+- [ ] Sin etiquetas ni umbrales de certeza propios: la app solo muestra el `estado` y la `confianza` del backend. Si el contrato llega a incluir una etiqueta, se muestra tal cual.
 - [ ] `no_concluyente`: mensaje "No se pudo identificar" y opción de volver a fotografiar.
 - [ ] `pendiente_experto`: mensaje "En revisión por un experto", sin porcentaje final.
 - [ ] Se indica que la identificación es una sugerencia.
@@ -132,7 +135,19 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 - [ ] Muestra los datos del usuario en sesión (`GET /auth/perfil`) y su rol.
 - [ ] Nota visible: "Para certificarte como experto, comunícate con el administrador de IdentiMar." Sin formulario ni flujo de solicitud.
 - [ ] Cierre de sesión.
-- [ ] La app no ofrece controles para validar observaciones. La validación se hace por el rol `experto` desde el backend o la colección de pruebas.
+
+### Validación experta (rol `experto` o `administrador`)
+
+- [ ] Cola "Por validar" desde `GET /observaciones/pendientes`, visible solo para `experto` y `administrador`. Con la API real es la única forma de llegar a observaciones de otros usuarios, porque `GET /observaciones` solo devuelve las propias.
+- [ ] Desde el detalle, el experto registra su decisión con `POST /observaciones/{id}/validacion`:
+  - Confirmar la especie propuesta (`confirmada`).
+  - Corregirla eligiendo otra de `/catalogos/especies`, filtrada a `grupo: raya` (`corregida`).
+  - Marcar "No se puede identificar" (`rechazada`, con `especie_final_codigo` nulo).
+- [ ] Comentario opcional, máximo 2000 caracteres.
+- [ ] Los controles solo aparecen si la observación está en `pendiente_experto` o `no_concluyente` y aún no tiene validación.
+- [ ] La predicción original se muestra aparte y nunca se sobrescribe.
+- [ ] Errores 403 y 409 con mensajes en español.
+- [ ] En modo simulado, el cambio de rol del perfil permite probar todo el flujo.
 
 ### Transversal H1
 
@@ -171,6 +186,8 @@ Se ejecutan con el checklist de H1 y H2. Cada caso se registra con: fecha, perso
 - [ ] Respuesta 413: se muestra el mensaje correspondiente.
 - [ ] Resultado `no_concluyente`: se muestra mensaje y opción de volver a fotografiar.
 - [ ] Observación validada por experto después del envío: el detalle muestra la decisión sin recargar la app manualmente.
+- [ ] Experto confirma, corrige (eligiendo especie) y rechaza observaciones pendientes; cada decisión deja el estado y la validación esperados.
+- [ ] Usuario sin rol experto no ve la cola ni los controles de validación.
 - [ ] Sin red: la observación queda en cola y se envía al recuperar la conexión, en orden.
 
 **Registro de resultados:** se guarda en `docs/pruebas/` con el nombre `pruebas-funcionales-AAAA-MM-DD.md`.
@@ -219,6 +236,11 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 - [ ] El token se guarda con `expo-secure-store`.
 - [ ] Ante un 401 se renueva el token automáticamente. Si falla, se cierra la sesión y se limpia la caché.
 
+**Validación experta**
+
+- [ ] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409.
+- [ ] Los controles del experto dejan de depender del modo simulado.
+
 **Observaciones**
 
 - [ ] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`.
@@ -258,13 +280,14 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 - [ ] Metadatos completados y envío al backend real.
 - [ ] Identificación propuesta por el modelo, con especie, confianza y estado.
 - [ ] Caso no concluyente y su manejo en pantalla.
-- [ ] Actualización del detalle cuando el experto registra su decisión desde el backend.
+- [ ] Un experto registra su decisión desde la app y el detalle del usuario se actualiza.
 
 ---
 
 ## Riesgos conocidos
 
-- **Experto sin interfaz en la app:** la demo pide mostrar la actualización tras la revisión del experto. La app la muestra en el detalle, pero la revisión se hace desde el backend o la colección de pruebas. Confirmar con el profesor que es aceptable.
+- **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto` en staging.
+- **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. El mock la deja en `no_concluyente`; confirmar con el Equipo 3.
 - **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe.
 - **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería.
 - **`pendiente_envio` es local:** no pertenece a `EstadoObservacion` ni aparece en el contrato.
@@ -273,7 +296,6 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 ## Fuera de alcance del MVP
 
 - Certificación como experto dentro de la app (solo nota en el perfil).
-- Validación experta desde la app.
 - Pestaña "Todos" y listado público.
 - Profundidad como campo propio.
 - Tiburones.
