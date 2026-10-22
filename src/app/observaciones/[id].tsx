@@ -6,8 +6,8 @@ import {
 } from '@/constants/formato';
 import { observacionesService } from '@/services';
 import type { DecisionValidacion, ObservacionDetalle } from '@/types';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
@@ -48,7 +48,8 @@ export default function DetalleRegistroScreen() {
   const [estado, setEstado] = useState<Estado>('cargando');
 
   const cargar = useCallback(async () => {
-    setEstado('cargando');
+    // Al recargar un registro ya visible no se vuelve a mostrar el indicador.
+    setEstado((actual) => (actual === 'listo' ? actual : 'cargando'));
     try {
       const detalle = await observacionesService.obtenerObservacion(id);
       setObs(detalle);
@@ -58,11 +59,15 @@ export default function DetalleRegistroScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void cargar();
-    });
-  }, [cargar]);
+  // Se consulta de nuevo cada vez que la pantalla vuelve a estar visible, para
+  // que una validación hecha después aparezca sin reiniciar la app.
+  useFocusEffect(
+    useCallback(() => {
+      queueMicrotask(() => {
+        void cargar();
+      });
+    }, [cargar]),
+  );
 
   const volver = () => router.back();
 
