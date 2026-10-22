@@ -522,6 +522,7 @@ export default function NuevaObservacionScreen() {
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   maximumDate={new Date()}
                   locale="es-CO"
+                  is24Hour={false}
                   onValueChange={(_, nuevaFecha) => cambiarFecha(nuevaFecha)}
                   onDismiss={() => setModoFecha(null)}
                 />

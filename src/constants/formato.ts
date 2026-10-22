@@ -34,7 +34,7 @@ export function formatearConfianza(confianza: number | null | undefined): string
 /**
  * Formatea una fecha ISO 8601 con desfase, por ejemplo "2026-09-20T14:30:00-05:00".
  * Lee año, mes, día y hora directamente del texto, así que se respeta la hora local
- * registrada en el evento. Ejemplo: "20 sep 2026, 14:30"
+ * registrada en el evento. Ejemplo: "20 sep 2026, 2:30 p. m."
  */
 export function formatearFechaEvento(iso: string): string {
   const coincidencia = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso);
@@ -43,8 +43,12 @@ export function formatearFechaEvento(iso: string): string {
   }
   const [, anio, mes, dia, hora, minuto] = coincidencia;
   const nombreMes = MESES_ABREV[Number(mes) - 1] ?? mes;
-  return `${Number(dia)} ${nombreMes} ${anio}, ${hora}:${minuto}`;
+  const hora24 = Number(hora);
+  const hora12 = hora24 % 12 || 12;
+  const periodo = hora24 < 12 ? 'a. m.' : 'p. m.';
+  return `${Number(dia)} ${nombreMes} ${anio}, ${hora12}:${minuto} ${periodo}`;
 }
+
 /**
  * Convierte una fecha del dispositivo a ISO 8601 con su desfase local,
  * como pide `fecha_hora_evento`. Ejemplo: "2026-09-20T14:35:00-05:00"
