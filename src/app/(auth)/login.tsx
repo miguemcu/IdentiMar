@@ -154,7 +154,7 @@ export default function LoginScreen() {
         </Card>
 
         {/* Accesos rápidos para probar los 3 roles en el mock */}
-        <Card className="border border-ocean/20 bg-ocean/5">
+        <Card className="border-sky-200 bg-sky-50">
           <Text className="text-xs font-nunito-bold text-ocean-dark mb-2">
             Accesos de prueba simulada (Roles):
           </Text>

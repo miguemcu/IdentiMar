@@ -279,7 +279,7 @@ export default function DetalleRegistroScreen() {
           </Seccion>
 
           {puedeSimularExperto ? (
-            <Card className="border border-ocre-dark/40 bg-ocre/10">
+            <Card className="border-amber-200 bg-amber-50">
               <Text className="font-nunito-bold text-base text-slate-deep">
                 Simular decisión del experto
               </Text>

@@ -135,7 +135,7 @@ export default function PerfilScreen() {
         </Card>
 
         {MODO_SIMULADO ? (
-          <Card className="border-ocean/30 bg-ocean/5">
+          <Card className="border-sky-200 bg-sky-50">
             <Text className="font-nunito-bold text-base text-slate-deep">
               Cambiar rol de prueba
             </Text>

@@ -117,7 +117,7 @@ export default function InicioScreen() {
       </View>
 
       <View className="mt-8 px-4">
-        <Card className="flex-row gap-3 border-ocre-dark/30 bg-ocre/15">
+        <Card className="flex-row gap-3 border-amber-200 bg-amber-50">
           <Icono nombre="sinConexion" size={24} className="text-slate-deep" />
           <View className="flex-1">
             <Text className="font-nunito-bold text-base text-slate-deep">
