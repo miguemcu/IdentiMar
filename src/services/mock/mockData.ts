@@ -46,7 +46,7 @@ export const MOCK_ESPECIES: Especie[] = [
     descripcion:
       "Disco circular con ojos pequeños y cola moderadamente alargada con espina caudal.",
     url_imagen_referencia:
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5",
+      "https://www.topanglerscharters.com/marine-life/round-stingray.webp",
   },
   {
     id: "e1a10002-0000-4000-a000-000000000002",
@@ -58,7 +58,7 @@ export const MOCK_ESPECIES: Especie[] = [
     descripcion:
       "Disco en forma de rombo, coloración dorsal gris oscura a pardo, cola larga en forma de látigo.",
     url_imagen_referencia:
-      "https://images.unsplash.com/photo-1518837695005-2083093ee35b",
+      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2740_3540.jpg",
   },
   {
     id: "e1a10003-0000-4000-a000-000000000003",
@@ -70,7 +70,7 @@ export const MOCK_ESPECIES: Especie[] = [
     descripcion:
       "Disco extremadamente ancho con aletas pectorales expandidas y cola muy reducida sin espina.",
     url_imagen_referencia:
-      "https://images.unsplash.com/photo-1559827291-72ee739d0d9a",
+      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2747_3180.jpg",
   },
   {
     id: "e1a10004-0000-4000-a000-000000000004",
@@ -82,7 +82,7 @@ export const MOCK_ESPECIES: Especie[] = [
     descripcion:
       "Dorso oscuro con numerosas motas blancas, cabeza diferenciada con hocico cónico característico.",
     url_imagen_referencia:
-      "https://images.unsplash.com/photo-1574781330855-d0db8cc6a79c",
+      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/263_7361.jpg",
   },
   {
     id: "e1a10005-0000-4000-a000-000000000005",
@@ -94,7 +94,7 @@ export const MOCK_ESPECIES: Especie[] = [
     descripcion:
       "Cuerpo alargado y plano con disco triangular y parte posterior robusta similar a un escualo.",
     url_imagen_referencia:
-      "https://images.unsplash.com/photo-1582967788606-a171c1080cb0",
+      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2727_5605.jpg",
   },
 ];
 
