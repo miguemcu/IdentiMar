@@ -1,4 +1,5 @@
 import type {
+  DetalleError,
   EstadoObservacion,
   ObservacionDetalle,
   ObservacionesPagina,
@@ -6,8 +7,10 @@ import type {
   ObservacionResumen,
   Prediccion,
 } from "../../types";
+import { ErrorServicio } from "../errores";
 import type {
   FiltrosListadoObservaciones,
+  ImagenObservacion,
   IObservacionesService,
 } from "../observaciones.service";
 import { simularRetardo } from "./delay";
@@ -18,6 +21,104 @@ import {
   MOCK_TIPOS_AMBIENTE,
   MOCK_USUARIOS,
 } from "./mockData";
+
+/** UUID v4 de prueba; el backend real asigna los suyos. */
+function uuidSimulado(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16);
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+/**
+ * Permite probar los errores del contrato sin backend:
+ * EXPO_PUBLIC_MOCK_ERROR = 400 | 401 | 413 | red
+ */
+function errorSimulado(): ErrorServicio | null {
+  switch (process.env.EXPO_PUBLIC_MOCK_ERROR) {
+    case "400":
+      return new ErrorServicio(400, {
+        codigo: "validacion-fallida",
+        mensaje: "Uno o más campos no cumplen las restricciones.",
+        detalles: [{ campo: "latitud", problema: "Debe estar entre -90 y 90." }],
+      });
+    case "401":
+      return new ErrorServicio(401, {
+        codigo: "no-autenticado",
+        mensaje: "Se requiere autenticación para acceder a este recurso.",
+      });
+    case "413":
+      return new ErrorServicio(413, {
+        codigo: "imagen-muy-grande",
+        mensaje: "Imagen demasiado grande.",
+      });
+    case "red":
+      return new ErrorServicio(0, {
+        codigo: "sin-conexion",
+        mensaje: "No hay conexión.",
+      });
+    default:
+      return null;
+  }
+}
+
+/** Aplica las mismas restricciones que ObservacionInput y la parte `imagen` del contrato. */
+function validarEntrada(
+  datos: ObservacionInput,
+  imagen: ImagenObservacion,
+): DetalleError[] {
+  const detalles: DetalleError[] = [];
+  const enRango = (v: unknown, min: number, max: number) =>
+    typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+
+  if (Number.isNaN(Date.parse(datos.fecha_hora_evento))) {
+    detalles.push({
+      campo: "fecha_hora_evento",
+      problema: "Debe ser una fecha válida.",
+    });
+  }
+  if (!enRango(datos.latitud, -90, 90)) {
+    detalles.push({ campo: "latitud", problema: "Debe estar entre -90 y 90." });
+  }
+  if (!enRango(datos.longitud, -180, 180)) {
+    detalles.push({
+      campo: "longitud",
+      problema: "Debe estar entre -180 y 180.",
+    });
+  }
+  if (
+    datos.precision_gps_metros != null &&
+    !enRango(datos.precision_gps_metros, 0, Infinity)
+  ) {
+    detalles.push({
+      campo: "precision_gps_metros",
+      problema: "No puede ser negativa.",
+    });
+  }
+  if (!MOCK_TIPOS_AMBIENTE.some((i) => i.codigo === datos.tipo_ambiente)) {
+    detalles.push({ campo: "tipo_ambiente", problema: "Elige una opción." });
+  }
+  if (
+    !MOCK_CONDICIONES_ORGANISMO.some(
+      (i) => i.codigo === datos.condicion_organismo,
+    )
+  ) {
+    detalles.push({
+      campo: "condicion_organismo",
+      problema: "Elige una opción.",
+    });
+  }
+  if ((datos.observaciones_usuario?.length ?? 0) > 2000) {
+    detalles.push({
+      campo: "observaciones_usuario",
+      problema: "Máximo 2000 caracteres.",
+    });
+  }
+  if (imagen.mimeType !== "image/jpeg" && imagen.mimeType !== "image/png") {
+    detalles.push({ campo: "imagen", problema: "Debe ser JPEG o PNG." });
+  }
+  return detalles;
+}
 
 export class ObservacionesMockService implements IObservacionesService {
   private observaciones: ObservacionDetalle[] = [
@@ -38,37 +139,39 @@ export class ObservacionesMockService implements IObservacionesService {
 
   async crearObservacion(
     datos: ObservacionInput,
-    imagenUri?: string,
+    imagen: ImagenObservacion,
   ): Promise<ObservacionResumen> {
     await simularRetardo();
 
-    const id = `obs-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const simulado = errorSimulado();
+    if (simulado) throw simulado;
+
+    const detalles = validarEntrada(datos, imagen);
+    if (detalles.length > 0) {
+      throw new ErrorServicio(400, {
+        codigo: "validacion-fallida",
+        mensaje: "Uno o más campos no cumplen las restricciones.",
+        detalles,
+      });
+    }
+
+    const id = uuidSimulado();
     const ahora = new Date().toISOString();
 
+    // validarEntrada ya garantizó que ambos códigos existen en el catálogo.
     const tipoAmbienteItem = MOCK_TIPOS_AMBIENTE.find(
       (item) => item.codigo === datos.tipo_ambiente,
-    ) ?? {
-      id: `amb-${Date.now()}`,
-      codigo: datos.tipo_ambiente,
-      nombre_visible: datos.tipo_ambiente,
-    };
-
+    )!;
     const condicionOrganismoItem = MOCK_CONDICIONES_ORGANISMO.find(
       (item) => item.codigo === datos.condicion_organismo,
-    ) ?? {
-      id: `cond-${Date.now()}`,
-      codigo: datos.condicion_organismo,
-      nombre_visible: datos.condicion_organismo,
-    };
+    )!;
 
     const nuevaObservacion: ObservacionDetalle = {
       id,
       estado: "recibido",
       creado_en: ahora,
       fecha_hora_evento: datos.fecha_hora_evento,
-      imagen_url:
-        imagenUri ||
-        "https://images.unsplash.com/photo-1544551763-46a013bb70d5",
+      imagen_url: imagen.uri,
       especie_aceptada: null,
       confianza: null,
       usuario: MOCK_USUARIOS.usuario,
@@ -151,7 +254,7 @@ export class ObservacionesMockService implements IObservacionesService {
         }
 
         const prediccion: Prediccion = {
-          id: `pred-${Date.now()}`,
+          id: uuidSimulado(),
           especie_propuesta: especieAleatoria,
           confianza,
           version_modelo: "1.0.0",

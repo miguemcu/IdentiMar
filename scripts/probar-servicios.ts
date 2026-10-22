@@ -3,6 +3,8 @@ import {
   authService,
   observacionesService,
   validacionService,
+  ErrorServicio,
+  mensajeError,
 } from '../src/services';
 import type { ObservacionInput } from '../src/types';
 
@@ -35,7 +37,21 @@ async function ejecutarPrueba() {
     observaciones_usuario: 'Ejemplar visto nadando cerca a la playa en aguas claras.',
   };
 
-  const nueva = await observacionesService.crearObservacion(datosNuevaObs);
+  const imagen = {
+    uri: 'file:///prueba/raya.jpg',
+    mimeType: 'image/jpeg' as const,
+    nombre: 'raya.jpg',
+  };
+
+  const rechazo = await observacionesService
+    .crearObservacion({ ...datosNuevaObs, latitud: 120 }, imagen)
+    .then(() => null, (e: unknown) => e);
+  if (!(rechazo instanceof ErrorServicio) || rechazo.status !== 400) {
+    throw new Error('Se esperaba un 400 con latitud fuera de rango');
+  }
+  console.log(`Latitud fuera de rango rechazada: ${mensajeError(rechazo)}`);
+
+  const nueva = await observacionesService.crearObservacion(datosNuevaObs, imagen);
   console.log(`Observación creada ID: ${nueva.id}`);
   console.log(`Estado inicial reportado: ${nueva.estado}`);
 
