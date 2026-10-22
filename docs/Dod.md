@@ -42,7 +42,7 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 ## H0. Base técnica
 
-**Estado:** terminado salvo el esqueleto `api` de autenticación y catálogos, los mensajes propios para 400 y 409 en inicio de sesión y registro, el `refresh_token` en la sesión y la plantilla de PR.
+**Estado:** terminado salvo el esqueleto `api` de autenticación y catálogos, los mensajes propios para 400 y 409 en inicio de sesión y registro, y el `refresh_token` en la sesión.
 
 - [x] Tipos derivados de los schemas del contrato, con nombres de campo en snake_case y enums como union types (`Rol`, `EstadoObservacion`, `DecisionValidacion`).
 - [x] Capa de servicios por dominio (auth, observaciones, catálogos) con implementación `mock`.
@@ -56,7 +56,7 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 - [x] Login y registro con las validaciones del contrato: nombre (3 a 200 caracteres), correo válido, contraseña (8 a 128), teléfono opcional.
 - [ ] Errores 400, 401 y 409 mostrados con mensajes en español.
 - [ ] El modelo de sesión contempla access token y refresh token.
-- [ ] `AGENTS.md` y plantilla de PR existentes.
+- [x] `AGENTS.md`.
 - [x] No hay textos ni datos de `App.tsx` (mockup web) en el código.
 
 ---
