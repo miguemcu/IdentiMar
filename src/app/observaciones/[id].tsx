@@ -28,7 +28,7 @@ type Estado = 'cargando' | 'listo' | 'error';
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <View className="py-2 border-b border-slate-light/20">
-      <Text className="font-nunito-bold text-xs text-slate-mid">{etiqueta}</Text>
+      <Text className="font-nunito-bold text-sm text-slate-mid">{etiqueta}</Text>
       <Text className="font-source text-base text-slate-deep mt-0.5">{valor}</Text>
     </View>
   );
@@ -37,7 +37,9 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <Card>
-      <Text className="font-nunito-bold text-base text-slate-deep mb-2">{titulo}</Text>
+      <Text accessibilityRole="header" className="font-nunito-extrabold text-lg text-slate-deep mb-2">
+        {titulo}
+      </Text>
       {children}
     </Card>
   );
@@ -158,7 +160,7 @@ export default function DetalleRegistroScreen() {
           {obs.imagen_url ? (
             <Image
               source={{ uri: obs.imagen_url }}
-              className="w-full h-56 rounded-2xl bg-slate-light/20"
+              className="w-full h-64 rounded-3xl bg-slate-light/20"
               resizeMode="cover"
             />
           ) : null}
@@ -237,7 +239,7 @@ export default function DetalleRegistroScreen() {
                   etiqueta="Versión del modelo"
                   valor={obs.prediccion_original.version_modelo}
                 />
-                <Text className="font-source text-xs text-slate-mid mt-2">
+                <Text className="font-source text-sm text-slate-mid mt-2">
                   Esta predicción se conserva aunque un experto la corrija.
                 </Text>
               </>
@@ -386,7 +388,7 @@ export default function DetalleRegistroScreen() {
                       {transicion.motivo}
                     </Text>
                   ) : null}
-                  <Text className="font-source text-xs text-slate-mid mt-0.5">
+                  <Text className="font-source text-sm text-slate-mid mt-0.5">
                     {transicion.actor ?? 'Sistema'} · {formatearFechaEvento(transicion.creado_en)}
                   </Text>
                 </View>
