@@ -5,7 +5,6 @@ import {
   Image,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -15,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Card, Input, ScreenHeader } from '@/components/ui';
+import { Button, Card, Chip, Icono, Input, ScreenHeader, type NombreIcono } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
 import { useAuth } from '@/contexts/auth-context';
 import {
@@ -83,49 +82,56 @@ function imagenParaEnvio(asset: ImagePicker.ImagePickerAsset): ImagenObservacion
   };
 }
 
-function Opciones({
+const PASOS = ['Foto', 'Dónde y cuándo', 'Sobre el animal'] as const;
+
+/** Tarjeta de un bloque del formulario con ícono y título. */
+function Bloque({
+  icono,
   titulo,
+  children,
+}: {
+  icono: NombreIcono;
+  titulo: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <View className="mb-3 flex-row items-center gap-2">
+        <View className="h-9 w-9 items-center justify-center rounded-xl bg-ocean/10">
+          <Icono nombre={icono} size={20} className="text-ocean-dark" />
+        </View>
+        <Text
+          accessibilityRole="header"
+          className="font-nunito-extrabold text-lg text-slate-deep"
+        >
+          {titulo}
+        </Text>
+      </View>
+      {children}
+    </Card>
+  );
+}
+
+function Opciones({
   opciones,
   seleccion,
   onSeleccionar,
 }: {
-  titulo: string;
   opciones: CatalogoItem[];
   seleccion: string | null;
   onSeleccionar: (codigo: string) => void;
 }) {
   return (
-    <View className="mt-5">
-      <Text className="mb-2 font-nunito-bold text-base text-slate-deep">
-        {titulo}
-      </Text>
-      <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-        {opciones.map((opcion) => {
-          const activa = opcion.codigo === seleccion;
-          return (
-            <Pressable
-              key={opcion.id}
-              onPress={() => onSeleccionar(opcion.codigo)}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: activa }}
-              accessibilityHint={opcion.descripcion ?? undefined}
-              className={`min-h-[44px] justify-center rounded-full border px-4 ${
-                activa
-                  ? 'border-ocean bg-ocean active:bg-ocean-dark'
-                  : 'border-slate-light/60 bg-white active:bg-slate-light/20'
-              }`}
-            >
-              <Text
-                className={`font-source-semibold text-base ${
-                  activa ? 'text-white' : 'text-slate-deep'
-                }`}
-              >
-                {opcion.nombre_visible}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+      {opciones.map((opcion) => (
+        <Chip
+          key={opcion.id}
+          etiqueta={opcion.nombre_visible}
+          activo={opcion.codigo === seleccion}
+          onPress={() => onSeleccionar(opcion.codigo)}
+          accessibilityHint={opcion.descripcion ?? undefined}
+        />
+      ))}
     </View>
   );
 }
@@ -174,7 +180,9 @@ export default function NuevaObservacionScreen() {
   const [notas, setNotas] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
+  const [paso, setPaso] = useState(0);
   const previousAppState = useRef(AppState.currentState);
+  const camaraInicialAbierta = useRef(false);
 
   const cargarCatalogos = useCallback(async () => {
     setErrorCatalogos(false);
@@ -202,12 +210,23 @@ export default function NuevaObservacionScreen() {
     !errorCoordenada('latitud', coordinateInputs.latitud, coordinates.latitud) &&
     !errorCoordenada('longitud', coordinateInputs.longitud, coordinates.longitud);
 
-  const faltantes = [
-    !ubicacionValida && 'la ubicación',
-    fechaFutura && 'una fecha válida',
-    !tipoAmbiente && 'dónde estaba',
-    !condicion && 'cómo estaba el animal',
-  ].filter((faltante): faltante is string => typeof faltante === 'string');
+  const faltantesPorPaso = [
+    [!imageAsset && 'una foto'],
+    [!ubicacionValida && 'la ubicación', fechaFutura && 'una fecha válida'],
+    [!tipoAmbiente && 'dónde estaba', !condicion && 'cómo estaba el animal'],
+  ].map((lista) =>
+    lista.filter((faltante): faltante is string => typeof faltante === 'string'),
+  );
+  const faltantes = faltantesPorPaso[paso];
+  const ultimoPaso = paso === PASOS.length - 1;
+
+  function volver() {
+    if (paso > 0) {
+      setPaso(paso - 1);
+    } else {
+      router.back();
+    }
+  }
 
   async function enviar() {
     if (
@@ -381,6 +400,18 @@ export default function NuevaObservacionScreen() {
     }
   }
 
+  // Al entrar se abre la cámara de una vez; si se cancela, el paso 1 ofrece
+  // abrirla de nuevo o elegir de la galería.
+  useEffect(() => {
+    if (camaraInicialAbierta.current) return;
+    camaraInicialAbierta.current = true;
+    queueMicrotask(() => {
+      void takePhoto();
+    });
+    // takePhoto solo se usa en el primer render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function chooseFromGallery() {
     setImageValidationError(null);
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -398,47 +429,125 @@ export default function NuevaObservacionScreen() {
   return (
     <View className="flex-1 bg-surface">
       <ScreenHeader
-        title="Nueva Observación"
-        subtitle="Captura de imagen"
-        onBack={() => router.back()}
+        title="Nueva observación"
+        subtitle={`Paso ${paso + 1} de ${PASOS.length} · ${PASOS[paso]}`}
+        onBack={volver}
       />
+      <View
+        accessible
+        accessibilityLabel={`Paso ${paso + 1} de ${PASOS.length}`}
+        className="flex-row gap-1.5 bg-surface px-4 pb-2 pt-1"
+      >
+        {PASOS.map((nombre, indice) => (
+          <View
+            key={nombre}
+            className={`h-1.5 flex-1 rounded-full ${
+              indice <= paso ? 'bg-ocean' : 'bg-slate-light/30'
+            }`}
+          />
+        ))}
+      </View>
+
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 24,
-          paddingBottom: 24 + insets.bottom,
-        }}
+        contentContainerStyle={{ padding: 16, gap: 16 }}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <Card className="w-full border border-ocean/20">
-          {imageAsset ? (
-            <Image
-              source={{ uri: imageAsset.uri }}
-              resizeMode="contain"
-              accessibilityLabel="Vista previa de la foto seleccionada"
-              className="mt-4 h-64 w-full"
-            />
-          ) : null}
-          {imageAsset ? (
-            <View className="mt-5">
-              <Text className="font-nunito-bold text-base text-slate-deep">
-                Ubicación del avistamiento
+        {paso === 0 ? (
+          <>
+            {imageAsset ? (
+              <Image
+                source={{ uri: imageAsset.uri }}
+                resizeMode="cover"
+                accessibilityLabel="Vista previa de la foto seleccionada"
+                className="h-80 w-full rounded-3xl bg-slate-light/20"
+              />
+            ) : (
+              <Card className="items-center py-8">
+                <View className="h-20 w-20 items-center justify-center rounded-3xl bg-ocean/10">
+                  <Icono nombre="camara" size={40} className="text-ocean-dark" />
+                </View>
+                <Text className="mt-4 text-center font-nunito-extrabold text-xl text-slate-deep">
+                  Toma una foto de la raya
+                </Text>
+                <View className="mt-3 gap-1">
+                  {[
+                    'Que se vea el animal completo',
+                    'Con buena luz, sin sombras fuertes',
+                    'Desde arriba si es posible',
+                  ].map((consejo) => (
+                    <Text
+                      key={consejo}
+                      className="text-center font-source text-base text-slate-mid"
+                    >
+                      {consejo}
+                    </Text>
+                  ))}
+                </View>
+              </Card>
+            )}
+
+            {imageValidationError ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                className="text-center font-source text-base text-danger"
+              >
+                {imageValidationError}
               </Text>
+            ) : null}
+
+            <View className="flex-row gap-3">
+              <Button
+                title={imageAsset ? 'Tomar otra' : 'Abrir cámara'}
+                variant={imageAsset ? 'outline' : 'primary'}
+                leftIcon={
+                  <Icono
+                    nombre="camara"
+                    size={20}
+                    className={imageAsset ? 'text-ocean' : 'text-white'}
+                  />
+                }
+                onPress={() => void takePhoto()}
+                className="flex-1"
+              />
+              <Button
+                title="Galería"
+                variant="outline"
+                leftIcon={<Icono nombre="galeria" size={20} className="text-ocean" />}
+                onPress={() => void chooseFromGallery()}
+                className="flex-1"
+              />
+            </View>
+
+            {cameraPermissionDenied ? (
+              <Card className="border-danger/40">
+                <Text className="font-source text-base text-slate-deep">
+                  Necesitamos acceso a la cámara para tomar la foto. También
+                  puedes elegirla de la galería.
+                </Text>
+                <Button
+                  title="Abrir ajustes"
+                  variant="ghost"
+                  onPress={() => Linking.openSettings()}
+                  className="mt-2"
+                />
+              </Card>
+            ) : null}
+          </>
+        ) : null}
+
+        {paso === 1 ? (
+          <>
+            <Bloque icono="ubicacion" titulo="Ubicación">
               {isGettingLocation ? (
-                <Text
-                  accessibilityRole="text"
-                  className="mt-2 font-source text-sm text-slate-mid"
-                >
+                <Text className="font-source text-base text-slate-mid">
                   Obteniendo ubicación…
                 </Text>
               ) : null}
               {locationPermissionDenied ? (
-                <View className="mt-2 items-center">
-                  <Text className="text-center font-source text-sm text-danger">
+                <View className="gap-2">
+                  <Text className="font-source text-base text-danger">
                     No se permitió acceder a la ubicación. Puedes ingresarla
                     manualmente.
                   </Text>
@@ -446,30 +555,29 @@ export default function NuevaObservacionScreen() {
                     title="Abrir ajustes"
                     variant="primary"
                     onPress={() => Linking.openSettings()}
-                    className="mt-2 w-full"
                   />
                   <Button
-                    title="Intentar obtener ubicación de nuevo"
+                    title="Intentar de nuevo"
                     variant="outline"
                     onPress={() => void captureLocation()}
                     disabled={isGettingLocation}
-                    className="mt-2 w-full"
                   />
                 </View>
               ) : null}
               {locationError ? (
-                <Text className="mt-2 font-source text-sm text-danger">
+                <Text className="font-source text-base text-danger">
                   {locationError}
                 </Text>
               ) : null}
-              {coordinates.latitud !== null &&
-              coordinates.longitud !== null ? (
-                <Text className="mt-2 font-source text-sm text-slate-deep">
-                  Coordenadas actuales: {coordinates.latitud.toFixed(6)}°,
-                  {' '}{coordinates.longitud.toFixed(6)}°
+              {coordinates.latitud !== null && coordinates.longitud !== null ? (
+                <Text className="font-source-semibold text-base text-slate-deep">
+                  {coordinates.latitud.toFixed(6)}°, {coordinates.longitud.toFixed(6)}°
+                  {precisionGps !== null
+                    ? `  ·  ± ${Math.round(precisionGps)} m`
+                    : ''}
                 </Text>
               ) : null}
-              <Text className="mb-3 mt-2 font-source text-sm text-slate-mid">
+              <Text className="mb-3 mt-1 font-source text-sm text-slate-mid">
                 Puedes corregir estos valores si conoces la ubicación exacta.
               </Text>
               <Input
@@ -497,13 +605,13 @@ export default function NuevaObservacionScreen() {
                 keyboardType="decimal-pad"
                 placeholder="Ej. -76.123456"
                 accessibilityLabel="Longitud del avistamiento"
+                containerClassName="mb-0"
               />
+            </Bloque>
 
-              <Text className="mt-2 font-nunito-bold text-base text-slate-deep">
-                Fecha y hora del avistamiento
-              </Text>
+            <Bloque icono="calendario" titulo="Fecha y hora">
               <Text
-                className={`mt-1 font-source text-base ${
+                className={`font-source-semibold text-lg ${
                   fechaFutura ? 'text-danger' : 'text-slate-deep'
                 }`}
               >
@@ -514,7 +622,7 @@ export default function NuevaObservacionScreen() {
                   La fecha no puede ser posterior a este momento.
                 </Text>
               ) : null}
-              <View className="mt-2 flex-row gap-2">
+              <View className="mt-3 flex-row gap-2">
                 <Button
                   title="Cambiar fecha"
                   variant="outline"
@@ -549,39 +657,45 @@ export default function NuevaObservacionScreen() {
                   onPress={() => setModoFecha(null)}
                 />
               ) : null}
+            </Bloque>
+          </>
+        ) : null}
 
-              {errorCatalogos ? (
-                <View className="mt-5">
-                  <Text className="font-source text-sm text-danger">
-                    No pudimos cargar las opciones del formulario.
-                  </Text>
-                  <Button
-                    title="Reintentar"
-                    variant="outline"
-                    onPress={() => void cargarCatalogos()}
-                    className="mt-2 w-full"
-                  />
-                </View>
-              ) : (
-                <>
+        {paso === 2 ? (
+          <>
+            {errorCatalogos ? (
+              <Card>
+                <Text className="font-source text-base text-danger">
+                  No pudimos cargar las opciones del formulario.
+                </Text>
+                <Button
+                  title="Reintentar"
+                  variant="outline"
+                  onPress={() => void cargarCatalogos()}
+                  className="mt-2"
+                />
+              </Card>
+            ) : (
+              <>
+                <Bloque icono="ubicacion" titulo="¿Dónde estaba?">
                   <Opciones
-                    titulo="¿Dónde estaba?"
                     opciones={tiposAmbiente}
                     seleccion={tipoAmbiente}
                     onSeleccionar={setTipoAmbiente}
                   />
+                </Bloque>
+                <Bloque icono="especies" titulo="¿Cómo estaba el animal?">
                   <Opciones
-                    titulo="¿Cómo estaba el animal?"
                     opciones={condiciones}
                     seleccion={condicion}
                     onSeleccionar={setCondicion}
                   />
-                </>
-              )}
+                </Bloque>
+              </>
+            )}
 
+            <Bloque icono="registros" titulo="Notas (opcional)">
               <Input
-                label="Notas (opcional)"
-                containerClassName="mt-5"
                 value={notas}
                 onChangeText={setNotas}
                 maxLength={MAX_NOTAS}
@@ -591,76 +705,39 @@ export default function NuevaObservacionScreen() {
                 placeholder="Ej. La vi cerca de la desembocadura del río"
                 helperText={`${notas.length} / ${MAX_NOTAS}`}
                 accessibilityLabel="Notas del avistamiento"
+                containerClassName="mb-0"
               />
-            </View>
-          ) : null}
-          {imageValidationError ? (
-            <Text className="mt-4 text-center font-source text-sm text-danger">
-              {imageValidationError}
-            </Text>
-          ) : null}
-          <Button
-            title={
-              imageValidationError
-                ? 'Intentar de nuevo con la cámara'
-                : imageAsset
-                  ? 'Cambiar foto con la cámara'
-                  : 'Tomar foto'
-            }
-            onPress={takePhoto}
-            className="w-full"
-          />
-          <Button
-            title={
-              imageValidationError
-                ? 'Intentar de nuevo desde la galería'
-                : imageAsset
-                  ? 'Cambiar foto desde la galería'
-                  : 'Elegir de la galería'
-            }
-            variant="outline"
-            onPress={chooseFromGallery}
-            className="mt-3 w-full"
-          />
-          {cameraPermissionDenied ? (
-            <View className="mt-4 items-center">
-              <Text className="font-source text-sm text-danger text-center">
-                Necesitamos acceso a la cámara para tomar la foto
-              </Text>
-              <Button
-                title="Abrir ajustes"
-                variant="ghost"
-                onPress={() => Linking.openSettings()}
-                className="mt-2 w-full"
-              />
-            </View>
-          ) : null}
-        </Card>
-        {imageAsset ? (
-          <View className="mt-4 w-full">
-            {faltantes.length > 0 ? (
-              <Text className="mb-2 text-center font-source text-sm text-slate-mid">
-                Para enviar falta: {faltantes.join(', ')}.
-              </Text>
-            ) : null}
-            {errorEnvio ? (
-              <Text
-                accessibilityLiveRegion="polite"
-                className="mb-2 text-center font-source text-sm text-danger"
-              >
-                {errorEnvio}
-              </Text>
-            ) : null}
-            <Button
-              title="Enviar observación"
-              size="lg"
-              loading={enviando}
-              disabled={faltantes.length > 0}
-              onPress={() => void enviar()}
-            />
-          </View>
+            </Bloque>
+          </>
         ) : null}
       </ScrollView>
+
+      <View
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        className="gap-2 border-t border-slate-light/20 bg-white px-4 pt-3"
+      >
+        {faltantes.length > 0 ? (
+          <Text className="text-center font-source text-sm text-slate-mid">
+            {ultimoPaso ? 'Para enviar' : 'Para continuar'} falta:{' '}
+            {faltantes.join(', ')}.
+          </Text>
+        ) : null}
+        {ultimoPaso && errorEnvio ? (
+          <Text
+            accessibilityLiveRegion="polite"
+            className="text-center font-source text-sm text-danger"
+          >
+            {errorEnvio}
+          </Text>
+        ) : null}
+        <Button
+          title={ultimoPaso ? 'Enviar observación' : 'Siguiente'}
+          size="lg"
+          loading={ultimoPaso && enviando}
+          disabled={faltantes.length > 0}
+          onPress={() => (ultimoPaso ? void enviar() : setPaso(paso + 1))}
+        />
+      </View>
     </View>
   );
 }
