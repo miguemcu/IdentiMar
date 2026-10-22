@@ -1,5 +1,10 @@
 import "@/global.css";
-import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  Stack,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import {
@@ -23,9 +28,10 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { usuario, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !navigationState?.key) return;
 
     const enAuth = (segments[0] as string) === "(auth)";
     const hayUsuario = !!usuario;
@@ -35,7 +41,7 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
     } else if (hayUsuario && enAuth) {
       router.replace("/(tabs)" as any);
     }
-  }, [usuario, isLoading, segments]);
+  }, [usuario, isLoading, navigationState?.key, router, segments]);
 
   return <>{children}</>;
 }
