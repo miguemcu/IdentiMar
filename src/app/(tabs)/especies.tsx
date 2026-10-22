@@ -1,4 +1,4 @@
-import { Button, Card, Input, ScreenHeader } from '@/components/ui';
+import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { filtrarEspecies } from '@/constants/busqueda-especies';
 import { catalogosService } from '@/services';
 import type { Especie } from '@/types';
@@ -19,7 +19,8 @@ export default function EspeciesScreen() {
     setEstado('cargando');
     try {
       const lista = await catalogosService.obtenerEspecies();
-      setEspecies(lista);
+      // La app solo trabaja con rayas (DoD).
+      setEspecies(lista.filter((e) => e.grupo === 'raya'));
       setEstado('listo');
     } catch {
       setEstado('error');
@@ -38,8 +39,9 @@ export default function EspeciesScreen() {
   return (
     <View className="flex-1 bg-surface">
       <ScreenHeader
-        title="Catálogo de Especies"
-        subtitle="Batoideos del Urabá antioqueño"
+        grande
+        title="Especies del Urabá"
+        subtitle="Rayas del Caribe colombiano"
       />
 
       {estado === 'cargando' ? (
@@ -66,7 +68,7 @@ export default function EspeciesScreen() {
         <FlatList
           data={filtradas}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingTop: 8 }}
           ItemSeparatorComponent={() => <View className="h-3" />}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
@@ -80,6 +82,7 @@ export default function EspeciesScreen() {
                 returnKeyType="search"
                 accessibilityLabel="Buscar especie por nombre común o científico"
                 containerClassName="mb-0"
+                leftIcon={<Icono nombre="buscar" size={20} className="text-slate-mid" />}
               />
             </View>
           }
@@ -96,35 +99,36 @@ export default function EspeciesScreen() {
             <Card
               onPress={() => router.push(`/especies/${item.id}` as any)}
               accessibilityLabel={`${item.nombre_comun ?? item.nombre_cientifico}. Ver ficha`}
-              className="flex-row gap-3"
+              className="flex-row items-center gap-4 p-3"
             >
               {item.url_imagen_referencia ? (
                 <Image
                   source={{ uri: item.url_imagen_referencia }}
-                  className="w-20 h-20 rounded-xl bg-slate-light/20"
+                  className="h-24 w-24 rounded-2xl bg-slate-light/20"
                   resizeMode="cover"
                 />
               ) : (
-                <View className="w-20 h-20 rounded-xl bg-slate-light/20 items-center justify-center">
-                  <Text className="font-source text-xs text-slate-mid">Sin imagen</Text>
+                <View className="h-24 w-24 items-center justify-center rounded-2xl bg-slate-light/20">
+                  <Icono nombre="especies" size={28} className="text-slate-mid" />
                 </View>
               )}
 
-              <View className="flex-1 justify-center">
-                <Text numberOfLines={1} className="font-nunito-bold text-base text-slate-deep">
+              <View className="flex-1">
+                <Text numberOfLines={2} className="font-nunito-bold text-lg text-slate-deep">
                   {item.nombre_comun ?? item.nombre_cientifico}
                 </Text>
                 {item.nombre_comun ? (
-                  <Text numberOfLines={1} className="font-source text-xs italic text-slate-mid">
+                  <Text numberOfLines={1} className="font-source text-sm italic text-slate-mid">
                     {item.nombre_cientifico}
                   </Text>
                 ) : null}
                 {item.familia ? (
-                  <Text className="font-source text-xs text-slate-mid mt-1">
+                  <Text className="font-source text-sm text-slate-mid mt-1">
                     Familia {item.familia.nombre_cientifico}
                   </Text>
                 ) : null}
               </View>
+              <Icono nombre="siguiente" size={18} className="text-slate-light" />
             </Card>
           )}
         />
