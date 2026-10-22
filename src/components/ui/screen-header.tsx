@@ -9,6 +9,8 @@ export interface ScreenHeaderProps {
   onBack?: () => void;
   rightElement?: React.ReactNode;
   className?: string;
+  /** Título grande sin borde, para las pestañas principales. */
+  grande?: boolean;
 }
 
 export function ScreenHeader({
@@ -17,13 +19,16 @@ export function ScreenHeader({
   onBack,
   rightElement,
   className = '',
+  grande = false,
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{ paddingTop: Math.max(insets.top, 16) }}
-      className={`bg-surface px-4 pb-3 border-b border-slate-light/20 ${className}`}
+      className={`bg-surface px-4 ${
+        grande ? 'pb-2' : 'pb-3 border-b border-slate-light/20'
+      } ${className}`}
     >
       <View className="flex-row items-center justify-between min-h-[44px]">
         <View className="flex-row items-center flex-1">
@@ -47,14 +52,21 @@ export function ScreenHeader({
           <View className="flex-1">
             <Text
               numberOfLines={1}
-              className="font-nunito-bold text-slate-deep text-xl"
+              accessibilityRole="header"
+              className={
+                grande
+                  ? 'font-nunito-extrabold text-slate-deep text-3xl'
+                  : 'font-nunito-bold text-slate-deep text-xl'
+              }
             >
               {title}
             </Text>
             {subtitle ? (
               <Text
                 numberOfLines={1}
-                className="font-source text-slate-mid text-xs mt-0.5"
+                className={`font-source text-slate-mid mt-0.5 ${
+                  grande ? 'text-base' : 'text-sm'
+                }`}
               >
                 {subtitle}
               </Text>

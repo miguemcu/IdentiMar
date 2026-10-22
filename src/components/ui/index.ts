@@ -11,3 +11,4 @@ export * from './stat-tile';
 export * from './action-card';
 export * from './section-header';
 export * from './avatar';
+export * from './chip';

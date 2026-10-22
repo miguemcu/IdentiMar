@@ -52,6 +52,11 @@ const ESTADOS_MAP: Record<EstadoObservacion, EstadoConfig> = {
   },
 };
 
+/** Texto en español de cada estado del contrato. */
+export function etiquetaEstado(estado: EstadoObservacion): string {
+  return ESTADOS_MAP[estado]?.label ?? estado;
+}
+
 export function EstadoBadge({
   estado,
   size = 'md',
@@ -71,7 +76,7 @@ export function EstadoBadge({
 
   const textSizeStyles = {
     sm: 'text-xs',
-    md: 'text-xs',
+    md: 'text-sm',
   }[size];
 
   return (
