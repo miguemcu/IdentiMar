@@ -182,7 +182,6 @@ export default function NuevaObservacionScreen() {
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [paso, setPaso] = useState(0);
   const previousAppState = useRef(AppState.currentState);
-  const camaraInicialAbierta = useRef(false);
 
   const cargarCatalogos = useCallback(async () => {
     setErrorCatalogos(false);
@@ -399,18 +398,6 @@ export default function NuevaObservacionScreen() {
       confirmImageAsset(selectedAsset);
     }
   }
-
-  // Al entrar se abre la cámara de una vez; si se cancela, el paso 1 ofrece
-  // abrirla de nuevo o elegir de la galería.
-  useEffect(() => {
-    if (camaraInicialAbierta.current) return;
-    camaraInicialAbierta.current = true;
-    queueMicrotask(() => {
-      void takePhoto();
-    });
-    // takePhoto solo se usa en el primer render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function chooseFromGallery() {
     setImageValidationError(null);
