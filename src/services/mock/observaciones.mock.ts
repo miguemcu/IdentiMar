@@ -62,6 +62,39 @@ function errorSimulado(): ErrorServicio | null {
   }
 }
 
+/**
+ * Umbral que simula el `umbral_minimo` del modelo (Equipo 2). Solo vive en el
+ * mock: la app muestra el estado y la confianza que defina el backend.
+ */
+const UMBRAL_MINIMO_MODELO = 0.7;
+
+const RESULTADOS_MODELO = [
+  "identificado",
+  "pendiente_experto",
+  "no_concluyente",
+] as const;
+type ResultadoModelo = (typeof RESULTADOS_MODELO)[number];
+
+/**
+ * Resultado final de la inferencia simulada. EXPO_PUBLIC_MOCK_RESULTADO lo
+ * fuerza; si está vacío: 60 % identificado, 25 % pendiente_experto, 15 % no_concluyente.
+ */
+function resultadoSimulado(): ResultadoModelo {
+  const forzado = process.env.EXPO_PUBLIC_MOCK_RESULTADO;
+  const valido = RESULTADOS_MODELO.find((r) => r === forzado);
+  if (valido) return valido;
+
+  const rand = Math.random();
+  if (rand < 0.6) return "identificado";
+  if (rand < 0.85) return "pendiente_experto";
+  return "no_concluyente";
+}
+
+/** Número aleatorio entre min y max con dos decimales. */
+function confianzaEntre(min: number, max: number): number {
+  return Number((min + Math.random() * (max - min)).toFixed(2));
+}
+
 /** Aplica las mismas restricciones que ObservacionInput y la parte `imagen` del contrato. */
 function validarEntrada(
   datos: ObservacionInput,
@@ -230,25 +263,22 @@ export class ObservacionesMockService implements IObservacionesService {
         const especieAleatoria =
           MOCK_ESPECIES[Math.floor(Math.random() * MOCK_ESPECIES.length)];
 
-        // Distribución: 60% identificado, 25% pendiente_experto, 15% no_concluyente
-        const rand = Math.random();
-        let nuevoEstado: EstadoObservacion;
+        // Por encima del umbral identifica; por debajo, la división entre
+        // pendiente_experto y no_concluyente es solo del mock (el contrato no la define).
+        const nuevoEstado = resultadoSimulado();
         let confianza: number;
         let motivo: string;
 
-        if (rand < 0.6) {
-          nuevoEstado = "identificado";
-          confianza = Number((0.85 + Math.random() * 0.12).toFixed(2));
+        if (nuevoEstado === "identificado") {
+          confianza = confianzaEntre(UMBRAL_MINIMO_MODELO, 0.99);
           obsFinal.especie_aceptada = especieAleatoria;
-          motivo = "Inferencia exitosa con confianza >= 0.85";
-        } else if (rand < 0.85) {
-          nuevoEstado = "pendiente_experto";
-          confianza = Number((0.55 + Math.random() * 0.2).toFixed(2));
+          motivo = `Inferencia exitosa con confianza >= ${UMBRAL_MINIMO_MODELO}`;
+        } else if (nuevoEstado === "pendiente_experto") {
+          confianza = confianzaEntre(0.45, UMBRAL_MINIMO_MODELO - 0.01);
           obsFinal.especie_aceptada = null;
           motivo = "Confianza intermedia: derivada a validación experta";
         } else {
-          nuevoEstado = "no_concluyente";
-          confianza = Number((0.2 + Math.random() * 0.25).toFixed(2));
+          confianza = confianzaEntre(0.15, 0.44);
           obsFinal.especie_aceptada = null;
           motivo = "Confianza insuficiente en la imagen";
         }
