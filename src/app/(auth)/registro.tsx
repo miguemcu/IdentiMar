@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
-import { Button, Card, Input, ScreenHeader } from '@/components/ui';
+import { Button, Card, HeroHeader, Input } from '@/components/ui';
 
 export default function RegistroScreen() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function RegistroScreen() {
 
     // Nombre completo: entre 3 y 200 caracteres según contrato
     if (!nombreCompleto.trim()) {
-      nuevosErrores.nombre_completo = 'El nombre completo es requerido.';
+      nuevosErrores.nombre_completo = 'Escribe tu nombre completo.';
     } else if (nombreCompleto.trim().length < 3 || nombreCompleto.trim().length > 200) {
       nuevosErrores.nombre_completo = 'El nombre debe tener entre 3 y 200 caracteres.';
     }
@@ -42,14 +42,14 @@ export default function RegistroScreen() {
     // Correo: formato válido requerido
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!correo.trim()) {
-      nuevosErrores.correo = 'El correo electrónico es requerido.';
+      nuevosErrores.correo = 'Escribe tu correo.';
     } else if (!emailRegex.test(correo.trim())) {
-      nuevosErrores.correo = 'El formato del correo electrónico no es válido.';
+      nuevosErrores.correo = 'Revisa el correo. Debe verse así: nombre@correo.com';
     }
 
     // Contraseña: entre 8 y 128 caracteres
     if (!password) {
-      nuevosErrores.password = 'La contraseña es requerida.';
+      nuevosErrores.password = 'Escribe una contraseña.';
     } else if (password.length < 8 || password.length > 128) {
       nuevosErrores.password = 'La contraseña debe tener entre 8 y 128 caracteres.';
     }
@@ -62,7 +62,7 @@ export default function RegistroScreen() {
     setErrorGeneral(null);
 
     if (!validarFormulario()) {
-      setErrorGeneral('Uno o más campos no cumplen las restricciones.');
+      setErrorGeneral('Revisa los datos marcados en rojo.');
       return;
     }
 
@@ -77,7 +77,7 @@ export default function RegistroScreen() {
       // El SessionProvider actualiza el usuario y redirige automáticamente
     } catch {
       // 409 según contrato si ya está registrado
-      setErrorGeneral('El correo ya está registrado.');
+      setErrorGeneral('Ya hay una cuenta con ese correo. Intenta entrar con él.');
     } finally {
       setCargando(false);
     }
@@ -88,20 +88,24 @@ export default function RegistroScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1 bg-surface"
     >
-      <ScreenHeader
-        title="Crear cuenta"
-        subtitle="Registro de observador en IdentiMar"
-        onBack={() => router.back()}
-      />
-
       <ScrollView
-        contentContainerStyle={{ padding: 24 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Card className="mb-6">
+        <HeroHeader
+          antetitulo="IdentiMar"
+          titulo="Crea tu cuenta"
+          subtitulo="Con tu cuenta guardas tus registros de rayas y ves qué especie es cada una."
+          conCruce
+        />
+
+        <Card className="mx-4 -mt-12 shadow-lg">
           {errorGeneral ? (
-            <View className="bg-red-50 border border-danger/30 rounded-xl p-3 mb-4">
-              <Text className="text-xs font-source text-danger">
+            <View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-source text-sm text-danger"
+              >
                 {errorGeneral}
               </Text>
             </View>
@@ -109,7 +113,7 @@ export default function RegistroScreen() {
 
           <Input
             label="Nombre completo"
-            placeholder="Ana María Torres"
+            placeholder="Ej. Ana María Torres"
             value={nombreCompleto}
             onChangeText={(val) => {
               setNombreCompleto(val);
@@ -118,12 +122,11 @@ export default function RegistroScreen() {
               }
             }}
             error={errores.nombre_completo}
-            helperText="Entre 3 y 200 caracteres"
           />
 
           <Input
-            label="Correo electrónico"
-            placeholder="ana.torres@ejemplo.co"
+            label="Correo"
+            placeholder="nombre@correo.com"
             keyboardType="email-address"
             autoCapitalize="none"
             value={correo}
@@ -148,36 +151,38 @@ export default function RegistroScreen() {
               }
             }}
             error={errores.password}
-            helperText="Entre 8 y 128 caracteres"
+            helperText="Mínimo 8 caracteres"
           />
 
           <Input
-            label="Teléfono de contacto (opcional)"
-            placeholder="+573001234567"
+            label="Celular (opcional)"
+            placeholder="Ej. 300 123 4567"
             keyboardType="phone-pad"
             value={telefono}
             onChangeText={setTelefono}
-            helperText="dwc:contactInformation"
+            helperText="Solo para contactarte si hace falta"
           />
 
           <Button
-            title="Completar registro"
-            variant="primary"
+            title="Crear mi cuenta"
+            size="lg"
             loading={cargando}
             onPress={handleRegistro}
-            className="mt-3"
+            className="mt-2"
           />
 
-          <View className="flex-row items-center justify-center mt-5">
-            <Text className="text-sm font-source text-slate-mid">
+          <View className="mt-4 flex-row flex-wrap items-center justify-center">
+            <Text className="font-source text-base text-slate-mid">
               ¿Ya tienes cuenta?{' '}
             </Text>
             <Pressable
               onPress={() => router.back()}
-              accessibilityRole="button"
+              accessibilityRole="link"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              className="min-h-[44px] justify-center active:opacity-70"
             >
-              <Text className="text-sm font-nunito-bold text-ocean">
-                Inicia sesión
+              <Text className="font-nunito-bold text-base text-ocean">
+                Entra aquí
               </Text>
             </Pressable>
           </View>
