@@ -59,7 +59,9 @@ export default function DetalleRegistroScreen() {
   }, [id]);
 
   useEffect(() => {
-    cargar();
+    queueMicrotask(() => {
+      void cargar();
+    });
   }, [cargar]);
 
   const volver = () => router.back();

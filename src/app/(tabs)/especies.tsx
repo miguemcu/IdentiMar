@@ -27,7 +27,9 @@ export default function EspeciesScreen() {
   }, []);
 
   useEffect(() => {
-    cargar();
+    queueMicrotask(() => {
+      void cargar();
+    });
   }, [cargar]);
 
   // El filtro se recalcula en la app, sin llamadas de red

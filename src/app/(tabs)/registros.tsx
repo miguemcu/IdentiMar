@@ -38,7 +38,9 @@ export default function RegistrosScreen() {
   }, []);
 
   useEffect(() => {
-    cargarInicial();
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
   }, [cargarInicial]);
 
   const cargarMas = useCallback(async () => {
