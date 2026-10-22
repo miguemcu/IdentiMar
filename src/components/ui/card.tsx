@@ -16,7 +16,7 @@ export function Card({
   ...rest
 }: CardProps) {
   const baseStyles =
-    'bg-card rounded-2xl p-4 border border-slate-light/25';
+    'bg-card rounded-3xl p-4 border border-slate-light/20 shadow-sm';
 
   if (onPress) {
     return (
