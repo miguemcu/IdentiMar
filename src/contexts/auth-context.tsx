@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { authService } from '../services';
 import type {
   UsuarioPublico,
@@ -37,7 +44,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     inicializarSesion();
   }, []);
 
-  const login = async (datos: LoginRequest) => {
+  const login = useCallback(async (datos: LoginRequest) => {
     setIsLoading(true);
     try {
       const resp = await authService.login(datos);
@@ -46,9 +53,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const registro = async (datos: RegistroRequest) => {
+  const registro = useCallback(async (datos: RegistroRequest) => {
     setIsLoading(true);
     try {
       const nuevo = await authService.registro(datos);
@@ -57,9 +64,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setIsLoading(true);
     try {
       setUsuario(null);
@@ -67,31 +74,40 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const cambiarRolMock = async (nuevoRol: Rol) => {
-    if (nuevoRol === 'experto') {
-      await login({ correo: 'carlos.mendoza@invemar.org.co', password: 'password123' });
-    } else if (nuevoRol === 'administrador') {
-      await login({ correo: 'admin@identimar.udea.edu.co', password: 'password123' });
-    } else {
-      await login({ correo: 'ana.torres@ejemplo.co', password: 'password123' });
-    }
-  };
+  // No pasa por isLoading: así el cambio de rol vuelve a dibujar la app una
+  // sola vez (con el nuevo usuario) en lugar de dos.
+  const cambiarRolMock = useCallback(async (nuevoRol: Rol) => {
+    const correo =
+      nuevoRol === 'experto'
+        ? 'carlos.mendoza@invemar.org.co'
+        : nuevoRol === 'administrador'
+          ? 'admin@identimar.udea.edu.co'
+          : 'ana.torres@ejemplo.co';
+    const resp = await authService.login({ correo, password: 'password123' });
+    setUsuario(resp.usuario);
+    setToken(resp.access_token);
+  }, []);
+
+  // Valor estable: los componentes que usan useAuth solo se actualizan
+  // cuando cambia algo de la sesión.
+  const valor = useMemo<AuthContextType>(
+    () => ({
+      usuario,
+      rol: usuario?.rol ?? null,
+      token,
+      isLoading,
+      login,
+      registro,
+      logout,
+      cambiarRolMock,
+    }),
+    [usuario, token, isLoading, login, registro, logout, cambiarRolMock],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        usuario,
-        rol: usuario?.rol ?? null,
-        token,
-        isLoading,
-        login,
-        registro,
-        logout,
-        cambiarRolMock,
-      }}
-    >
+    <AuthContext.Provider value={valor}>
       {children}
     </AuthContext.Provider>
   );

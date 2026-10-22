@@ -42,6 +42,18 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 export default function PerfilScreen() {
   const { usuario, rol, logout, cambiarRolMock } = useAuth();
   const [cifras, setCifras] = useState<Cifras | null>(null);
+  // Se marca al instante mientras el mock simula la espera de la red.
+  const [rolElegido, setRolElegido] = useState<Rol | null>(null);
+
+  async function elegirRol(opcion: Rol) {
+    if (opcion === (rolElegido ?? rol)) return;
+    setRolElegido(opcion);
+    try {
+      await cambiarRolMock(opcion);
+    } finally {
+      setRolElegido(null);
+    }
+  }
 
   // Una página de hasta 100 registros (máximo del contrato): las especies
   // distintas y las validadas se cuentan sobre esa página.
@@ -150,8 +162,8 @@ export default function PerfilScreen() {
                 <Chip
                   key={opcion}
                   etiqueta={ROL_ETIQUETA[opcion]}
-                  activo={rol === opcion}
-                  onPress={() => void cambiarRolMock(opcion)}
+                  activo={(rolElegido ?? rol) === opcion}
+                  onPress={() => void elegirRol(opcion)}
                 />
               ))}
             </View>
