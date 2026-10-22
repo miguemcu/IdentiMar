@@ -52,10 +52,29 @@ function errorCoordenada(
   return Math.abs(valor) > max ? `Debe estar entre -${max} y ${max}` : undefined;
 }
 
+/**
+ * Tipo de la imagen. Algunos Android no informan `mimeType`; en ese caso
+ * se deduce de la extensión del archivo.
+ */
+function tipoImagen(
+  asset: ImagePicker.ImagePickerAsset,
+): ImagenObservacion['mimeType'] | null {
+  const mimeType = asset.mimeType?.toLowerCase();
+  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') return 'image/jpeg';
+  if (mimeType === 'image/png') return 'image/png';
+  if (mimeType) return null;
+
+  const extension = /\.(\w+)(?:\?.*)?$/
+    .exec(asset.fileName ?? asset.uri)?.[1]
+    ?.toLowerCase();
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+  if (extension === 'png') return 'image/png';
+  return null;
+}
+
 function imagenParaEnvio(asset: ImagePicker.ImagePickerAsset): ImagenObservacion {
   // validateImageAsset ya garantizó JPEG o PNG.
-  const mimeType =
-    asset.mimeType?.toLowerCase() === 'image/png' ? 'image/png' : 'image/jpeg';
+  const mimeType = tipoImagen(asset) ?? 'image/jpeg';
   const extension = mimeType === 'image/png' ? 'png' : 'jpg';
   return {
     uri: asset.uri,
@@ -112,11 +131,7 @@ function Opciones({
 }
 
 function validateImageAsset(asset: ImagePicker.ImagePickerAsset) {
-  const mimeType = asset.mimeType?.toLowerCase();
-  const hasValidFormat =
-    mimeType === 'image/jpeg' ||
-    mimeType === 'image/jpg' ||
-    mimeType === 'image/png';
+  const hasValidFormat = tipoImagen(asset) !== null;
   const hasValidSize = Math.max(asset.width, asset.height) >= 1280;
 
   return {
