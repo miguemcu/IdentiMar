@@ -45,3 +45,17 @@ export function formatearFechaEvento(iso: string): string {
   const nombreMes = MESES_ABREV[Number(mes) - 1] ?? mes;
   return `${Number(dia)} ${nombreMes} ${anio}, ${hora}:${minuto}`;
 }
+/**
+ * Convierte una fecha del dispositivo a ISO 8601 con su desfase local,
+ * como pide `fecha_hora_evento`. Ejemplo: "2026-09-20T14:35:00-05:00"
+ */
+export function fechaIsoLocal(fecha: Date): string {
+  const dos = (n: number) => String(Math.trunc(Math.abs(n))).padStart(2, '0');
+  const desfase = -fecha.getTimezoneOffset();
+  const signo = desfase >= 0 ? '+' : '-';
+  return (
+    `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}` +
+    `T${dos(fecha.getHours())}:${dos(fecha.getMinutes())}:${dos(fecha.getSeconds())}` +
+    `${signo}${dos(desfase / 60)}:${dos(desfase % 60)}`
+  );
+}
