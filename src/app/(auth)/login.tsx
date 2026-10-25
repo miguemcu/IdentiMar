@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import { Button, Card, Chip, HeroHeader, Input } from '@/components/ui';
-import { MODO_SIMULADO } from '@/services';
+import { MODO_SIMULADO, erroresAuth } from '@/services';
 
 /** Cuentas del mock para entrar rápido con cada rol (solo con datos simulados). */
 const CUENTAS_PRUEBA = [
@@ -65,9 +65,10 @@ export default function LoginScreen() {
         password,
       });
       // El SessionProvider redirige automáticamente a (tabs)
-    } catch {
-      // 401 CredencialesInvalidas según contrato
-      setErrorGeneral('El correo o la contraseña no coinciden.');
+    } catch (error) {
+      const { general, campos } = erroresAuth(error, 'login');
+      setErrores(campos);
+      setErrorGeneral(general);
     } finally {
       setCargando(false);
     }

@@ -5,14 +5,42 @@ import type {
   LoginResponse,
   UsuarioPublico,
 } from '../../types';
+import { ErrorServicio } from '../errores';
 import { simularRetardo } from './delay';
 import { MOCK_USUARIOS } from './mockData';
+
+/** Correo que el mock trata como ya registrado (409). */
+const CORREO_YA_REGISTRADO = 'ya.registrado@ejemplo.co';
+
+/**
+ * Permite probar los errores del registro sin backend:
+ * EXPO_PUBLIC_MOCK_ERROR = 409 | 400-auth, o el correo ya.registrado@ejemplo.co.
+ */
+function errorRegistroSimulado(correo: string): ErrorServicio | null {
+  const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+  if (forzado === '409' || correo.trim().toLowerCase() === CORREO_YA_REGISTRADO) {
+    return new ErrorServicio(409, {
+      codigo: 'correo-registrado',
+      mensaje: 'El correo ya está registrado.',
+    });
+  }
+  if (forzado === '400-auth') {
+    return new ErrorServicio(400, {
+      codigo: 'validacion-fallida',
+      mensaje: 'Uno o más campos no cumplen las restricciones.',
+      detalles: [{ campo: 'correo', problema: 'Revisa el correo. Debe verse así: nombre@correo.com' }],
+    });
+  }
+  return null;
+}
 
 export class AuthMockService implements IAuthService {
   private usuarioActual: UsuarioPublico = MOCK_USUARIOS.usuario;
 
   async registro(datos: RegistroRequest): Promise<UsuarioPublico> {
     await simularRetardo();
+    const error = errorRegistroSimulado(datos.correo);
+    if (error) throw error;
     const nuevoUsuario: UsuarioPublico = {
       id: `u1a-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       nombre_completo: datos.nombre_completo,
