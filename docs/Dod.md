@@ -42,11 +42,11 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 ## H0. Base técnica
 
-**Estado:** terminado salvo el esqueleto `api` de autenticación y catálogos, los mensajes propios para 400 y 409 en inicio de sesión y registro, y el `refresh_token` en la sesión.
+**Estado:** terminado (Verificado en Expo Go (Android); detalle en [`estado_actual.md`](estado_actual.md)). Falta probar en iOS. El 401 del inicio de sesión tiene mensaje propio, pero el mock no lo puede forzar: se comprueba con la API real en H2.
 
 - [x] Tipos derivados de los schemas del contrato, con nombres de campo en snake_case y enums como union types (`Rol`, `EstadoObservacion`, `DecisionValidacion`).
 - [x] Capa de servicios por dominio (auth, observaciones, catálogos) con implementación `mock`.
-- [ ] Implementación `api` como esqueleto que lanza un error explícito si se activa.
+- [x] Implementación `api` como esqueleto que lanza un error explícito si se activa. Incluye `validarObservacion` y `listarPendientes`. *En Expo Go (Android), con `EXPO_PUBLIC_USE_API=true`: el inicio de sesión muestra un error claro y la app no se cierra. El resto de los esqueletos (observaciones, validación, catálogos) se revisó en código y con `tsc`; no se recorrió en Expo Go porque sin sesión no se llega a esas pantallas.*
 - [x] Selección `mock`/`api` por variable de entorno, sin tocar pantallas.
 - [x] Tokens de Bentos Costero en NativeWind y fuentes Nunito y Source Sans 3 cargadas.
 - [x] Componentes base: `Button`, `Card`, `Input`, `Badge`, `ScreenHeader`, `EstadoBadge`.
@@ -54,8 +54,8 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 - [x] Navegación con grupos `(auth)` y `(tabs)`, tabs Inicio, Registros, Especies y Perfil, y stack para nueva observación.
 - [x] Sesión con usuario y rol. Sin sesión se redirige a login.
 - [x] Login y registro con las validaciones del contrato: nombre (3 a 200 caracteres), correo válido, contraseña (8 a 128), teléfono opcional.
-- [ ] Errores 400, 401 y 409 mostrados con mensajes en español.
-- [ ] El modelo de sesión contempla access token y refresh token.
+- [x] Errores 400, 401 y 409 mostrados con mensajes en español. *Verificado en Expo Go (Android): 409 con `ya.registrado@ejemplo.co` y `EXPO_PUBLIC_MOCK_ERROR=409`, 400 con `400-auth`. El 401 del inicio de sesión queda por comprobar con la API real (H2).*
+- [x] El modelo de sesión contempla access token y refresh token. *Revisado en código y con `tsc`: la sesión guarda `access_token`, `refresh_token` y `expires_in`, y `logout` los borra. En Expo Go (Android), registro, inicio y cierre de sesión siguen funcionando con este modelo; los tokens no se ven en pantalla.*
 - [x] `AGENTS.md`.
 - [x] No hay textos ni datos de `App.tsx` (mockup web) en el código.
 

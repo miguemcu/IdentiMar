@@ -1,8 +1,8 @@
-# Estado actual de la app (22 oct 2026)
+# Estado actual de la app (25 oct 2026)
 
-Resumen de cómo está IdentiMar hoy en la rama `develop` más `feature/identidad-visual`. El avance contra el DoD está marcado en [`Dod.md`](Dod.md); las diferencias con el contrato, en [`discrepancias.md`](discrepancias.md).
+Resumen de cómo está IdentiMar hoy en la rama `develop`, que ya incluye la identidad visual (`style/refactor-identidad-visual`, #15). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); las diferencias con el contrato, en [`discrepancias.md`](discrepancias.md).
 
-- **Datos:** todo funciona con datos simulados (mock). No hay llamadas de red todavía.
+- **Datos:** todo funciona con datos simulados (mock). No hay llamadas de red todavía. Con `EXPO_PUBLIC_USE_API=true` todos los servicios usan los esqueletos API, así que no se puede entrar a la app hasta H2.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit` y `npx expo lint` sin errores; `scripts/probar-servicios.ts` pasa; el bundle de Android (`expo export`) compila.
 
@@ -10,7 +10,7 @@ Resumen de cómo está IdentiMar hoy en la rama `develop` más `feature/identida
 
 ## Lo que puede hacer un usuario hoy
 
-1. **Entrar o crear cuenta.** Con datos simulados, cualquier correo y contraseña válidos entran. Hay cuentas de prueba para cada rol.
+1. **Entrar o crear cuenta.** Con datos simulados, cualquier correo y contraseña válidos entran. Hay cuentas de prueba para cada rol. Al crear cuenta, el Perfil muestra el nombre registrado. Si el correo ya está registrado o un dato no es válido, el mensaje aparece en español junto al campo.
 2. **Inicio.** Saludo, cifras de sus registros (Registros, Identificadas, En revisión), sus últimos registros, una nota para cuando no hay internet en el mar y una raya del catálogo que cambia cada día.
 3. **Registrar una raya en 3 pasos.**
    - **Foto:** cámara o galería. Se valida que sea JPEG o PNG con lado mayor de al menos 1280 px.
@@ -67,9 +67,9 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **H0**
 
-- Esqueleto `api` para autenticación y catálogos (hoy solo existe el de observaciones).
-- Mensajes propios para 400 y 409 en inicio de sesión y registro.
-- Guardar el `refresh_token` en la sesión.
+- ~~Esqueleto `api` para autenticación y catálogos (hoy solo existe el de observaciones).~~ Hecho en `feature/cierre-h0`: esqueletos de auth, catálogos y validación, y `EXPO_PUBLIC_USE_API` cambia todos los dominios a la vez. **Verificado en Expo Go (Android)** con `EXPO_PUBLIC_USE_API=true` y `npx expo start -c`, al iniciar sesión aparece "No pudimos conectarnos en este momento. Inténtalo más tarde." y la app no se cierra. Solo se recorrió en Expo Go el inicio de sesión; el resto de los esqueletos está en código pero no se reviso en Expo Go.
+- ~~Mensajes propios para 400 y 409 en inicio de sesión y registro.~~ Hecho en `feature/cierre-h0`. El contrato solo define 401 para el inicio de sesión; 400 y 409 aplican al registro. **Verificado en Expo Go (Android)** registrarse con `ya.registrado@ejemplo.co` o con `EXPO_PUBLIC_MOCK_ERROR=409` muestra "Ya hay una cuenta con ese correo" y marca el campo correo; con `EXPO_PUBLIC_MOCK_ERROR=400-auth` el error aparece bajo el campo correo; datos inválidos muestran un mensaje por campo. El 401 del inicio de sesión no se puede forzar con el mock: queda para H2.
+- ~~Guardar el `refresh_token` en la sesión.~~ Hecho en `feature/cierre-h0`: la sesión guarda `access_token`, `refresh_token` y `expires_in` en memoria (secure-store llega en H2); al registrarse se inicia sesión con los mismos datos. **Está en el codigo** la sesión guarda los tres valores y `logout` los borra. **En Expo Go (Android)** un registro válido entra a Inicio y el Perfil muestra el nombre registrado; el inicio de sesión entra a Inicio; cerrar sesión vuelve a la pantalla de inicio de sesión.
 
 **H1 (Frentes A, B y validación)**
 
