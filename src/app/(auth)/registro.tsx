@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
+import { erroresAuth } from '@/services';
 import { Button, Card, HeroHeader, Input } from '@/components/ui';
 
 export default function RegistroScreen() {
@@ -75,9 +76,10 @@ export default function RegistroScreen() {
         telefono: telefono.trim() ? telefono.trim() : null,
       });
       // El SessionProvider actualiza el usuario y redirige automáticamente
-    } catch {
-      // 409 según contrato si ya está registrado
-      setErrorGeneral('Ya hay una cuenta con ese correo. Intenta entrar con él.');
+    } catch (error) {
+      const { general, campos } = erroresAuth(error, 'registro');
+      setErrores(campos);
+      setErrorGeneral(general);
     } finally {
       setCargando(false);
     }

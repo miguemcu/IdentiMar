@@ -11,13 +11,24 @@ import type {
   UsuarioPublico,
   Rol,
   LoginRequest,
+  LoginResponse,
   RegistroRequest,
 } from '../types';
+
+/** Tokens de la sesión según LoginResponse. Viven solo en memoria (secure-store llega en H2). */
+interface TokensSesion {
+  access_token: string;
+  refresh_token: string;
+  /** Segundos de vigencia del access token, tal como los entrega el servidor. */
+  expires_in: number;
+}
 
 interface AuthContextType {
   usuario: UsuarioPublico | null;
   rol: Rol | null;
   token: string | null;
+  refreshToken: string | null;
+  expiresIn: number | null;
   isLoading: boolean;
   login: (datos: LoginRequest) => Promise<void>;
   registro: (datos: RegistroRequest) => Promise<void>;
@@ -29,7 +40,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioPublico | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<TokensSesion | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -44,33 +55,43 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     inicializarSesion();
   }, []);
 
+  const guardarSesion = useCallback((resp: LoginResponse) => {
+    setUsuario(resp.usuario);
+    setTokens({
+      access_token: resp.access_token,
+      refresh_token: resp.refresh_token,
+      expires_in: resp.expires_in,
+    });
+  }, []);
+
   const login = useCallback(async (datos: LoginRequest) => {
     setIsLoading(true);
     try {
-      const resp = await authService.login(datos);
-      setUsuario(resp.usuario);
-      setToken(resp.access_token);
+      guardarSesion(await authService.login(datos));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [guardarSesion]);
 
   const registro = useCallback(async (datos: RegistroRequest) => {
     setIsLoading(true);
     try {
-      const nuevo = await authService.registro(datos);
-      setUsuario(nuevo);
-      setToken(`mock-token-${Date.now()}`);
+      // El contrato responde 201 con UsuarioPublico, sin tokens: la sesión
+      // se obtiene iniciando sesión con los mismos datos.
+      await authService.registro(datos);
+      guardarSesion(
+        await authService.login({ correo: datos.correo, password: datos.password }),
+      );
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [guardarSesion]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
       setUsuario(null);
-      setToken(null);
+      setTokens(null);
     } finally {
       setIsLoading(false);
     }
@@ -85,10 +106,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         : nuevoRol === 'administrador'
           ? 'admin@identimar.udea.edu.co'
           : 'ana.torres@ejemplo.co';
-    const resp = await authService.login({ correo, password: 'password123' });
-    setUsuario(resp.usuario);
-    setToken(resp.access_token);
-  }, []);
+    guardarSesion(await authService.login({ correo, password: 'password123' }));
+  }, [guardarSesion]);
 
   // Valor estable: los componentes que usan useAuth solo se actualizan
   // cuando cambia algo de la sesión.
@@ -96,14 +115,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     () => ({
       usuario,
       rol: usuario?.rol ?? null,
-      token,
+      token: tokens?.access_token ?? null,
+      refreshToken: tokens?.refresh_token ?? null,
+      expiresIn: tokens?.expires_in ?? null,
       isLoading,
       login,
       registro,
       logout,
       cambiarRolMock,
     }),
-    [usuario, token, isLoading, login, registro, logout, cambiarRolMock],
+    [usuario, tokens, isLoading, login, registro, logout, cambiarRolMock],
   );
 
   return (
