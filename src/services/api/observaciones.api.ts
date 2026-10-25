@@ -4,12 +4,7 @@ import type {
   ObservacionResumen,
 } from '../../types';
 import type { IObservacionesService } from '../observaciones.service';
-
-function noIntegrada(endpoint: string): Error {
-  return new Error(
-    `[IdentiMar] ${endpoint} aún no está integrado. Usa EXPO_PUBLIC_USE_API=false.`
-  );
-}
+import { noIntegrada } from './no-integrada';
 
 /**
  * Esqueleto de la implementación real (H2). No hace llamadas de red todavía.

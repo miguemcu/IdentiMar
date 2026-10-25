@@ -7,7 +7,10 @@ import { AuthMockService } from './mock/auth.mock';
 import { ObservacionesMockService } from './mock/observaciones.mock';
 import { ValidacionMockService } from './mock/validacion.mock';
 import { CatalogosMockService } from './mock/catalogos.mock';
+import { AuthApiService } from './api/auth.api';
 import { ObservacionesApiService } from './api/observaciones.api';
+import { ValidacionApiService } from './api/validacion.api';
+import { CatalogosApiService } from './api/catalogos.api';
 
 export * from './auth.service';
 export * from './observaciones.service';
@@ -25,20 +28,22 @@ let observacionesServiceInstance: IObservacionesService;
 let validacionServiceInstance: IValidacionService;
 let catalogosServiceInstance: ICatalogosService;
 
-const mockObs = new ObservacionesMockService();
-
 if (USE_API) {
-  // Solo observaciones tiene esqueleto API (lanza error explícito); el resto sigue en mock.
+  // Todos los dominios usan su esqueleto API (lanza error explícito).
   console.warn(
-    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo: observaciones usa el esqueleto API, que aún no está integrado.'
+    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo: los servicios usan los esqueletos API, que aún no están integrados.'
   );
+  authServiceInstance = new AuthApiService();
   observacionesServiceInstance = new ObservacionesApiService();
+  validacionServiceInstance = new ValidacionApiService();
+  catalogosServiceInstance = new CatalogosApiService();
 } else {
+  const mockObs = new ObservacionesMockService();
+  authServiceInstance = new AuthMockService();
   observacionesServiceInstance = mockObs;
+  validacionServiceInstance = new ValidacionMockService(mockObs);
+  catalogosServiceInstance = new CatalogosMockService();
 }
-authServiceInstance = new AuthMockService();
-validacionServiceInstance = new ValidacionMockService(mockObs);
-catalogosServiceInstance = new CatalogosMockService();
 
 export const authService = authServiceInstance;
 export const observacionesService = observacionesServiceInstance;
