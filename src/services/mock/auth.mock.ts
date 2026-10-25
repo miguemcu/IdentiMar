@@ -36,6 +36,8 @@ function errorRegistroSimulado(correo: string): ErrorServicio | null {
 
 export class AuthMockService implements IAuthService {
   private usuarioActual: UsuarioPublico = MOCK_USUARIOS.usuario;
+  /** Cuentas creadas con registro(), por correo, para que login() las reconozca. */
+  private registrados = new Map<string, UsuarioPublico>();
 
   async registro(datos: RegistroRequest): Promise<UsuarioPublico> {
     await simularRetardo();
@@ -50,14 +52,19 @@ export class AuthMockService implements IAuthService {
       creado_en: new Date().toISOString(),
     };
     this.usuarioActual = nuevoUsuario;
+    this.registrados.set(datos.correo.trim().toLowerCase(), nuevoUsuario);
     return nuevoUsuario;
   }
 
   async login(datos: LoginRequest): Promise<LoginResponse> {
     await simularRetardo();
 
+    const registrado = this.registrados.get(datos.correo.trim().toLowerCase());
+
     // Si coincide con correo de experto o admin, asignamos ese rol
-    if (datos.correo.includes('experto') || datos.correo.includes('invemar')) {
+    if (registrado) {
+      this.usuarioActual = registrado;
+    } else if (datos.correo.includes('experto') || datos.correo.includes('invemar')) {
       this.usuarioActual = MOCK_USUARIOS.experto;
     } else if (datos.correo.includes('admin')) {
       this.usuarioActual = MOCK_USUARIOS.administrador;
