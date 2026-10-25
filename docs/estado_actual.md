@@ -71,6 +71,13 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 - ~~Mensajes propios para 400 y 409 en inicio de sesión y registro.~~ Hecho en `feature/cierre-h0`. El contrato solo define 401 para el inicio de sesión; 400 y 409 aplican al registro. **Verificado en Expo Go (Android)** registrarse con `ya.registrado@ejemplo.co` o con `EXPO_PUBLIC_MOCK_ERROR=409` muestra "Ya hay una cuenta con ese correo" y marca el campo correo; con `EXPO_PUBLIC_MOCK_ERROR=400-auth` el error aparece bajo el campo correo; datos inválidos muestran un mensaje por campo. El 401 del inicio de sesión no se puede forzar con el mock: queda para H2.
 - ~~Guardar el `refresh_token` en la sesión.~~ Hecho en `feature/cierre-h0`: la sesión guarda `access_token`, `refresh_token` y `expires_in` en memoria (secure-store llega en H2); al registrarse se inicia sesión con los mismos datos. **Está en el codigo** la sesión guarda los tres valores y `logout` los borra. **En Expo Go (Android)** un registro válido entra a Inicio y el Perfil muestra el nombre registrado; el inicio de sesión entra a Inicio; cerrar sesión vuelve a la pantalla de inicio de sesión.
 
+**H0: Por revisar** (implementado en `feature/cierre-h0`, sin marcar como hecho)
+
+- Esqueletos `api` de observaciones, validación y catálogos: solo comprobados en el código (compilan con `npx tsc --noEmit`), no en Expo Go. Verificar cuando haya sesión con la API real: cada pantalla que los use muestra un error claro y no se cierra.
+- Tokens en memoria (`refresh_token`, `expires_in`): no se ven en pantalla. En Expo Go solo se verificó que registro, inicio y cierre de sesión funcionan. Verificar en H2 que la renovación con `/auth/refresh` usa el `refresh_token` guardado.
+- 401 del inicio de sesión: tiene mensaje ("El correo o la contraseña no coinciden."), pero el mock no lo puede forzar. Verificar con la API real en H2.
+- 400 del inicio de sesión: el contrato no lo define (solo 401). Confirmar con el Equipo 3 si existe; si no, no se maneja.
+
 **H1 (Frentes A, B y validación)**
 
 - Volver a consultar el detalle si la URL firmada de la imagen venció.
