@@ -259,7 +259,7 @@ export default function NuevaObservacionScreen() {
     } catch (error) {
       if (error instanceof ErrorServicio && error.status === 401) {
         Alert.alert('Sesión expirada', mensajeError(error), [
-          { text: 'Iniciar sesión', onPress: () => void logout() },
+          { text: 'Iniciar sesión', onPress: () => void logout('sesion-vencida') },
         ]);
       } else {
         setErrorEnvio(mensajeError(error));

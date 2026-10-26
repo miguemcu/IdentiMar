@@ -332,8 +332,23 @@ export class ObservacionesMockService implements IObservacionesService {
     };
   }
 
+  /** Consultas al detalle por id, para los errores que dependen del número de consulta. */
+  private consultasDetalle = new Map<string, number>();
+
   async obtenerObservacion(id: string): Promise<ObservacionDetalle> {
     await simularRetardo();
+
+    const consulta = (this.consultasDetalle.get(id) ?? 0) + 1;
+    this.consultasDetalle.set(id, consulta);
+
+    // EXPO_PUBLIC_MOCK_ERROR=401-seguimiento: la primera consulta responde y
+    // las siguientes dan 401, como si la sesión venciera durante el seguimiento.
+    if (process.env.EXPO_PUBLIC_MOCK_ERROR === "401-seguimiento" && consulta > 1) {
+      throw new ErrorServicio(401, {
+        codigo: "no-autenticado",
+        mensaje: "Se requiere autenticación para acceder a este recurso.",
+      });
+    }
 
     const obs = this.observaciones.find((o) => o.id === id);
     if (!obs) {
@@ -341,7 +356,19 @@ export class ObservacionesMockService implements IObservacionesService {
     }
 
     // Retorna una copia profunda para evitar mutaciones externas involuntarias
-    return JSON.parse(JSON.stringify(obs));
+    const copia: ObservacionDetalle = JSON.parse(JSON.stringify(obs));
+
+    // EXPO_PUBLIC_MOCK_ERROR=imagen-vencida: la primera consulta de cada registro
+    // trae una ruta local que no existe (como una URL firmada vencida, sin red);
+    // la siguiente trae la foto real. Con imagen-vencida-siempre, nunca carga.
+    const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+    if (
+      (forzado === "imagen-vencida" && consulta === 1) ||
+      forzado === "imagen-vencida-siempre"
+    ) {
+      copia.imagen_url = "file:///identimar-mock/imagen-vencida.jpg";
+    }
+    return copia;
   }
 
   async listarPendientes(
@@ -349,8 +376,24 @@ export class ObservacionesMockService implements IObservacionesService {
   ): Promise<ObservacionesPagina> {
     await simularRetardo();
 
+    // EXPO_PUBLIC_MOCK_ERROR=pendientes | 403-pendientes: la cola falla.
+    const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+    if (forzado === "pendientes") {
+      throw new ErrorServicio(0, { codigo: "sin-conexion", mensaje: "No hay conexión." });
+    }
+    if (forzado === "403-pendientes") {
+      throw new ErrorServicio(403, {
+        codigo: "sin-permiso",
+        mensaje: "No tienes permiso para realizar esta acción.",
+      });
+    }
+
+    // Un rechazo del experto deja la observación en no_concluyente (pregunta
+    // abierta al Equipo 3): sin este filtro volvería a aparecer en la cola.
     const pendientes = this.observaciones.filter(
-      (o) => o.estado === "pendiente_experto" || o.estado === "no_concluyente",
+      (o) =>
+        !o.validacion_experta &&
+        (o.estado === "pendiente_experto" || o.estado === "no_concluyente"),
     );
 
     const pagina = filtros?.pagina ?? 1;
@@ -375,7 +418,20 @@ export class ObservacionesMockService implements IObservacionesService {
   ): ObservacionDetalle {
     const obs = this.observaciones.find((o) => o.id === id);
     if (!obs) {
-      throw new Error(`Observación no encontrada: ${id}`);
+      throw new ErrorServicio(404, {
+        codigo: "recurso-no-encontrado",
+        mensaje: `Observación no encontrada: ${id}`,
+      });
+    }
+    // Como el contrato: solo se valida una vez y en estos dos estados.
+    if (
+      obs.validacion_experta ||
+      (obs.estado !== "pendiente_experto" && obs.estado !== "no_concluyente")
+    ) {
+      throw new ErrorServicio(409, {
+        codigo: "estado-invalido",
+        mensaje: "La observación no está en un estado que admita validación.",
+      });
     }
 
     const estadoAnterior = obs.estado;

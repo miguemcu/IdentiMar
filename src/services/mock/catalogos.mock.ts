@@ -5,6 +5,7 @@ import type {
   CatalogoItem,
   CatalogoEstadoItem,
 } from '../../types';
+import { ErrorServicio } from '../errores';
 import { simularRetardo } from './delay';
 import {
   MOCK_ESPECIES,
@@ -22,6 +23,10 @@ export class CatalogosMockService implements ICatalogosService {
 
   async obtenerFamilias(): Promise<Familia[]> {
     await simularRetardo();
+    // EXPO_PUBLIC_MOCK_ERROR=familias: /catalogos/familias no responde.
+    if (process.env.EXPO_PUBLIC_MOCK_ERROR === 'familias') {
+      throw new ErrorServicio(0, { codigo: 'sin-conexion', mensaje: 'No hay conexión.' });
+    }
     return [...MOCK_FAMILIAS];
   }
 

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import {
   Avatar,
@@ -11,8 +11,13 @@ import {
   Icono,
   StatTile,
 } from '@/components/ui';
-import { MODO_SIMULADO, observacionesService } from '@/services';
-import type { Rol } from '@/types';
+import {
+  authService,
+  ErrorServicio,
+  MODO_SIMULADO,
+  observacionesService,
+} from '@/services';
+import type { Rol, UsuarioPublico } from '@/types';
 
 const ROL_ETIQUETA: Record<Rol, string> = {
   usuario: 'Observador',
@@ -40,8 +45,12 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 }
 
 export default function PerfilScreen() {
+  const router = useRouter();
   const { usuario, rol, logout, cambiarRolMock } = useAuth();
   const [cifras, setCifras] = useState<Cifras | null>(null);
+  // Datos de GET /auth/perfil. Mientras llegan, o si fallan, se usan los de la sesión.
+  const [perfil, setPerfil] = useState<UsuarioPublico | null>(null);
+  const [perfilFallo, setPerfilFallo] = useState(false);
   // Se marca al instante mientras el mock simula la espera de la red.
   const [rolElegido, setRolElegido] = useState<Rol | null>(null);
 
@@ -77,15 +86,35 @@ export default function PerfilScreen() {
     }
   }, []);
 
+  const cargarPerfil = useCallback(async () => {
+    try {
+      setPerfil(await authService.obtenerPerfil());
+      setPerfilFallo(false);
+    } catch (error) {
+      if (error instanceof ErrorServicio && error.status === 401) {
+        void logout('sesion-vencida');
+        return;
+      }
+      setPerfilFallo(true);
+    }
+  }, [logout]);
+
+  // `usuario?.id` en las dependencias: tras cambiar de cuenta o de rol de
+  // prueba se vuelve a pedir el perfil.
+  const usuarioId = usuario?.id;
   useFocusEffect(
     useCallback(() => {
       queueMicrotask(() => {
         void cargarCifras();
+        if (usuarioId) void cargarPerfil();
       });
-    }, [cargarCifras]),
+    }, [cargarCifras, cargarPerfil, usuarioId]),
   );
 
-  const nombre = usuario?.nombre_completo ?? '—';
+  // Solo se usa el perfil si es de la cuenta en sesión.
+  const datos = perfil && perfil.id === usuario?.id ? perfil : usuario;
+  const rolMostrado = datos?.rol ?? rol;
+  const nombre = datos?.nombre_completo ?? '—';
   const esValidador = rol === 'experto' || rol === 'administrador';
   const cifra = (valor: number | undefined) => valor ?? '–';
 
@@ -97,7 +126,7 @@ export default function PerfilScreen() {
       <HeroHeader
         antetitulo="Mi perfil"
         titulo={nombre}
-        subtitulo={ROL_ETIQUETA[rol ?? 'usuario']}
+        subtitulo={ROL_ETIQUETA[rolMostrado ?? 'usuario']}
         derecha={<Avatar nombre={nombre} />}
         conCruce
       />
@@ -109,20 +138,30 @@ export default function PerfilScreen() {
       </Card>
 
       <View className="mt-6 gap-4 px-4">
-        <View className="flex-row items-center gap-4 rounded-3xl bg-slate-deep p-4">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-ocre">
-            <Icono nombre="verificado" size={28} className="text-slate-deep" />
+        <View className="rounded-3xl bg-slate-deep p-4">
+          <View className="flex-row items-center gap-4">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-ocre">
+              <Icono nombre="verificado" size={28} className="text-slate-deep" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-nunito-extrabold text-lg text-white">
+                {esValidador ? 'Eres validador' : '¿Quieres ser experto?'}
+              </Text>
+              <Text className="mt-0.5 font-source text-sm text-white">
+                {esValidador
+                  ? 'Puedes revisar las observaciones que la app no pudo reconocer.'
+                  : 'Para certificarte como experto, comunícate con el administrador de IdentiMar.'}
+              </Text>
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="font-nunito-extrabold text-lg text-white">
-              {esValidador ? 'Eres validador' : '¿Quieres ser experto?'}
-            </Text>
-            <Text className="mt-0.5 font-source text-sm text-white">
-              {esValidador
-                ? 'Puedes revisar las observaciones que la app no pudo reconocer.'
-                : 'Para certificarte como experto, comunícate con el administrador de IdentiMar.'}
-            </Text>
-          </View>
+          {esValidador ? (
+            <Button
+              title="Ver observaciones por validar"
+              variant="secondary"
+              onPress={() => router.push('/validacion/pendientes' as any)}
+              className="mt-4 w-full"
+            />
+          ) : null}
         </View>
 
         <Card>
@@ -133,16 +172,24 @@ export default function PerfilScreen() {
             Información personal
           </Text>
           <Fila etiqueta="Nombre" valor={nombre} />
-          <Fila etiqueta="Correo" valor={usuario?.correo ?? '—'} />
-          <Fila etiqueta="Rol" valor={ROL_ETIQUETA[rol ?? 'usuario']} />
-          {usuario?.creado_en ? (
+          <Fila etiqueta="Correo" valor={datos?.correo ?? '—'} />
+          <Fila etiqueta="Rol" valor={ROL_ETIQUETA[rolMostrado ?? 'usuario']} />
+          {datos?.creado_en ? (
             <Fila
               etiqueta="Desde"
-              valor={new Date(usuario.creado_en).toLocaleDateString('es-CO', {
+              valor={new Date(datos.creado_en).toLocaleDateString('es-CO', {
                 year: 'numeric',
                 month: 'long',
               })}
             />
+          ) : null}
+          {perfilFallo ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              className="mt-3 font-source text-sm text-slate-mid"
+            >
+              No pudimos actualizar tus datos. Se muestran los de tu última sesión.
+            </Text>
           ) : null}
         </Card>
 
@@ -174,7 +221,7 @@ export default function PerfilScreen() {
           title="Cerrar sesión"
           variant="outline"
           leftIcon={<Icono nombre="salir" size={20} className="text-ocean" />}
-          onPress={logout}
+          onPress={() => void logout()}
           accessibilityLabel="Cerrar sesión y volver a la pantalla de inicio de sesión"
         />
       </View>
