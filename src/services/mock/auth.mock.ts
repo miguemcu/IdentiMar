@@ -95,6 +95,17 @@ export class AuthMockService implements IAuthService {
 
   async obtenerPerfil(): Promise<UsuarioPublico> {
     await simularRetardo();
+    // EXPO_PUBLIC_MOCK_ERROR=perfil | 401-perfil: GET /auth/perfil falla.
+    const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+    if (forzado === 'perfil') {
+      throw new ErrorServicio(0, { codigo: 'sin-conexion', mensaje: 'No hay conexión.' });
+    }
+    if (forzado === '401-perfil') {
+      throw new ErrorServicio(401, {
+        codigo: 'no-autenticado',
+        mensaje: 'Se requiere autenticación para acceder a este recurso.',
+      });
+    }
     return this.usuarioActual;
   }
 }
