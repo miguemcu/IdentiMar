@@ -1,4 +1,4 @@
-import { Button, Card, EstadoBadge, ScreenHeader } from '@/components/ui';
+import { Button, Card, EstadoBadge, Input, ScreenHeader } from '@/components/ui';
 import {
     formatearConfianza,
     formatearCoordenadas,
@@ -9,7 +9,6 @@ import {
     catalogosService,
     ErrorServicio,
     mensajeError,
-    MODO_SIMULADO,
     observacionesService,
     validacionService,
 } from '@/services';
@@ -25,6 +24,9 @@ const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
 };
 
 type Estado = 'cargando' | 'listo' | 'error';
+
+/** Máximo de `comentario` en ValidacionInput según el contrato. */
+const MAX_COMENTARIO = 2000;
 
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
@@ -62,10 +64,11 @@ export default function DetalleRegistroScreen() {
   const [fotoReintentada, setFotoReintentada] = useState(false);
   const [fotoFallo, setFotoFallo] = useState(false);
   const [intentoFoto, setIntentoFoto] = useState(0);
-  const [simulando, setSimulando] = useState(false);
-  const [errorSimulacion, setErrorSimulacion] = useState<string | null>(null);
+  const [enviandoDecision, setEnviandoDecision] = useState(false);
+  const [errorDecision, setErrorDecision] = useState<string | null>(null);
   const [especiesCorreccion, setEspeciesCorreccion] = useState<Especie[] | null>(null);
   const [especieElegida, setEspecieElegida] = useState<string | null>(null);
+  const [comentario, setComentario] = useState('');
 
   const cargar = useCallback(async () => {
     // Al recargar un registro ya visible no se vuelve a mostrar el indicador.
@@ -113,10 +116,8 @@ export default function DetalleRegistroScreen() {
 
   const volver = () => router.back();
 
-  // Solo con datos simulados: reemplaza al experto que, con la API real, decide
-  // desde el backend (POST /observaciones/{id}/validacion). La app no valida.
-  const puedeSimularExperto =
-    MODO_SIMULADO &&
+  // El experto registra su decisión con POST /observaciones/{id}/validacion.
+  const puedeValidar =
     (rol === 'experto' || rol === 'administrador') &&
     !obs?.validacion_experta &&
     (obs?.estado === 'pendiente_experto' || obs?.estado === 'no_concluyente');
@@ -125,7 +126,7 @@ export default function DetalleRegistroScreen() {
 
   /** Muestra las rayas del catálogo (GET /catalogos/especies) para elegir la correcta. */
   async function abrirCorreccion() {
-    setErrorSimulacion(null);
+    setErrorDecision(null);
     setEspecieElegida(null);
     try {
       const especies = await catalogosService.obtenerEspecies();
@@ -133,29 +134,30 @@ export default function DetalleRegistroScreen() {
         especies.filter((e) => e.grupo === 'raya' && e.codigo !== codigoPropuesto),
       );
     } catch (error) {
-      setErrorSimulacion(mensajeError(error));
+      setErrorDecision(mensajeError(error));
     }
   }
 
-  async function simularDecision(
+  async function registrarDecision(
     decision: DecisionValidacion,
     especieFinal: string | null,
   ) {
     if (!obs) return;
-    setSimulando(true);
-    setErrorSimulacion(null);
+    setEnviandoDecision(true);
+    setErrorDecision(null);
     try {
       const actualizada = await validacionService.validarObservacion(obs.id, {
         decision,
         especie_final_codigo: especieFinal,
-        comentario: 'Decisión simulada desde la app (modo de prueba).',
+        comentario: comentario.trim() === '' ? null : comentario.trim(),
       });
       setObs(actualizada);
+      setComentario('');
       setEspeciesCorreccion(null);
     } catch (error) {
-      setErrorSimulacion(mensajeError(error));
+      setErrorDecision(mensajeError(error));
     } finally {
-      setSimulando(false);
+      setEnviandoDecision(false);
     }
   }
 
@@ -330,18 +332,31 @@ export default function DetalleRegistroScreen() {
             </Seccion>
           ) : null}
 
-          {puedeSimularExperto ? (
-            <Card className="border-amber-200 bg-amber-50">
-              <Text className="font-nunito-bold text-base text-slate-deep">
-                Simular decisión del experto
+          {puedeValidar ? (
+            <Card>
+              <Text accessibilityRole="header" className="font-nunito-extrabold text-lg text-slate-deep">
+                Tu decisión como experto
               </Text>
               <Text className="font-source text-sm text-slate-mid mt-1">
-                Solo en modo de prueba. Con el servidor real, el experto decide
-                desde el sistema del proyecto.
+                La predicción de la app se conserva aparte; tu decisión queda como la especie final.
               </Text>
-              {errorSimulacion ? (
+              <Input
+                label="Comentario (opcional)"
+                value={comentario}
+                onChangeText={setComentario}
+                maxLength={MAX_COMENTARIO}
+                multiline
+                textAlignVertical="top"
+                className="min-h-[96px]"
+                placeholder="Ej. Coincide con las manchas y la forma del disco"
+                helperText={`${comentario.length} / ${MAX_COMENTARIO}`}
+                accessibilityLabel="Comentario del experto"
+                editable={!enviandoDecision}
+                containerClassName="mt-3 mb-0"
+              />
+              {errorDecision ? (
                 <Text className="font-source text-sm text-danger mt-2">
-                  {errorSimulacion}
+                  {errorDecision}
                 </Text>
               ) : null}
               {especiesCorreccion ? (
@@ -386,15 +401,15 @@ export default function DetalleRegistroScreen() {
                   </View>
                   <Button
                     title="Guardar corrección"
-                    loading={simulando}
+                    loading={enviandoDecision}
                     disabled={!especieElegida}
-                    onPress={() => void simularDecision('corregida', especieElegida)}
+                    onPress={() => void registrarDecision('corregida', especieElegida)}
                     className="mt-3"
                   />
                   <Button
                     title="Cancelar"
                     variant="ghost"
-                    disabled={simulando}
+                    disabled={enviandoDecision}
                     onPress={() => setEspeciesCorreccion(null)}
                     className="mt-2"
                   />
@@ -403,23 +418,23 @@ export default function DetalleRegistroScreen() {
                 <>
                   <Button
                     title="Confirmar especie"
-                    loading={simulando}
+                    loading={enviandoDecision}
                     disabled={!codigoPropuesto}
-                    onPress={() => void simularDecision('confirmada', codigoPropuesto)}
+                    onPress={() => void registrarDecision('confirmada', codigoPropuesto)}
                     className="mt-3"
                   />
                   <Button
                     title="Corregir especie"
                     variant="outline"
-                    disabled={simulando}
+                    disabled={enviandoDecision}
                     onPress={() => void abrirCorreccion()}
                     className="mt-2"
                   />
                   <Button
                     title="No se puede identificar"
                     variant="outline"
-                    disabled={simulando}
-                    onPress={() => void simularDecision('rechazada', null)}
+                    disabled={enviandoDecision}
+                    onPress={() => void registrarDecision('rechazada', null)}
                     className="mt-2"
                   />
                 </>
