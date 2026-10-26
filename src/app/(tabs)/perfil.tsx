@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import {
   Avatar,
@@ -45,6 +45,7 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 }
 
 export default function PerfilScreen() {
+  const router = useRouter();
   const { usuario, rol, logout, cambiarRolMock } = useAuth();
   const [cifras, setCifras] = useState<Cifras | null>(null);
   // Datos de GET /auth/perfil. Mientras llegan, o si fallan, se usan los de la sesión.
@@ -137,20 +138,30 @@ export default function PerfilScreen() {
       </Card>
 
       <View className="mt-6 gap-4 px-4">
-        <View className="flex-row items-center gap-4 rounded-3xl bg-slate-deep p-4">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-ocre">
-            <Icono nombre="verificado" size={28} className="text-slate-deep" />
+        <View className="rounded-3xl bg-slate-deep p-4">
+          <View className="flex-row items-center gap-4">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-ocre">
+              <Icono nombre="verificado" size={28} className="text-slate-deep" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-nunito-extrabold text-lg text-white">
+                {esValidador ? 'Eres validador' : '¿Quieres ser experto?'}
+              </Text>
+              <Text className="mt-0.5 font-source text-sm text-white">
+                {esValidador
+                  ? 'Puedes revisar las observaciones que la app no pudo reconocer.'
+                  : 'Para certificarte como experto, comunícate con el administrador de IdentiMar.'}
+              </Text>
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="font-nunito-extrabold text-lg text-white">
-              {esValidador ? 'Eres validador' : '¿Quieres ser experto?'}
-            </Text>
-            <Text className="mt-0.5 font-source text-sm text-white">
-              {esValidador
-                ? 'Puedes revisar las observaciones que la app no pudo reconocer.'
-                : 'Para certificarte como experto, comunícate con el administrador de IdentiMar.'}
-            </Text>
-          </View>
+          {esValidador ? (
+            <Button
+              title="Ver observaciones por validar"
+              variant="secondary"
+              onPress={() => router.push('/validacion/pendientes' as any)}
+              className="mt-4 w-full"
+            />
+          ) : null}
         </View>
 
         <Card>

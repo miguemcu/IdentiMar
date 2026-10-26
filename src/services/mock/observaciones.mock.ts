@@ -376,6 +376,18 @@ export class ObservacionesMockService implements IObservacionesService {
   ): Promise<ObservacionesPagina> {
     await simularRetardo();
 
+    // EXPO_PUBLIC_MOCK_ERROR=pendientes | 403-pendientes: la cola falla.
+    const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+    if (forzado === "pendientes") {
+      throw new ErrorServicio(0, { codigo: "sin-conexion", mensaje: "No hay conexión." });
+    }
+    if (forzado === "403-pendientes") {
+      throw new ErrorServicio(403, {
+        codigo: "sin-permiso",
+        mensaje: "No tienes permiso para realizar esta acción.",
+      });
+    }
+
     const pendientes = this.observaciones.filter(
       (o) => o.estado === "pendiente_experto" || o.estado === "no_concluyente",
     );
