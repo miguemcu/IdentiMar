@@ -123,32 +123,32 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 - [x] Historial de estados en orden cronológico.
 - [x] Si hay validación experta, se muestra en solo lectura: decisión, especie final y comentario.
 - [x] Al abrir el detalle se consulta de nuevo la API, para que una validación hecha después se vea sin reinstalar ni cerrar la app.
-- [ ] Si la URL firmada de la imagen expiró, se vuelve a consultar el detalle.
+- [x] Si la URL firmada de la imagen expiró, se vuelve a consultar el detalle. *Verificado en Expo Go (Android),  con `EXPO_PUBLIC_MOCK_ERROR=imagen-vencida` (la foto aparece tras reconsultar) e `imagen-vencida-siempre` (mensaje "No pudimos cargar la foto" y botón para reintentar).*
 
 **Especies**
 
 - [x] Lista desde `/catalogos/especies`, filtrada a `grupo: raya`.
 - [x] Búsqueda por nombre común o científico, en el cliente.
-- [ ] Ficha con nombre común, nombre científico, código, familia (desde `/catalogos/familias`), descripción e imagen de referencia (`url_imagen_referencia`).
+- [x] Ficha con nombre común, nombre científico, código, familia (desde `/catalogos/familias`), descripción e imagen de referencia (`url_imagen_referencia`). *Verificado en Expo Go (Android), 25 oct 2026. Con `EXPO_PUBLIC_MOCK_ERROR=familias` la ficha no se rompe y usa la familia que trae la especie. En el mock ambas fuentes dan el mismo dato, así que no se distingue de cuál sale.*
 - [x] Identificadores UUID, nunca numéricos.
 
 ### Perfil (Frente C reducido)
 
-- [ ] Muestra los datos del usuario en sesión (`GET /auth/perfil`) y su rol.
+- [x] Muestra los datos del usuario en sesión (`GET /auth/perfil`) y su rol. *Verificado en Expo Go (Android), 25 oct 2026: cambia con la cuenta y el rol de prueba; con `perfil` muestra los datos de la sesión y una nota; con `401-perfil` lleva a inicio de sesión con aviso.*
 - [x] Nota visible: "Para certificarte como experto, comunícate con el administrador de IdentiMar." Sin formulario ni flujo de solicitud.
 - [x] Cierre de sesión.
 
 ### Validación experta (rol `experto` o `administrador`)
 
-- [ ] Cola "Por validar" desde `GET /observaciones/pendientes`, visible solo para `experto` y `administrador`. Con la API real es la única forma de llegar a observaciones de otros usuarios, porque `GET /observaciones` solo devuelve las propias.
+- [x] Cola "Por validar" desde `GET /observaciones/pendientes`, visible solo para `experto` y `administrador`. Con la API real es la única forma de llegar a observaciones de otros usuarios, porque `GET /observaciones` solo devuelve las propias. *Verificado en Expo Go (Android), 25 oct 2026: botón en Perfil solo para experto y administrador; la observación validada (confirmada, corregida o rechazada) sale de la cola; estados vacío, error (`pendientes`) y sin permiso (`403-pendientes`). No verificado: que un observador que llegue por la ruta directa vea "Esta sección es para expertos".*
 - [x] Desde el detalle, el experto registra su decisión con `POST /observaciones/{id}/validacion`:
   - Confirmar la especie propuesta (`confirmada`).
   - Corregirla eligiendo otra de `/catalogos/especies`, filtrada a `grupo: raya` (`corregida`).
   - Marcar "No se puede identificar" (`rechazada`, con `especie_final_codigo` nulo).
-- [ ] Comentario opcional, máximo 2000 caracteres.
+- [x] Comentario opcional, máximo 2000 caracteres. *Verificado en Expo Go (Android), 25 oct 2026: se edita antes de enviar, con contador, y se ve en la validación y en el historial. No se puede editar después de enviado: el contrato no tiene endpoint para actualizar una validación.*
 - [x] Los controles solo aparecen si la observación está en `pendiente_experto` o `no_concluyente` y aún no tiene validación.
 - [x] La predicción original se muestra aparte y nunca se sobrescribe.
-- [ ] Errores 403 y 409 con mensajes en español.
+- [x] Errores 403 y 409 con mensajes en español. *Verificado en Expo Go (Android),  con `403-validacion` y `409-validacion`. No verificados en pantalla: el 409 real (validar dos veces; los controles se ocultan antes), el 404 y el 400.*
 - [x] En modo simulado, el cambio de rol del perfil permite probar todo el flujo.
 
 ### Transversal H1

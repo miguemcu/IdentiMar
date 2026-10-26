@@ -20,11 +20,13 @@ Resumen de cómo está IdentiMar hoy en la rama `develop`, que ya incluye la ide
    - **Identificado:** especie y qué tan segura está la app, como sugerencia.
    - **En revisión por un experto:** sin porcentaje.
    - **No se pudo identificar:** con opción de tomar otra foto.
-5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app, validación del experto (si la hay) e historial.
-6. **Consultar el catálogo de especies** (solo rayas) con buscador y ficha.
-7. **Perfil:** datos, rol, cifras, nota para certificarse como experto y cerrar sesión.
+5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app, validación del experto (si la hay) e historial. Si la foto no carga, el detalle se vuelve a pedir una vez y, si sigue fallando, se ofrece reintentar.
+6. **Consultar el catálogo de especies** (solo rayas) con buscador y ficha con código y familia.
+7. **Perfil:** datos (desde `GET /auth/perfil`; si falla, los de la sesión), rol, cifras, nota para certificarse como experto y cerrar sesión.
 
-**Experto o administrador:** desde el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar". Por ahora solo aparece con datos simulados.
+Si la sesión vence (401) al seguir el resultado, en el detalle, en el perfil o en la cola, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
+
+**Experto o administrador:** desde Perfil abre la cola "Por validar". En el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar", con un comentario opcional (máximo 2000 caracteres). El comentario no se puede editar después de enviado. Los controles ya no dependen del modo simulado; con `EXPO_PUBLIC_USE_API=true` no se puede entrar a la app hasta H2.
 
 ---
 
@@ -39,8 +41,18 @@ npx expo start -c
 | Variable                     | Valores                                                         | Para qué                                               |
 | ---------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
 | `EXPO_PUBLIC_USE_API`        | `false` (por defecto) · `true`                                  | `true` usa el esqueleto de la API, que aún lanza error |
-| `EXPO_PUBLIC_MOCK_ERROR`     | vacío · `400` · `401` · `413` · `red`                           | Fuerza un error al enviar una observación              |
+| `EXPO_PUBLIC_MOCK_ERROR`     | vacío · ver la lista de abajo                                   | Fuerza un error en el mock                             |
 | `EXPO_PUBLIC_MOCK_RESULTADO` | vacío · `identificado` · `pendiente_experto` · `no_concluyente` | Fuerza el resultado de la identificación               |
+
+Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiarlo):
+
+- **Enviar observación:** `400` · `401` · `413` · `red`
+- **Registro:** `409` · `400-auth` (el correo `ya.registrado@ejemplo.co` siempre da 409)
+- **Seguimiento y detalle:** `401-seguimiento` (la segunda consulta del detalle da 401) · `imagen-vencida` (la primera consulta de cada registro trae una foto que no carga) · `imagen-vencida-siempre`
+- **Ficha de especie:** `familias`
+- **Perfil:** `perfil` · `401-perfil`
+- **Cola "Por validar":** `pendientes` · `403-pendientes`
+- **Validación experta:** `403-validacion` · `409-validacion`
 
 Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, se cambia a **Experto** en Perfil y se valida desde el detalle. Los datos simulados viven en memoria: al recargar la app se pierden las observaciones nuevas.
 
@@ -50,7 +62,7 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 | Carpeta              | Contenido                                                                                                                               |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/`           | Rutas (Expo Router): `(auth)`, `(tabs)`, `nueva-observacion`, `observaciones/[id]`, `observaciones/resultado/[id]`, `especies/[id]`     |
+| `src/app/`           | Rutas (Expo Router): `(auth)`, `(tabs)`, `nueva-observacion`, `observaciones/[id]`, `observaciones/resultado/[id]`, `especies/[id]`, `validacion/pendientes` |
 | `src/components/ui/` | Componentes de la identidad visual: `HeroHeader`, `ActionCard`, `StatTile`, `Chip`, `Icono`, `Avatar`, `Card`, `Button`, `EstadoBadge`… |
 | `src/services/`      | Interfaces por dominio, implementación `mock/` y esqueleto `api/`. Las pantallas solo usan esta capa                                    |
 | `src/hooks/`         | `useSeguimientoObservacion` (consulta el estado con esperas crecientes) y `useResumenRegistros`                                         |
@@ -78,14 +90,21 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 - 401 del inicio de sesión: tiene mensaje ("El correo o la contraseña no coinciden."), pero el mock no lo puede forzar. Verificar con la API real en H2.
 - 400 del inicio de sesión: el contrato no lo define (solo 401). Confirmar con el Equipo 3 si existe; si no, no se maneja.
 
-**H1 (Frentes A, B y validación)**
+**H1 (Frentes A, B y validación)**, implementado en `feature/h1-pendientes`
 
-- Volver a consultar el detalle si la URL firmada de la imagen venció.
-- Ficha de especie con `código` y familia desde `/catalogos/familias`.
-- Perfil con `GET /auth/perfil`.
-- Cola "Por validar" (`GET /observaciones/pendientes`): con la API real es la única forma de que el experto vea observaciones de otros usuarios.
-- Comentario editable del experto y mensajes para 403 y 409.
-- Un 401 durante el seguimiento del resultado solo muestra el mensaje; no lleva a inicio de sesión.
+- ~~Volver a consultar el detalle si la URL firmada de la imagen venció.~~ **Verificado en Expo Go (Android):** con `imagen-vencida` la foto aparece tras reconsultar; con `imagen-vencida-siempre` aparece "No pudimos cargar la foto" y el botón para reintentar repite el ciclo sin cerrar la app.
+- ~~Ficha de especie con `código` y familia desde `/catalogos/familias`.~~ **Verificado en Expo Go (Android):** la tarjeta "Clasificación" muestra código, familia y su descripción; con `familias` la ficha no se rompe.
+- ~~Perfil con `GET /auth/perfil`.~~ **Verificado en Expo Go (Android):** los datos cambian con la cuenta y el rol de prueba; con `perfil` se ve la nota "No pudimos actualizar tus datos"; con `401-perfil` vuelve a inicio de sesión con aviso.
+- ~~Cola "Por validar" (`GET /observaciones/pendientes`): con la API real es la única forma de que el experto vea observaciones de otros usuarios.~~ **Verificado en Expo Go (Android):** botón en Perfil solo para experto y administrador; las observaciones validadas salen de la cola; estados vacío, error y sin permiso.
+- ~~Comentario editable del experto y mensajes para 403 y 409.~~ **Verificado en Expo Go (Android):** comentario con contador y límite de 2000, visible en la validación y el historial; mensajes de 403 y 409 con `403-validacion` y `409-validacion`.
+- ~~Un 401 durante el seguimiento del resultado solo muestra el mensaje; no lleva a inicio de sesión.~~ **Verificado en Expo Go (Android):** con `401-seguimiento`, Resultado y el detalle vuelven a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."; el aviso desaparece al entrar de nuevo.
+
+**H1: Por revisar** (sin marcar como hecho)
+
+- Cola "Por validar": que un observador que llegue por la ruta directa vea "Esta sección es para expertos". Desde la interfaz no se puede llegar.
+- Validación: el 409 real (los controles se ocultan antes de poder validar dos veces), la tarjeta roja que aparece cuando el 409 recarga una observación ya validada, el 404 y el 400. No hay valor para forzarlos.
+- Controles del experto, perfil y ficha con `EXPO_PUBLIC_USE_API=true`: no se puede entrar a la app hasta H2.
+- Ficha y perfil: en el mock la familia y el perfil traen el mismo dato por las dos vías; solo se verificó que los flujos no se rompen.
 
 **Offline (parte 1)**
 
@@ -99,6 +118,8 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 ## Preguntas abiertas para el Equipo 3
 
-- A qué estado pasa una observación cuando el experto la rechaza (`rechazada`). El mock la deja en `no_concluyente`.
+- A qué estado pasa una observación cuando el experto la rechaza (`rechazada`). El mock la deja en `no_concluyente` y la saca de la cola "Por validar"; confirmar que el backend también la saca.
+- No hay endpoint para editar o borrar una validación (solo `POST`, que responde 409 si ya existe). Si el experto necesita corregir su comentario o su decisión, hay que definirlo.
 - Los catálogos de ambiente y condición usan los códigos del DoD; el contrato no los enumera.
 - La respuesta del modelo trae `umbral_minimo` y `tiempo_inferencia_ms`, que no están en el contrato, y la especie como nombre científico (`Hypanus_guttatus`) en vez de `codigo`.
+- Habrá forma de editar una validación experta ya enviada? El contrato solo tiene `POST /observaciones/{id}/validacion` (409 si ya existe), así que el comentario y la decisión no se pueden corregir.

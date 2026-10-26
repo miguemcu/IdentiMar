@@ -32,7 +32,7 @@ Comparación entre el mockup de Figma (`docs/mockup/`) y el contrato OpenAPI del
 | #   | Tema                    | Mockup                                              | Contrato                                                                                  | Acción en la app                                                | Estado    |
 | --- | ----------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------- |
 | 12  | Decisión del experto    | "Porcentaje de validación"                          | `decision` (`confirmada`, `corregida`, `rechazada`), `especie_final_codigo`, `comentario` | Rediseñar esa parte; el porcentaje no existe en el contrato     | pendiente |
-| 13  | Cola de pendientes      | "Como experto puedes validar cualquier observación" | Cola dedicada (`/observaciones/pendientes`, solo experto o administrador)                 | Definir cómo llega el experto a la cola                         | pendiente |
+| 13  | Cola de pendientes      | "Como experto puedes validar cualquier observación" | Cola dedicada (`/observaciones/pendientes`, solo experto o administrador)                 | Cola "Por validar" desde Perfil, solo para experto y administrador | resuelto en la app |
 | 14  | Conservar la predicción | No contemplado                                      | La predicción original del modelo no se sobrescribe                                       | Mostrar predicción original y decisión del experto por separado | pendiente |
 | 15  | Rechazo                 | No contemplado                                      | `rechazada` con `especie_final_codigo` nulo                                               | Agregar la opción "No se puede identificar"                     | pendiente |
 
@@ -69,6 +69,7 @@ Comparación entre el mockup de Figma (`docs/mockup/`) y el contrato OpenAPI del
 - Habrá un listado de observaciones de otros usuarios para la pestaña "Todos"?
 - Contemplamos la posibilidad de registrar observaciones / consultar otras sin necesidad de crear una cuenta?
   - Esto sería muy útil para pescadores que poco y nada conocen acerca de sesiones y cuentas.
+- Habrá forma de editar una validación experta ya enviada? El contrato solo tiene `POST /observaciones/{id}/validacion` (409 si ya existe), así que el comentario y la decisión no se pueden corregir.
 - Recordemos que el alcance se limitó solo a tiburones, la variable `grupo` no tiene sentido en nuestro caso.
 
 Todo esto tambien hay que ver como lo ha contemplado el equipo de Visión Artificial, hay que encontrar un equilibrio entre lo que le sirve al usuario y lo que le sirve al modelo para dar buenas clasificaciones.
