@@ -1,6 +1,6 @@
 import { Button, Card, ScreenHeader } from '@/components/ui';
 import { catalogosService } from '@/services';
-import type { Especie } from '@/types';
+import type { Especie, Familia } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
@@ -12,16 +12,27 @@ export default function FichaEspecieScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [especie, setEspecie] = useState<Especie | null>(null);
+  const [familia, setFamilia] = useState<Familia | null>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
 
   // El contrato no tiene endpoint por especie: se busca en el catálogo completo
   const cargar = useCallback(async () => {
     setEstado('cargando');
     try {
-      const lista = await catalogosService.obtenerEspecies();
+      // Las familias completan la ficha (descripción); si fallan, se usa la
+      // familia que ya trae la especie.
+      const [lista, familias] = await Promise.all([
+        catalogosService.obtenerEspecies(),
+        catalogosService.obtenerFamilias().catch(() => null),
+      ]);
       const encontrada = lista.find((e) => e.id === id);
       if (encontrada) {
         setEspecie(encontrada);
+        setFamilia(
+          familias?.find((f) => f.id === encontrada.familia?.id) ??
+            encontrada.familia ??
+            null,
+        );
         setEstado('listo');
       } else {
         setEstado('no_encontrada');
@@ -89,11 +100,29 @@ export default function FichaEspecieScreen() {
             <Text className="font-source text-base italic text-slate-mid mt-0.5">
               {especie.nombre_cientifico}
             </Text>
-            {especie.familia ? (
-              <Text className="font-source text-sm text-slate-mid mt-2">
-                Familia {especie.familia.nombre_cientifico}
+          </Card>
+
+          <Card>
+            <Text className="font-nunito-bold text-base text-slate-deep mb-1">
+              Clasificación
+            </Text>
+            <View className="py-2 border-b border-slate-light/20">
+              <Text className="font-nunito-bold text-sm text-slate-mid">Código</Text>
+              <Text className="font-source text-base text-slate-deep mt-0.5">
+                {especie.codigo}
               </Text>
-            ) : null}
+            </View>
+            <View className="py-2">
+              <Text className="font-nunito-bold text-sm text-slate-mid">Familia</Text>
+              <Text className="font-source text-base text-slate-deep mt-0.5">
+                {familia?.nombre_cientifico ?? 'Sin familia registrada'}
+              </Text>
+              {familia?.descripcion ? (
+                <Text className="font-source text-sm text-slate-mid mt-0.5">
+                  {familia.descripcion}
+                </Text>
+              ) : null}
+            </View>
           </Card>
 
           {especie.descripcion ? (
