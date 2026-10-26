@@ -174,7 +174,7 @@ export default function PerfilScreen() {
           title="Cerrar sesión"
           variant="outline"
           leftIcon={<Icono nombre="salir" size={20} className="text-ocean" />}
-          onPress={logout}
+          onPress={() => void logout()}
           accessibilityLabel="Cerrar sesión y volver a la pantalla de inicio de sesión"
         />
       </View>

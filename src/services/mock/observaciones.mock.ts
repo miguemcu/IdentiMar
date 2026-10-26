@@ -332,8 +332,23 @@ export class ObservacionesMockService implements IObservacionesService {
     };
   }
 
+  /** Consultas al detalle por id, para los errores que dependen del número de consulta. */
+  private consultasDetalle = new Map<string, number>();
+
   async obtenerObservacion(id: string): Promise<ObservacionDetalle> {
     await simularRetardo();
+
+    const consulta = (this.consultasDetalle.get(id) ?? 0) + 1;
+    this.consultasDetalle.set(id, consulta);
+
+    // EXPO_PUBLIC_MOCK_ERROR=401-seguimiento: la primera consulta responde y
+    // las siguientes dan 401, como si la sesión venciera durante el seguimiento.
+    if (process.env.EXPO_PUBLIC_MOCK_ERROR === "401-seguimiento" && consulta > 1) {
+      throw new ErrorServicio(401, {
+        codigo: "no-autenticado",
+        mensaje: "Se requiere autenticación para acceder a este recurso.",
+      });
+    }
 
     const obs = this.observaciones.find((o) => o.id === id);
     if (!obs) {

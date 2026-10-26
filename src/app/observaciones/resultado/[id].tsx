@@ -1,4 +1,5 @@
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -14,7 +15,8 @@ import {
   estaEnCurso,
   useSeguimientoObservacion,
 } from '@/hooks/use-seguimiento-observacion';
-import { mensajeError } from '@/services';
+import { ErrorServicio, mensajeError } from '@/services';
+import { useAuth } from '@/contexts/auth-context';
 import type { EstadoObservacion, ObservacionDetalle } from '@/types';
 
 /** Ícono y fondo que acompañan al texto de cada resultado (nunca solo color). */
@@ -129,6 +131,14 @@ export default function ResultadoObservacionScreen() {
     useSeguimientoObservacion(id);
 
   const enCurso = !obs || estaEnCurso(obs.estado);
+
+  // 401 durante el seguimiento: la sesión venció. La observación ya se envió,
+  // así que no hay nada que perder; se vuelve a inicio de sesión con un aviso.
+  const { logout } = useAuth();
+  const sesionVencida = error instanceof ErrorServicio && error.status === 401;
+  useEffect(() => {
+    if (sesionVencida) void logout('sesion-vencida');
+  }, [sesionVencida, logout]);
 
   return (
     <View className="flex-1 bg-surface">

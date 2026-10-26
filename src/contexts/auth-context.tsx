@@ -23,6 +23,13 @@ interface TokensSesion {
   expires_in: number;
 }
 
+/** Por qué se cerró la sesión sin que el usuario lo pidiera. */
+export type MotivoCierre = 'sesion-vencida';
+
+const AVISO_CIERRE: Record<MotivoCierre, string> = {
+  'sesion-vencida': 'Tu sesión venció, vuelve a entrar.',
+};
+
 interface AuthContextType {
   usuario: UsuarioPublico | null;
   rol: Rol | null;
@@ -30,9 +37,11 @@ interface AuthContextType {
   refreshToken: string | null;
   expiresIn: number | null;
   isLoading: boolean;
+  /** Aviso para la pantalla de inicio de sesión tras un cierre automático. */
+  avisoSesion: string | null;
   login: (datos: LoginRequest) => Promise<void>;
   registro: (datos: RegistroRequest) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (motivo?: MotivoCierre) => Promise<void>;
   cambiarRolMock: (rol: Rol) => Promise<void>;
 }
 
@@ -42,6 +51,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioPublico | null>(null);
   const [tokens, setTokens] = useState<TokensSesion | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [avisoSesion, setAvisoSesion] = useState<string | null>(null);
 
   useEffect(() => {
     // Inicialización de sesión simulada
@@ -66,6 +76,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (datos: LoginRequest) => {
     setIsLoading(true);
+    setAvisoSesion(null);
     try {
       guardarSesion(await authService.login(datos));
     } finally {
@@ -87,9 +98,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [guardarSesion]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (motivo?: MotivoCierre) => {
     setIsLoading(true);
     try {
+      setAvisoSesion(motivo ? AVISO_CIERRE[motivo] : null);
       setUsuario(null);
       setTokens(null);
     } finally {
@@ -119,12 +131,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       refreshToken: tokens?.refresh_token ?? null,
       expiresIn: tokens?.expires_in ?? null,
       isLoading,
+      avisoSesion,
       login,
       registro,
       logout,
       cambiarRolMock,
     }),
-    [usuario, tokens, isLoading, login, registro, logout, cambiarRolMock],
+    [usuario, tokens, isLoading, avisoSesion, login, registro, logout, cambiarRolMock],
   );
 
   return (

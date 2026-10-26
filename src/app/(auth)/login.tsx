@@ -21,7 +21,7 @@ const CUENTAS_PRUEBA = [
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, avisoSesion } = useAuth();
 
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -104,6 +104,17 @@ export default function LoginScreen() {
           >
             Entrar
           </Text>
+
+          {avisoSesion && !errorGeneral ? (
+            <View className="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-3">
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-source text-sm text-slate-deep"
+              >
+                {avisoSesion}
+              </Text>
+            </View>
+          ) : null}
 
           {errorGeneral ? (
             <View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
