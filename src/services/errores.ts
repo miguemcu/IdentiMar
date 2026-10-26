@@ -100,3 +100,46 @@ export function erroresAuth(error: unknown, flujo: 'login' | 'registro'): Errore
       return { general: mensajeError(error), campos: {} };
   }
 }
+
+export interface ErrorValidacion {
+  mensaje: string;
+  /** 409: la observación cambió; conviene volver a pedir el detalle. */
+  recargar: boolean;
+  /** 401: hay que volver a iniciar sesión. */
+  sesionVencida: boolean;
+}
+
+/**
+ * Traduce un error de POST /observaciones/{id}/validacion a un mensaje en español.
+ * El contrato define 400, 401, 403, 404 y 409.
+ */
+export function erroresValidacion(error: unknown): ErrorValidacion {
+  const resultado = (mensaje: string, extra: Partial<ErrorValidacion> = {}) => ({
+    mensaje,
+    recargar: false,
+    sesionVencida: false,
+    ...extra,
+  });
+
+  if (!(error instanceof ErrorServicio)) {
+    return resultado('No pudimos guardar tu decisión en este momento. Inténtalo más tarde.');
+  }
+
+  switch (error.status) {
+    case 400:
+      return resultado('Revisa el comentario o la especie elegida e inténtalo de nuevo.');
+    case 401:
+      return resultado(mensajeError(error), { sesionVencida: true });
+    case 403:
+      return resultado('No tienes permiso para validar observaciones.');
+    case 404:
+      return resultado('No encontramos esta observación. Puede que ya no exista.');
+    case 409:
+      return resultado(
+        'Esta observación ya no se puede validar: puede que otro experto ya la haya revisado.',
+        { recargar: true },
+      );
+    default:
+      return resultado(mensajeError(error));
+  }
+}

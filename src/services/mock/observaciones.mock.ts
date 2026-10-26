@@ -414,7 +414,20 @@ export class ObservacionesMockService implements IObservacionesService {
   ): ObservacionDetalle {
     const obs = this.observaciones.find((o) => o.id === id);
     if (!obs) {
-      throw new Error(`Observación no encontrada: ${id}`);
+      throw new ErrorServicio(404, {
+        codigo: "recurso-no-encontrado",
+        mensaje: `Observación no encontrada: ${id}`,
+      });
+    }
+    // Como el contrato: solo se valida una vez y en estos dos estados.
+    if (
+      obs.validacion_experta ||
+      (obs.estado !== "pendiente_experto" && obs.estado !== "no_concluyente")
+    ) {
+      throw new ErrorServicio(409, {
+        codigo: "estado-invalido",
+        mensaje: "La observación no está en un estado que admita validación.",
+      });
     }
 
     const estadoAnterior = obs.estado;

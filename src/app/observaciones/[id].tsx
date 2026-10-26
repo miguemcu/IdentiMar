@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context';
 import {
     catalogosService,
     ErrorServicio,
+    erroresValidacion,
     mensajeError,
     observacionesService,
     validacionService,
@@ -155,7 +156,14 @@ export default function DetalleRegistroScreen() {
       setComentario('');
       setEspeciesCorreccion(null);
     } catch (error) {
-      setErrorDecision(mensajeError(error));
+      const { mensaje, recargar, sesionVencida } = erroresValidacion(error);
+      if (sesionVencida) {
+        void logout('sesion-vencida');
+        return;
+      }
+      setErrorDecision(mensaje);
+      // 409: se vuelve a pedir el detalle para mostrar su estado actual.
+      if (recargar) void cargar();
     } finally {
       setEnviandoDecision(false);
     }
@@ -330,6 +338,14 @@ export default function DetalleRegistroScreen() {
                 <Vacio texto="Un experto revisará esta foto porque la app no pudo reconocer la especie." />
               )}
             </Seccion>
+          ) : null}
+
+          {!puedeValidar && errorDecision ? (
+            <Card className="border-red-200 bg-red-50">
+              <Text accessibilityLiveRegion="polite" className="font-source text-sm text-danger">
+                {errorDecision}
+              </Text>
+            </Card>
           ) : null}
 
           {puedeValidar ? (
