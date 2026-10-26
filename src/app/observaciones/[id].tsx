@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import {
     catalogosService,
+    ErrorServicio,
     mensajeError,
     MODO_SIMULADO,
     observacionesService,
@@ -55,7 +56,12 @@ export default function DetalleRegistroScreen() {
 
   const [obs, setObs] = useState<ObservacionDetalle | null>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
-  const { rol } = useAuth();
+  const { rol, logout } = useAuth();
+  // La URL de la imagen es firmada y temporal: si falla, se pide el detalle de
+  // nuevo una sola vez. `intentoFoto` vuelve a montar la imagen al reintentar.
+  const [fotoReintentada, setFotoReintentada] = useState(false);
+  const [fotoFallo, setFotoFallo] = useState(false);
+  const [intentoFoto, setIntentoFoto] = useState(0);
   const [simulando, setSimulando] = useState(false);
   const [errorSimulacion, setErrorSimulacion] = useState<string | null>(null);
   const [especiesCorreccion, setEspeciesCorreccion] = useState<Especie[] | null>(null);
@@ -68,10 +74,32 @@ export default function DetalleRegistroScreen() {
       const detalle = await observacionesService.obtenerObservacion(id);
       setObs(detalle);
       setEstado('listo');
-    } catch {
+    } catch (error) {
+      if (error instanceof ErrorServicio && error.status === 401) {
+        void logout('sesion-vencida');
+        return;
+      }
       setEstado('error');
     }
-  }, [id]);
+  }, [id, logout]);
+
+  async function alFallarFoto() {
+    if (fotoReintentada) {
+      setFotoFallo(true);
+      return;
+    }
+    setFotoReintentada(true);
+    await cargar();
+    // Se vuelve a montar la imagen solo cuando llega el detalle nuevo: si la
+    // URL es la misma, sin esto la imagen no se recarga y no vuelve a fallar.
+    setIntentoFoto((n) => n + 1);
+  }
+
+  // Al mostrar de nuevo la imagen, esta se monta y repite el ciclo completo.
+  function reintentarFoto() {
+    setFotoFallo(false);
+    setFotoReintentada(false);
+  }
 
   // Se consulta de nuevo cada vez que la pantalla vuelve a estar visible, para
   // que una validación hecha después aparezca sin reiniciar la app.
@@ -157,11 +185,26 @@ export default function DetalleRegistroScreen() {
 
       {estado === 'listo' && obs ? (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
-          {obs.imagen_url ? (
+          {obs.imagen_url && fotoFallo ? (
+            <View className="w-full h-64 rounded-3xl bg-slate-light/20 items-center justify-center p-6">
+              <Text className="font-nunito-bold text-base text-slate-deep text-center">
+                No pudimos cargar la foto
+              </Text>
+              <Text className="font-source text-sm text-slate-mid text-center mt-1">
+                Revisa que tengas internet e inténtalo de nuevo.
+              </Text>
+              <View className="w-full mt-4">
+                <Button title="Volver a cargar la foto" variant="outline" onPress={reintentarFoto} />
+              </View>
+            </View>
+          ) : obs.imagen_url ? (
             <Image
+              key={`${obs.imagen_url}-${intentoFoto}`}
               source={{ uri: obs.imagen_url }}
               className="w-full h-64 rounded-3xl bg-slate-light/20"
               resizeMode="cover"
+              onError={() => void alFallarFoto()}
+              accessibilityLabel="Foto del registro"
             />
           ) : null}
 

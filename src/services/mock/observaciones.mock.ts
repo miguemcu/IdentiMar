@@ -356,7 +356,19 @@ export class ObservacionesMockService implements IObservacionesService {
     }
 
     // Retorna una copia profunda para evitar mutaciones externas involuntarias
-    return JSON.parse(JSON.stringify(obs));
+    const copia: ObservacionDetalle = JSON.parse(JSON.stringify(obs));
+
+    // EXPO_PUBLIC_MOCK_ERROR=imagen-vencida: la primera consulta de cada registro
+    // trae una ruta local que no existe (como una URL firmada vencida, sin red);
+    // la siguiente trae la foto real. Con imagen-vencida-siempre, nunca carga.
+    const forzado = process.env.EXPO_PUBLIC_MOCK_ERROR;
+    if (
+      (forzado === "imagen-vencida" && consulta === 1) ||
+      forzado === "imagen-vencida-siempre"
+    ) {
+      copia.imagen_url = "file:///identimar-mock/imagen-vencida.jpg";
+    }
+    return copia;
   }
 
   async listarPendientes(
