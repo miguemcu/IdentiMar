@@ -388,8 +388,12 @@ export class ObservacionesMockService implements IObservacionesService {
       });
     }
 
+    // Un rechazo del experto deja la observación en no_concluyente (pregunta
+    // abierta al Equipo 3): sin este filtro volvería a aparecer en la cola.
     const pendientes = this.observaciones.filter(
-      (o) => o.estado === "pendiente_experto" || o.estado === "no_concluyente",
+      (o) =>
+        !o.validacion_experta &&
+        (o.estado === "pendiente_experto" || o.estado === "no_concluyente"),
     );
 
     const pagina = filtros?.pagina ?? 1;
