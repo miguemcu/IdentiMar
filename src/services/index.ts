@@ -28,10 +28,8 @@ let validacionServiceInstance: IValidacionService;
 let catalogosServiceInstance: ICatalogosService;
 
 if (USE_API) {
-  // Todos los dominios usan su esqueleto API (lanza error explícito).
-  console.warn(
-    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo: los servicios usan los esqueletos API, que aún no están integrados.'
-  );
+  // Todos los dominios usan la API real. La validación experta aún es un
+  // esqueleto que lanza error (paso 6 de docs/plan_integracion.md).
   authServiceInstance = new AuthApiService();
   observacionesServiceInstance = new ObservacionesApiService();
   validacionServiceInstance = new ValidacionApiService();
