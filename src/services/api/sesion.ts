@@ -28,6 +28,10 @@ export function tokenDeRenovacion(): string | null {
   return actual?.refresh_token ?? null;
 }
 
+export function usuarioDeSesion(): UsuarioPublico | null {
+  return actual?.usuario ?? null;
+}
+
 function persistir(): void {
   if (!USE_API) return;
   const tarea = actual
@@ -63,6 +67,13 @@ export function actualizarTokens(nuevos: {
     expires_in: nuevos.expires_in,
     refresh_token: nuevos.refresh_token ?? actual.refresh_token,
   };
+  persistir();
+}
+
+/** Datos del usuario más recientes (por ejemplo, un rol nuevo desde /auth/perfil). */
+export function actualizarUsuarioSesion(usuario: UsuarioPublico): void {
+  if (!actual) return;
+  actual = { ...actual, usuario };
   persistir();
 }
 
