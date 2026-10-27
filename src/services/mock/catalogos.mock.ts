@@ -6,7 +6,7 @@ import type {
   CatalogoEstadoItem,
 } from '../../types';
 import { ErrorServicio } from '../errores';
-import { simularRetardo } from './delay';
+import { lanzarSiSinRed, simularRetardo } from './delay';
 import {
   MOCK_ESPECIES,
   MOCK_FAMILIAS,
@@ -18,11 +18,13 @@ import {
 export class CatalogosMockService implements ICatalogosService {
   async obtenerEspecies(): Promise<Especie[]> {
     await simularRetardo();
+    lanzarSiSinRed();
     return [...MOCK_ESPECIES];
   }
 
   async obtenerFamilias(): Promise<Familia[]> {
     await simularRetardo();
+    lanzarSiSinRed();
     // EXPO_PUBLIC_MOCK_ERROR=familias: /catalogos/familias no responde.
     if (process.env.EXPO_PUBLIC_MOCK_ERROR === 'familias') {
       throw new ErrorServicio(0, { codigo: 'sin-conexion', mensaje: 'No hay conexión.' });
@@ -32,16 +34,19 @@ export class CatalogosMockService implements ICatalogosService {
 
   async obtenerTiposAmbiente(): Promise<CatalogoItem[]> {
     await simularRetardo();
+    lanzarSiSinRed();
     return [...MOCK_TIPOS_AMBIENTE];
   }
 
   async obtenerCondicionesOrganismo(): Promise<CatalogoItem[]> {
     await simularRetardo();
+    lanzarSiSinRed();
     return [...MOCK_CONDICIONES_ORGANISMO];
   }
 
   async obtenerEstados(): Promise<CatalogoEstadoItem[]> {
     await simularRetardo();
+    lanzarSiSinRed();
     return [...MOCK_ESTADOS];
   }
 }

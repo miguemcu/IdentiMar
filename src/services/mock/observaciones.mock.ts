@@ -13,7 +13,7 @@ import type {
   ImagenObservacion,
   IObservacionesService,
 } from "../observaciones.service";
-import { simularRetardo } from "./delay";
+import { lanzarSiSinRed, simularRetardo } from "./delay";
 import {
   MOCK_CONDICIONES_ORGANISMO,
   MOCK_ESPECIES,
@@ -314,6 +314,7 @@ export class ObservacionesMockService implements IObservacionesService {
     filtros?: FiltrosListadoObservaciones,
   ): Promise<ObservacionesPagina> {
     await simularRetardo();
+    lanzarSiSinRed();
 
     let resultado = [...this.observaciones];
 
@@ -342,6 +343,7 @@ export class ObservacionesMockService implements IObservacionesService {
 
   async obtenerObservacion(id: string): Promise<ObservacionDetalle> {
     await simularRetardo();
+    lanzarSiSinRed();
 
     const consulta = (this.consultasDetalle.get(id) ?? 0) + 1;
     this.consultasDetalle.set(id, consulta);
