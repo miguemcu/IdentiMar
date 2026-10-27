@@ -174,7 +174,7 @@ export default function PorValidarScreen() {
               <View className="py-4 items-center">
                 <ActivityIndicator />
               </View>
-            ) : null
+            ) : undefined
           }
         />
       ) : null}
