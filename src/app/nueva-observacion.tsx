@@ -20,6 +20,11 @@ import { useAuth } from '@/contexts/auth-context';
 import { useBorradorObservacion } from '@/hooks/use-borrador-observacion';
 import type { BorradorObservacion } from '@/services/local/borrador';
 import {
+  copiarFotoBorrador,
+  liberarFotoReservada,
+  reservarFotoParaEnvio,
+} from '@/services/local/fotos';
+import {
   catalogosService,
   ErrorServicio,
   mensajeError,
@@ -71,6 +76,7 @@ export default function NuevaObservacionScreen() {
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [paso, setPaso] = useState(0);
+  const [avisoFoto, setAvisoFoto] = useState<string | null>(null);
   const previousAppState = useRef(AppState.currentState);
 
   // Al entrar, se recupera el formulario que quedó a medias.
@@ -126,6 +132,7 @@ export default function NuevaObservacionScreen() {
     setCondicion(null);
     setNotas('');
     setPaso(0);
+    setAvisoFoto(null);
   }
 
   const cargarCatalogos = useCallback(async () => {
@@ -186,6 +193,7 @@ export default function NuevaObservacionScreen() {
     setEnviando(true);
     setErrorEnvio(null);
     const notasLimpias = notas.trim();
+    const uriEnvio = reservarFotoParaEnvio(imageAsset.uri, imageAsset.fileName ?? imageAsset.uri);
 
     try {
       const resumen = await observacionesService.crearObservacion(
@@ -198,11 +206,12 @@ export default function NuevaObservacionScreen() {
           condicion_organismo: condicion,
           observaciones_usuario: notasLimpias === '' ? null : notasLimpias,
         },
-        imagenParaEnvio(imageAsset),
+        imagenParaEnvio({ ...imageAsset, uri: uriEnvio }),
       );
       borrador.limpiar();
       router.replace(`/observaciones/resultado/${resumen.id}` as any);
     } catch (error) {
+      liberarFotoReservada(uriEnvio);
       if (error instanceof ErrorServicio && error.status === 401) {
         Alert.alert('Sesión expirada', mensajeError(error), [
           { text: 'Iniciar sesión', onPress: () => void logout('sesion-vencida') },
@@ -319,7 +328,16 @@ export default function NuevaObservacionScreen() {
       return;
     }
 
-    setImageAsset(selectedAsset);
+    // La copia local evita perder la foto si se cierra la app antes de enviar.
+    const copia = usuario
+      ? copiarFotoBorrador(usuario.id, selectedAsset.uri, selectedAsset.fileName ?? selectedAsset.uri)
+      : null;
+    setAvisoFoto(
+      copia
+        ? null
+        : 'No pudimos guardar una copia de la foto en el teléfono. Puedes seguir, pero si cierras la app antes de enviar quizá tengas que elegirla de nuevo.',
+    );
+    setImageAsset(copia ? { ...selectedAsset, uri: copia } : selectedAsset);
     setImageValidationError(null);
     void captureLocation();
   }
@@ -440,6 +458,11 @@ export default function NuevaObservacionScreen() {
                 className="text-center font-source text-base text-danger"
               >
                 {imageValidationError}
+              </Text>
+            ) : null}
+            {avisoFoto ? (
+              <Text accessibilityLiveRegion="polite" className="text-center font-source text-sm text-slate-mid">
+                {avisoFoto}
               </Text>
             ) : null}
 

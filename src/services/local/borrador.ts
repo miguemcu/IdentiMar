@@ -1,4 +1,5 @@
 import { borrarJson, escribirJson, leerJson } from './almacen';
+import { borrarFotosBorrador } from './fotos';
 
 /** Foto elegida en el paso 1, con lo necesario para volver a mostrarla y enviarla. */
 export interface FotoBorrador {
@@ -35,8 +36,10 @@ export function guardarBorrador(usuarioId: string, borrador: BorradorObservacion
   return escribirJson(nombre(usuarioId), borrador);
 }
 
+/** Borra el borrador y la copia local de su foto. */
 export function borrarBorrador(usuarioId: string): void {
   borrarJson(nombre(usuarioId));
+  borrarFotosBorrador(usuarioId);
 }
 
 /** true si el borrador tiene algo que valga la pena recuperar. */

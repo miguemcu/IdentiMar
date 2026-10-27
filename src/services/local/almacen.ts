@@ -11,6 +11,13 @@ function asegurarRaiz(): void {
   if (!RAIZ.exists) RAIZ.create({ intermediates: true, idempotent: true });
 }
 
+/** Subcarpeta de los datos locales (por ejemplo, las fotos). La crea si no existe. */
+export function carpetaLocal(...partes: string[]): Directory {
+  const carpeta = new Directory(RAIZ, ...partes);
+  if (!carpeta.exists) carpeta.create({ intermediates: true, idempotent: true });
+  return carpeta;
+}
+
 function archivo(nombre: string): File {
   return new File(RAIZ, `${nombre}.json`);
 }
