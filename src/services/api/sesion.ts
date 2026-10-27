@@ -1,6 +1,17 @@
-import * as SecureStore from 'expo-secure-store';
 import type { LoginResponse, UsuarioPublico } from '../../types';
 import { USE_API } from './config';
+
+type ModuloSecureStore = typeof import('expo-secure-store');
+let moduloSecureStore: Promise<ModuloSecureStore> | null = null;
+
+/**
+ * expo-secure-store se carga solo al usarlo (con la API). Así el mock no
+ * depende del módulo nativo y scripts/probar-servicios.ts corre en Node.
+ */
+function secureStore(): Promise<ModuloSecureStore> {
+  moduloSecureStore ??= import('expo-secure-store');
+  return moduloSecureStore;
+}
 
 /** Sesión guardada: los tokens de LoginResponse y el usuario que los obtuvo. */
 export interface SesionGuardada {
@@ -34,11 +45,12 @@ export function usuarioDeSesion(): UsuarioPublico | null {
 
 function persistir(): void {
   if (!USE_API) return;
-  const tarea = actual
-    ? SecureStore.setItemAsync(CLAVE, JSON.stringify(actual))
-    : SecureStore.deleteItemAsync(CLAVE);
-  // Si el teléfono no deja guardar, la sesión sigue en memoria.
-  tarea.catch(() => undefined);
+  // Se toma el valor ahora: las escrituras se aplican en el orden en que se piden.
+  const valor = actual ? JSON.stringify(actual) : null;
+  secureStore()
+    .then((store) => (valor ? store.setItemAsync(CLAVE, valor) : store.deleteItemAsync(CLAVE)))
+    // Si el teléfono no deja guardar, la sesión sigue en memoria.
+    .catch(() => undefined);
 }
 
 export function guardarSesion(resp: LoginResponse): void {
@@ -81,7 +93,7 @@ export function actualizarUsuarioSesion(usuario: UsuarioPublico): void {
 export async function leerSesionGuardada(): Promise<SesionGuardada | null> {
   if (!USE_API) return null;
   try {
-    const texto = await SecureStore.getItemAsync(CLAVE);
+    const texto = await (await secureStore()).getItemAsync(CLAVE);
     actual = texto ? (JSON.parse(texto) as SesionGuardada) : null;
   } catch {
     actual = null;
