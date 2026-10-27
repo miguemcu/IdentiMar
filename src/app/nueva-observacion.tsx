@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   AppState,
   Image,
   Linking,
@@ -18,23 +17,14 @@ import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
 import { useAuth } from '@/contexts/auth-context';
 import { useBorradorObservacion } from '@/hooks/use-borrador-observacion';
+import { useEnviarObservacion } from '@/hooks/use-enviar-observacion';
 import type { BorradorObservacion } from '@/services/local/borrador';
-import {
-  copiarFotoBorrador,
-  liberarFotoReservada,
-  reservarFotoParaEnvio,
-} from '@/services/local/fotos';
-import {
-  catalogosService,
-  ErrorServicio,
-  mensajeError,
-  observacionesService,
-} from '@/services';
+import { copiarFotoBorrador } from '@/services/local/fotos';
+import { catalogosService } from '@/services';
 import type { CatalogoItem } from '@/types';
 import { Bloque, Opciones } from '@/components/nueva-observacion/bloques';
 import {
   errorCoordenada,
-  imagenParaEnvio,
   MAX_NOTAS,
   PASOS,
   validateImageAsset,
@@ -45,7 +35,7 @@ import {
 export default function NuevaObservacionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { logout, usuario } = useAuth();
+  const { usuario } = useAuth();
   const [imageAsset, setImageAsset] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -73,8 +63,6 @@ export default function NuevaObservacionScreen() {
   const [tipoAmbiente, setTipoAmbiente] = useState<string | null>(null);
   const [condicion, setCondicion] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [paso, setPaso] = useState(0);
   const [avisoFoto, setAvisoFoto] = useState<string | null>(null);
   const previousAppState = useRef(AppState.currentState);
@@ -95,6 +83,7 @@ export default function NuevaObservacionScreen() {
   }
   const borrador = useBorradorObservacion(usuario?.id, aplicarBorrador);
   const { restaurado } = borrador;
+  const { enviar, enviando, errorEnvio } = useEnviarObservacion(borrador.limpiar);
 
   // Cada cambio del formulario se guarda en el dispositivo.
   const { guardar } = borrador;
@@ -176,51 +165,6 @@ export default function NuevaObservacionScreen() {
       setPaso(paso - 1);
     } else {
       router.back();
-    }
-  }
-
-  async function enviar() {
-    if (
-      !imageAsset ||
-      !tipoAmbiente ||
-      !condicion ||
-      coordinates.latitud === null ||
-      coordinates.longitud === null
-    ) {
-      return;
-    }
-
-    setEnviando(true);
-    setErrorEnvio(null);
-    const notasLimpias = notas.trim();
-    const uriEnvio = reservarFotoParaEnvio(imageAsset.uri, imageAsset.fileName ?? imageAsset.uri);
-
-    try {
-      const resumen = await observacionesService.crearObservacion(
-        {
-          fecha_hora_evento: fechaIsoLocal(fechaEvento),
-          latitud: coordinates.latitud,
-          longitud: coordinates.longitud,
-          precision_gps_metros: precisionGps,
-          tipo_ambiente: tipoAmbiente,
-          condicion_organismo: condicion,
-          observaciones_usuario: notasLimpias === '' ? null : notasLimpias,
-        },
-        imagenParaEnvio({ ...imageAsset, uri: uriEnvio }),
-      );
-      borrador.limpiar();
-      router.replace(`/observaciones/resultado/${resumen.id}` as any);
-    } catch (error) {
-      liberarFotoReservada(uriEnvio);
-      if (error instanceof ErrorServicio && error.status === 401) {
-        Alert.alert('Sesión expirada', mensajeError(error), [
-          { text: 'Iniciar sesión', onPress: () => void logout('sesion-vencida') },
-        ]);
-      } else {
-        setErrorEnvio(mensajeError(error));
-      }
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -704,7 +648,20 @@ export default function NuevaObservacionScreen() {
           size="lg"
           loading={ultimoPaso && enviando}
           disabled={faltantes.length > 0}
-          onPress={() => (ultimoPaso ? void enviar() : setPaso(paso + 1))}
+          onPress={() =>
+            ultimoPaso
+              ? void enviar({
+                  imageAsset,
+                  latitud: coordinates.latitud,
+                  longitud: coordinates.longitud,
+                  precisionGps,
+                  fechaEvento,
+                  tipoAmbiente,
+                  condicion,
+                  notas,
+                })
+              : setPaso(paso + 1)
+          }
         />
       </View>
     </View>
