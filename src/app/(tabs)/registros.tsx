@@ -1,5 +1,6 @@
 import { Button, Chip, Icono, ScreenHeader, etiquetaEstado } from '@/components/ui';
 import { ObservacionCard } from '@/components/ui/observacion-card';
+import { ColaEnRegistros } from '@/components/cola-envio/cola-en-registros';
 import { observacionesService } from '@/services';
 import type { EstadoObservacion, ObservacionResumen } from '@/types';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -105,6 +106,8 @@ export default function RegistrosScreen() {
             : 'Tus observaciones'
         }
       />
+
+      <ColaEnRegistros />
 
       <View>
         <ScrollView

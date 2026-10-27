@@ -1,0 +1,204 @@
+import * as Network from 'expo-network';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Alert, AppState } from 'react-native';
+import { observacionesService } from '../services';
+import {
+  guardarCola,
+  leerCola,
+  nuevaEnCola,
+  procesarCola,
+  sinElemento,
+  type ObservacionEnCola,
+} from '../services/local/cola-envio';
+import type { ImagenObservacion } from '../services/observaciones.service';
+import type { ObservacionInput } from '../types';
+import { useAuth } from './auth-context';
+
+/** Qué disparó un intento de envío de la cola. */
+export type OrigenEnvio = 'entrar' | 'manual' | 'senal' | 'volver';
+
+/** La señal y volver a la app avisan solos y pueden repetirse seguido. */
+const AUTOMATICOS: OrigenEnvio[] = ['senal', 'volver'];
+
+interface ColaEnvioContextType {
+  /** Observaciones guardadas en el teléfono, en el orden en que se crearon. */
+  cola: ObservacionEnCola[];
+  enviando: boolean;
+  /** Aviso de por qué se detuvo el último envío (no por falta de señal). */
+  aviso: string | null;
+  encolar: (datos: ObservacionInput, imagen: ImagenObservacion) => void;
+  /** Intenta enviar ahora lo pendiente (también se hace solo al volver la señal). */
+  enviarPendientes: (origen: OrigenEnvio) => Promise<void>;
+  /** Vuelve a dejar en espera una observación que requería revisión. */
+  reintentar: (idLocal: string) => void;
+  descartar: (idLocal: string) => void;
+}
+
+/** Tras un intento, los avisos automáticos se ignoran durante este tiempo. */
+const ESPERA_AUTOMATICA_MS = 5000;
+
+const AVISO_SESION = 'Tu sesión venció. Vuelve a entrar para enviarlas.';
+const AVISO_SERVIDOR = 'El servidor no respondió bien. Lo intentaremos de nuevo más tarde.';
+
+const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefined);
+
+/** Sin red real (modo avión, sin señal). Si no se puede saber, se asume que hay. */
+async function hayRed(): Promise<boolean> {
+  try {
+    const estado = await Network.getNetworkStateAsync();
+    return estado.isInternetReachable ?? estado.isConnected ?? true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Cola de envío por usuario. Se envía al entrar, al volver la señal y al
+ * volver a la app. Solo una pasada a la vez, para no repetir envíos.
+ */
+export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
+  const { usuario } = useAuth();
+  const usuarioId = usuario?.id;
+  const [cola, setCola] = useState<ObservacionEnCola[]>([]);
+  const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const colaRef = useRef<ObservacionEnCola[]>([]);
+  const enCurso = useRef(false);
+  // Fin del último intento: la señal y el volver a la app pueden avisar varias
+  // veces seguidas, y cada aviso no debe contar como un intento más.
+  const ultimoIntento = useRef(0);
+
+  const actualizar = useCallback(
+    (nueva: ObservacionEnCola[]) => {
+      colaRef.current = nueva;
+      setCola(nueva);
+      if (usuarioId) guardarCola(usuarioId, nueva);
+    },
+    [usuarioId],
+  );
+
+  const enviarPendientes = useCallback(async (origen: OrigenEnvio) => {
+    if (!usuarioId || enCurso.current) return;
+    if (AUTOMATICOS.includes(origen) && Date.now() - ultimoIntento.current < ESPERA_AUTOMATICA_MS) {
+      return;
+    }
+    if (!colaRef.current.some((e) => e.estado === 'pendiente_envio')) return;
+    // Se marca antes de esperar la red: así otra llamada no entra mientras tanto.
+    enCurso.current = true;
+    if (!(await hayRed())) {
+      enCurso.current = false;
+      return;
+    }
+    setEnviando(true);
+    try {
+      const resultado = await procesarCola(colaRef.current, observacionesService);
+      actualizar(resultado.cola);
+      setAviso(
+        resultado.detenidaPor === 'sesion'
+          ? AVISO_SESION
+          : resultado.detenidaPor === 'error'
+            ? AVISO_SERVIDOR
+            : null,
+      );
+      if (resultado.nuevasEnRevision > 0) {
+        Alert.alert(
+          'Revisa tus observaciones guardadas',
+          'Una observación guardada no se pudo enviar. En Registros verás cuál es y qué hacer.',
+        );
+      }
+    } finally {
+      ultimoIntento.current = Date.now();
+      enCurso.current = false;
+      setEnviando(false);
+    }
+  }, [usuarioId, actualizar]);
+
+  // Al entrar con una cuenta se lee su cola y se intenta enviar.
+  useEffect(() => {
+    let activo = true;
+    colaRef.current = [];
+    if (!usuarioId) {
+      // Sin sesión no se lee ni se envía ninguna cola.
+      queueMicrotask(() => {
+        setCola([]);
+        setAviso(null);
+      });
+      return;
+    }
+    void leerCola(usuarioId).then((guardada) => {
+      if (!activo) return;
+      colaRef.current = guardada;
+      setCola(guardada);
+      void enviarPendientes('entrar');
+    });
+    return () => {
+      activo = false;
+    };
+  }, [usuarioId, enviarPendientes]);
+
+  // Al volver la señal o volver a la app, se reintenta.
+  useEffect(() => {
+    const red = Network.addNetworkStateListener((estado) => {
+      if (estado.isInternetReachable ?? estado.isConnected) void enviarPendientes('senal');
+    });
+    const app = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') void enviarPendientes('volver');
+    });
+    return () => {
+      red.remove();
+      app.remove();
+    };
+  }, [enviarPendientes]);
+
+  const encolar = useCallback(
+    (datos: ObservacionInput, imagen: ImagenObservacion) => {
+      actualizar([...colaRef.current, nuevaEnCola(datos, imagen)]);
+    },
+    [actualizar],
+  );
+
+  const reintentar = useCallback(
+    (idLocal: string) => {
+      actualizar(
+        colaRef.current.map((e) =>
+          e.idLocal === idLocal
+            ? { ...e, estado: 'pendiente_envio', motivo: null, intentos: 0 }
+            : e,
+        ),
+      );
+      void enviarPendientes('manual');
+    },
+    [actualizar, enviarPendientes],
+  );
+
+  const descartar = useCallback(
+    (idLocal: string) => actualizar(sinElemento(colaRef.current, idLocal)),
+    [actualizar],
+  );
+
+  const valor = useMemo(
+    () => ({ cola, enviando, aviso, encolar, enviarPendientes, reintentar, descartar }),
+    [cola, enviando, aviso, encolar, enviarPendientes, reintentar, descartar],
+  );
+
+  return <ColaEnvioContext.Provider value={valor}>{children}</ColaEnvioContext.Provider>;
+}
+
+export function useColaEnvio(): ColaEnvioContextType {
+  const contexto = useContext(ColaEnvioContext);
+  if (!contexto) {
+    throw new Error('useColaEnvio debe usarse dentro de un ColaEnvioProvider');
+  }
+  return contexto;
+}
+
+/** Para la pantalla de envío: decide antes de enviar si hay red real. */
+export { hayRed };

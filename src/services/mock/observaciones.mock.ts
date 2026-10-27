@@ -32,7 +32,7 @@ function uuidSimulado(): string {
 
 /**
  * Permite probar los errores del contrato sin backend:
- * EXPO_PUBLIC_MOCK_ERROR = 400 | 401 | 413 | red
+ * EXPO_PUBLIC_MOCK_ERROR = 400 | 401 | 413 | 500 | red
  */
 function errorSimulado(): ErrorServicio | null {
   switch (process.env.EXPO_PUBLIC_MOCK_ERROR) {
@@ -51,6 +51,11 @@ function errorSimulado(): ErrorServicio | null {
       return new ErrorServicio(413, {
         codigo: "imagen-muy-grande",
         mensaje: "Imagen demasiado grande.",
+      });
+    case "500":
+      return new ErrorServicio(500, {
+        codigo: "error-interno",
+        mensaje: "Error interno del servidor.",
       });
     case "red":
       return new ErrorServicio(0, {
