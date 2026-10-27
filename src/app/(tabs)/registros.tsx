@@ -11,6 +11,7 @@ import type { EstadoObservacion, ObservacionResumen } from '@/types';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, ScrollView, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 const TAMANO_PAGINA = 20;
 
@@ -158,6 +159,7 @@ export default function RegistrosScreen() {
           <Text className="font-source text-sm text-slate-mid mt-3">
             Cargando registros…
           </Text>
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 

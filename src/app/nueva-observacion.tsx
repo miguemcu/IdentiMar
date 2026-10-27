@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AVISO_ENVIO, CargaLenta } from '@/components/carga-lenta/carga-lenta';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -581,6 +582,7 @@ export default function NuevaObservacionScreen() {
 
         {paso === 2 ? (
           <>
+            <CargaLenta activo={tiposAmbiente.length === 0 && !errorCatalogos} className="" />
             {errorCatalogos === 'sin-conexion' ? <SinConexion guardadoEn={null} /> : null}
             {errorCatalogos ? (
               <Card>
@@ -649,6 +651,7 @@ export default function NuevaObservacionScreen() {
             {errorEnvio}
           </Text>
         ) : null}
+        <CargaLenta activo={ultimoPaso && enviando} mensaje={AVISO_ENVIO} className="" />
         <Button
           title={ultimoPaso ? 'Enviar observación' : 'Siguiente'}
           size="lg"

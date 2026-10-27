@@ -17,6 +17,7 @@ import type { DecisionValidacion, Especie, ObservacionDetalle } from '@/types';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
   confirmada: 'Confirmada por el experto',
@@ -174,8 +175,9 @@ export default function DetalleRegistroScreen() {
       <ScreenHeader title="Detalle del registro" onBack={volver} />
 
       {estado === 'cargando' ? (
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center p-6">
           <ActivityIndicator size="large" />
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 

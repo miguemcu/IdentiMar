@@ -6,6 +6,7 @@ import type { ObservacionResumen } from '@/types';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 const TAMANO_PAGINA = 20;
 
@@ -129,6 +130,7 @@ export default function PorValidarScreen() {
           <Text className="font-source text-sm text-slate-mid mt-3">
             Cargando observaciones…
           </Text>
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 

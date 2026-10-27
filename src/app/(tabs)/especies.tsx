@@ -9,6 +9,7 @@ import type { Especie } from '@/types';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 type Estado = 'cargando' | 'listo' | 'error';
 
@@ -55,8 +56,9 @@ export default function EspeciesScreen() {
       />
 
       {estado === 'cargando' ? (
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center p-6">
           <ActivityIndicator size="large" />
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 

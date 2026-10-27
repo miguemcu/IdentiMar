@@ -13,4 +13,4 @@ export const API_URL = (
  * Tiempo máximo de espera por respuesta. Es largo porque el servidor (Render,
  * plan gratuito) tarda en despertar si lleva un rato sin uso.
  */
-export const TIEMPO_ESPERA_MS = 60_000;
+export const TIEMPO_ESPERA_MS = 90_000;

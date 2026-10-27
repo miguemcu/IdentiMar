@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
 } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import { erroresAuth } from '@/services';
@@ -172,6 +173,7 @@ export default function RegistroScreen() {
             onPress={handleRegistro}
             className="mt-2"
           />
+          <CargaLenta activo={cargando} className="mt-3" />
 
           <View className="mt-4 flex-row flex-wrap items-center justify-center">
             <Text className="font-source text-base text-slate-mid">
