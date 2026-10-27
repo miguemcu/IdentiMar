@@ -8,7 +8,7 @@
 
 Lo que el contrato no define no se implementa. Las limitaciones se registran en `docs/discrepancias.md`. La API no se modifica en este MVP.
 
-**Avance al 22 oct:** las casillas marcadas están implementadas con datos simulados y probadas en Expo Go (Android; falta iOS). El detalle está en [`estado_actual.md`](estado_actual.md).
+**Avance al 27 oct:** H0, H1 y el modo sin conexión (parte 1) están implementados con datos simulados y probados en Expo Go (Android; falta iOS). H2 avanza en `feature/h2-integracion`: cada casilla indica dónde se verificó. El detalle está en [`estado_actual.md`](estado_actual.md) y los pasos que faltan, en [`plan_integracion.md`](plan_integracion.md).
 
 **Cambios en 1.1:** la validación experta entra al alcance, usando solo `GET /observaciones/pendientes` y `POST /observaciones/{id}/validacion`. La app no define etiquetas ni umbrales de certeza: muestra lo que entregue el backend.
 
@@ -223,52 +223,54 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## H2. Integración con la API real
 
+**Avance al 27 oct (tarde):** en la rama `feature/h2-integracion`. Pasos 1 a 5 del [plan de integración](plan_integracion.md) hechos; faltan la validación experta (paso 6), la cola sin duplicados (paso 7) y el cierre (paso 8). Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
+
 ### Bloqueantes (antes del 25 oct)
 
-- [ ] URL de staging y credenciales de prueba del Equipo 3.
-- [ ] Códigos de los catálogos (`tipos-ambiente`, `condiciones-organismo`, `estados`), que el contrato no enumera.
+- [x] URL de staging y credenciales de prueba del Equipo 3. *URL: `https://identimar-backend.onrender.com/api/v1` (27 oct). Cuentas propias del Equipo 1: `e1.usuario@ejemplo.co` y `e1.experto@ejemplo.co`. Falta que el Equipo 3 asigne el rol `experto` a la segunda.*
+- [x] Códigos de los catálogos (`tipos-ambiente`, `condiciones-organismo`, `estados`), que el contrato no enumera. *Confirmados con el backend (ver `discrepancias.md`, fila 28).*
 - [ ] Confirmar que `info.version: "3"` es la versión vigente del contrato.
-- [ ] Servicio de inferencia del Equipo 2 disponible en staging, o confirmación de que el backend lo simula en ese entorno.
+- [x] Servicio de inferencia del Equipo 2 disponible en staging, o confirmación de que el backend lo simula en ese entorno. *Integrado: identificó una raya con 94 % de confianza. Si lleva un rato sin uso, la primera observación puede quedar `no_concluyente` ("Servicio de visión no disponible").*
 
 ### Criterios
 
 **Autenticación**
 
-- [ ] `api` implementa login, registro, refresh y perfil.
-- [ ] El token se guarda con `expo-secure-store`.
-- [ ] Ante un 401 se renueva el token automáticamente. Si falla, se cierra la sesión y se limpia la caché.
+- [x] `api` implementa login, registro, refresh y perfil. *Verificado en Expo Go: registro, inicio de sesión, perfil y cierre de sesión. El backend responde `{"usuario": …}` en registro y perfil, y rechaza `telefono: null`: la app se adapta (`discrepancias.md`, filas 27 y 33).*
+- [x] El token se guarda con `expo-secure-store`. *Verificado en Expo Go: la sesión sigue abierta al cerrar y reabrir la app.*
+- [x] Ante un 401 se renueva el token automáticamente. Si falla, se cierra la sesión y se limpia la caché. *Probado desde el computador (token alterado: renueva y repite; renovación rechazada: avisa una vez). Falta forzarlo en Expo Go. La sesión dura como máximo 7 días: el backend no entrega un `refresh_token` nuevo (fila 32).*
 
 **Validación experta**
 
-- [ ] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409.
-- [ ] Los controles del experto dejan de depender del modo simulado.
+- [ ] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409. *`listarPendientes` hecho (403 probado desde el computador con rol usuario). `validarObservacion` falta (paso 6).*
+- [x] Los controles del experto dejan de depender del modo simulado. *Desde H1: dependen del rol y del estado de la observación.*
 
 **Observaciones**
 
-- [ ] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`.
-- [ ] Manejo de 201, 400, 401 y 413.
-- [ ] Como no hay notificaciones, el estado se consulta con polling a `GET /observaciones/{id}` mientras esté en `recibido` o `procesando`. Con backoff, y se detiene al llegar a otro estado.
-- [ ] Listado paginado y detalle reales.
+- [x] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`. *Probado desde el computador con 2 observaciones reales. El backend pide `tipo_ambiente_codigo` y `condicion_organismo_codigo`: la app envía los dos nombres (fila 34). Falta enviar desde Expo Go.*
+- [x] Manejo de 201, 400, 401 y 413. *201 y 400 probados desde el computador; 401 cubierto por la renovación. 413 sin probar con el backend.*
+- [x] Como no hay notificaciones, el estado se consulta con polling a `GET /observaciones/{id}` mientras esté en `recibido` o `procesando`. Con backoff, y se detiene al llegar a otro estado. *En el backend el envío espera la inferencia (≈30 s) y responde con el estado final, así que el seguimiento se detiene en la primera consulta (fila 36).*
+- [x] Listado paginado y detalle reales. *Probado desde el computador, incluido el filtro por estado. `adaptadores.ts` pasa la forma del backend a la del contrato (fila 35). El listado no trae foto (fila 37).*
 
 **Catálogos**
 
-- [ ] Consumidos desde la API y guardados en caché local, actualizados al abrir la app con conexión.
+- [x] Consumidos desde la API y guardados en caché local, actualizados al abrir la app con conexión. *Probado desde el computador: 9 especies, 7 familias, 6 ambientes, 5 condiciones y 7 estados. Falta recorrer Especies y la ficha en Expo Go.*
 
 **Offline (parte 2: sincronización real)**
 
-- [ ] La cola usa la API real y respeta el orden de creación.
-- [ ] Reintentos con backoff. Un 400 no se reintenta: la observación se marca para revisión.
-- [ ] Si el token expiró sin red, la cola se mantiene y se envía al renovar la sesión.
+- [ ] La cola usa la API real y respeta el orden de creación. *La cola usa el mismo servicio, así que ya envía a la API; falta evitar duplicados cuando un envío termina por tiempo agotado (paso 7) y verificarlo en Expo Go.*
+- [ ] Reintentos con backoff. Un 400 no se reintenta: la observación se marca para revisión. *El 400 ya pasa a revisión; falta la espera creciente entre reintentos (paso 7).*
+- [ ] Si el token expiró sin red, la cola se mantiene y se envía al renovar la sesión. *Sin red no se intenta enviar y la sesión guardada permite entrar; falta verificarlo.*
 
 **Arquitectura**
 
-- [ ] Cambiar de `mock` a `api` por variable de entorno no requiere cambios en componentes.
-- [ ] No se registran datos personales ni coordenadas en los logs.
+- [x] Cambiar de `mock` a `api` por variable de entorno no requiere cambios en componentes. *`EXPO_PUBLIC_USE_API`; las diferencias del backend se resuelven dentro de `src/services/api/`.*
+- [x] No se registran datos personales ni coordenadas en los logs. *El código no tiene `console.log` con datos; el cliente HTTP no escribe tokens ni cuerpos.*
 
 **Integración**
 
-- [ ] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos.
-- [ ] Revisión de llamadas: solo se usan endpoints definidos en el contrato.
+- [ ] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos. *2 enviadas desde el computador (una `no_concluyente`, una `identificado`); faltan envíos desde la app.*
+- [ ] Revisión de llamadas: solo se usan endpoints definidos en el contrato. *Paso 8.*
 
 ### Criterio de cierre de H2
 
@@ -288,11 +290,12 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## Riesgos conocidos
 
-- **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto` en staging.
-- **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. El mock la deja en `no_concluyente`; confirmar con el Equipo 3.
-- **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe.
-- **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería. _(Hecho: nota en Inicio.)_
+- **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto`. *Pendiente: el Equipo 3 debe asignar el rol a `e1.experto@ejemplo.co`.*
+- **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. *Acordado con el Equipo 3: pasa a `no_concluyente`, como en el mock.*
+- **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe. *Más probable de lo previsto: el envío espera la inferencia (≈30 s) y con Render dormido puede pasar de 90 s.*
+- **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería. _(Hecho: nota en Inicio y sesión guardada con la API, hasta 7 días.)_
 - **`pendiente_envio` es local:** no pertenece a `EstadoObservacion` ni aparece en el contrato.
+- **Servidor dormido:** Render (plan gratuito) y el servicio de visión tardan en despertar. Conviene despertarlos antes de las pruebas de usabilidad y de la demo (abrir la app y enviar una observación de prueba).
 - **Plazo:** H2 depende del staging del Equipo 3 y del servicio de inferencia del Equipo 2. Si no están listos el 25 oct, se prioriza el flujo online y el resto queda documentado como limitación.
 
 ## Fuera de alcance del MVP

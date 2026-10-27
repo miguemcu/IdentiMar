@@ -1,133 +1,145 @@
 # Plan de integración con el backend (H2)
 
-- **Fecha:** 27 oct 2026
-- **Rama:** `feature/h2-integracion` (un commit por paso)
+- **Creado:** 27 oct 2026 · **Actualizado:** 27 oct 2026 (tarde)
+- **Rama:** `feature/h2-integracion` (sale de `develop`; un commit por paso)
 - **Meta:** integración completa hoy; pruebas desde el 28 oct.
 - **Backend:** `https://identimar-backend.onrender.com/api/v1` (desplegado por el Equipo 3)
 
+## Avance
+
+| Paso | Qué                                   | Estado                                                   | Commits principales                       |
+| ---- | ------------------------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| —    | Subida a Expo SDK 58                  | Hecho; la app se ve bien en Expo Go (Android)            | `805bd9a`                                 |
+| 1    | Ajustes previos                       | Hecho                                                    | `88d8597`, `7af5c7c`, `a3e091a`, `4f2823a` |
+| 2    | Cliente HTTP y sesión guardada        | Hecho; probado desde el computador                       | `5460068`, `27cc20f`                      |
+| —    | Aviso de carga lenta y espera de 90 s | Hecho                                                    | `61f37ba`                                 |
+| 3    | Autenticación                         | Hecho; **verificado en Expo Go**                         | `846cd67`, `0475f78`, `2e0cc2c`           |
+| 4    | Catálogos                             | Hecho; probado desde el computador                       | `4993711`                                 |
+| 5    | Observaciones                         | Hecho; probado desde el computador (2 observaciones reales) | `70e69ff`                              |
+| 6    | Validación experta                    | **Pendiente** · bloqueado por la cuenta experto          | —                                         |
+| 7    | Cola de envío con la API real         | **Pendiente**                                            | —                                         |
+| 8    | Cierre                                | **Pendiente**                                            | —                                         |
+
+"Probado desde el computador" significa que el servicio se ejecutó con `npx tsx` contra el backend desplegado; falta recorrerlo en el teléfono.
+
+## Para continuar (si retomas el trabajo)
+
+1. `git checkout feature/h2-integracion && npm install` (usa el `.npmrc` del repo).
+2. En `.env`: `EXPO_PUBLIC_USE_API=true` y `EXPO_PUBLIC_API_URL=https://identimar-backend.onrender.com/api/v1`. Arranca con `npm run start:tunel` (ngrok) o `npx expo start -c` en la misma red.
+3. Cuentas: `e1.usuario@ejemplo.co` (usuario) y `e1.experto@ejemplo.co` (pendiente del rol experto). Las contraseñas no están en el repo; pídelas a quien las creó.
+4. Lo siguiente, en orden:
+   - **Recorrer en el teléfono** lo de los pasos 4 y 5 (envío, Resultado, Registros, detalle, Especies, ficha) y marcarlo en `Dod.md`.
+   - **Paso 7** (no depende de nadie) y **paso 6** en cuanto el Equipo 3 asigne el rol experto.
+   - **Paso 8** y las pruebas funcionales en `docs/pruebas/`.
+5. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado).
+
+**Regla de trabajo:** las pantallas y el mock usan siempre la forma del contrato. Cualquier diferencia del backend se adapta solo dentro de `src/services/api/` y se anota en [`discrepancias.md`](discrepancias.md) (sección 6).
+
 ## Criterio
 
-El contrato (`docs/contrato_integracion.yaml`) es la fuente de verdad. Lo que la app hace distinto se adapta al contrato. Lo que el backend hace distinto se documenta en [`discrepancias.md`](discrepancias.md). Ya no hay tiempo de cambiar la API: cuando el backend difiere en algo de lo que la app depende (como el formato de los errores), la app lo toma tal como llega.
-
-## Punto de partida
-
-- **Hecho y verificado (Expo Go, Android):** autenticación simulada, formulario de 3 pasos, seguimiento del resultado, Registros y detalle, Especies y ficha, Perfil, cola "Por validar", validación experta, borrador, fotos locales, cola `pendiente_envio` y caché con la franja "Sin conexión". Detalle en [`estado_actual.md`](estado_actual.md).
-- Las pantallas solo usan `src/services/`. `EXPO_PUBLIC_USE_API=true` cambia a `src/services/api/*.api.ts`, que hoy son esqueletos que lanzan `noIntegrada()`.
-- **Pendiente:** todo H2, iOS, pruebas funcionales y de usabilidad.
-
-## Lo que se probó del backend desplegado (27 oct, solo lectura)
-
-- `/health` responde `{"status":"ok"}`. CORS abierto.
-- Con `http://` responde 301. Se usa **https**, porque un POST redirigido puede perderse.
-- Los catálogos responden sin token y con la forma del contrato.
-
-| Tema                   | Contrato                                           | Backend real                                                 | Qué se hace                                                       |
-| ---------------------- | -------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Condición del organismo | Sin enumerar                                       | `vivo`, `muerto_reciente`, `descompuesto`, `capturado`, `liberado` | Mock con estos códigos (hoy tiene `herido` y `muerto`)            |
-| Tipo de ambiente       | Sin enumerar                                       | `dulceacuicola`, `marino`, `arrecife`, `estuarino`, `manglar`, `playa` | Ya coincide con el mock                                           |
-| Estados                | 7 estados                                          | Los mismos 7, con `orden` y `es_terminal`                    | Coincide                                                          |
-| Especies               | `codigo` tipo `URO_MICR`                           | 9 rayas; códigos mezclados (`Hypanus_guttatus`, `DASYA_AME`)  | Mock con los códigos reales; documentar la mezcla                 |
-| Cuerpo de error        | `{codigo, mensaje, detalles[{campo, problema}]}`   | `{"error": {codigo, mensaje, detalles[{campo, mensaje}]}}`   | **La app lo lee tal como llega**; documentar                      |
-| Códigos de error       | kebab-case (`no-autenticado`)                      | Mayúsculas (`NO_AUTENTICADO`, `VALIDACION`)                  | La app decide por el status HTTP, no por el código; documentar   |
-| Mensajes de validación | En español                                         | En inglés (`"Required"`)                                     | La app muestra textos propios por campo; documentar               |
-| 400 en inicio de sesión | No definido                                        | Existe                                                       | Manejarlo y marcar los campos                                     |
-| Cuentas de prueba      | Ejemplo `ana.torres@ejemplo.co`                    | No existe                                                    | Registrar cuentas propias                                         |
+El contrato (`docs/contrato_integracion.yaml`) es la fuente de verdad. Lo que la app hace distinto se adapta al contrato. Lo que el backend hace distinto se documenta en [`discrepancias.md`](discrepancias.md). Ya no hay tiempo de cambiar la API: cuando el backend difiere en algo de lo que la app depende, la app lo toma tal como llega.
 
 ## Acordado con el Equipo 3 (27 oct)
 
 - **Cuenta experto:** registramos una cuenta nueva y el Equipo 3 le asigna el rol `experto`.
 - **Errores:** se capturan tal como los envía el backend.
-- **Modelo:** el modelo del Equipo 2 ya está integrado con la API.
+- **Modelo:** el modelo del Equipo 2 está integrado con la API (confirmado: identificó una raya con 94 %).
 - **Rechazo del experto:** la observación pasa a `no_concluyente`, como ya hace el mock.
 - **Plazo:** se adelanta; la integración debe quedar hoy.
 
+## Diferencias del backend que la app ya resuelve
+
+Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
+
+| Diferencia                                                                         | Dónde se resuelve                    |
+| ---------------------------------------------------------------------------------- | ------------------------------------ |
+| Errores dentro de `{"error": …}`, con `detalles[].mensaje` y textos en inglés       | `http.ts` y `errores.ts`             |
+| Registro y perfil responden `{"usuario": …}`; el registro rechaza `telefono: null`  | `auth.api.ts`                        |
+| `/auth/refresh` no devuelve `refresh_token` ni usuario                              | `sesion.ts` (conserva el anterior)   |
+| Al crear, pide `tipo_ambiente_codigo` y `condicion_organismo_codigo`               | `observaciones.api.ts`               |
+| Observaciones con otra forma (estado objeto, números texto, `imagen.url_firmada`, `prediccion`, `validacion`, `historial`) | `adaptadores.ts` |
+| Con `http://` responde 301                                                          | `config.ts` usa `https`              |
+
 ## Pasos
 
-Orden pensado para tener primero el flujo de la demo. Cada paso cierra con `npx tsc --noEmit` y `npx expo lint`.
+### 1. Ajustes previos · hecho
 
-### 1. Ajustes previos
+- Mock con los códigos reales de condiciones y las 9 especies del backend (mismos UUID y códigos).
+- Errores 400 con textos propios en español por campo, también en el inicio de sesión.
+- Un 401 al enviar la cola vuelve a inicio de sesión; la cola y el borrador se conservan.
+- `discrepancias.md` y `estado_actual.md` al día.
+- *Queda por probar en Expo Go:* cuenta sin datos guardados con `EXPO_PUBLIC_MOCK_ERROR=red`, y el 401 de la cola con `EXPO_PUBLIC_MOCK_ERROR=401`.
 
-1. **Mock alineado con el backend** (`src/services/mock/mockData.ts`): condiciones y especies con los códigos reales, y errores con la forma que envía el backend, para que el mock se comporte igual que la API.
-2. **Lectura de errores** (`src/services/errores.ts`):
-   - `mensajeError` y `erroresAuth` leen `detalles[].mensaje`. Muestran un texto propio en español por campo, no el texto del backend.
-   - 400 en inicio de sesión: marcar los campos, como en el registro.
-3. **401 en la cola de envío:** cierra la sesión con el aviso de sesión vencida, igual que el resto de pantallas, y conserva cola y borrador.
-4. Actualizar `docs/discrepancias.md` (estado real de cada fila y la tabla de arriba) y la línea de condiciones en `docs/Dod.md`.
+### 2. Cliente HTTP · hecho
 
-### 2. Cliente HTTP
+- `src/services/api/config.ts`: `USE_API`, `API_URL` (desde `EXPO_PUBLIC_API_URL`) y `TIEMPO_ESPERA_MS` (90 s).
+- `src/services/api/http.ts` (`pedir`): JSON y multipart; sin respuesta o tiempo agotado → `ErrorServicio(0)`, igual que el mock (la cola y la caché lo tratan como "sin conexión"); errores leídos tal como llegan y pasados a la forma del contrato; ante un 401 renueva una sola vez (compartida) y repite; si la renovación es rechazada, avisa con `avisarSesionVencida()`.
+- `src/services/api/sesion.ts`: sesión en memoria y, con la API, cifrada con `expo-secure-store` (se carga al primer uso, así el mock corre en Node).
+- `src/components/carga-lenta/`: aviso "Esto está tardando un poco" a los 10 s, en todas las pantallas que cargan desde la API.
 
-1. **`EXPO_PUBLIC_API_URL`** en `.env.example` (https de Render), leída en un solo lugar: `src/services/api/config.ts`.
-2. **`src/services/api/http.ts`**, un `fetch` envuelto con:
-   - JSON y `multipart/form-data`. En multipart no se fija `Content-Type` a mano.
-   - `Authorization: Bearer` tomado de la sesión guardada.
-   - Tiempo de espera con `AbortController` de unos 60 s, porque Render en plan gratuito tarda en despertar. El tiempo agotado y la falta de red se tratan como `ErrorServicio(0)`, igual que en el mock, así la cola y la caché funcionan sin cambios.
-   - Errores convertidos a `ErrorServicio(status, cuerpo)`. Se lee el envoltorio `error` y se pasa `detalles[].mensaje` a `problema`.
-   - Ante un 401 con token: renueva una sola vez con `/auth/refresh` (una renovación compartida si llegan varias a la vez) y repite la petición. Si la renovación falla, avisa a la sesión.
-   - No escribe tokens, datos personales ni coordenadas en los logs.
-3. **`src/services/api/sesion.ts`:** guarda `access_token`, `refresh_token` y `expires_in` en `expo-secure-store`. Expone `obtenerToken`, `renovar` y el aviso `alVencer`.
-4. **Dependencia:** `npx expo install expo-secure-store` (la pide el DoD).
+### 3. Autenticación · hecho
 
-### 3. Autenticación
+- `auth.api.ts`: registro, inicio de sesión, renovación y perfil.
+- `auth-context.tsx`: al abrir la app entra con la sesión guardada sin consultar la red; con señal pide `/auth/perfil` para traer datos al día (un rol nuevo se aplica sin volver a entrar). `logout` borra la sesión y la caché de registros de esa cuenta. Los tokens ya no están en el contexto.
+- Perfil actualiza el usuario de la sesión con lo que trae `/auth/perfil`.
 
-- `src/services/api/auth.api.ts`: `registro`, `login`, `refresh`, `obtenerPerfil`.
-- `src/contexts/auth-context.tsx`:
-  - Al iniciar sesión, los tokens se guardan en secure-store.
-  - `logout` borra los tokens y la caché. Si la sesión venció, conserva el borrador y la cola.
-  - Al abrir la app se recupera la sesión y se consulta `/auth/perfil`. Sin red, entra con el último usuario guardado, para que la cola espere la señal.
-  - El aviso `alVencer` llama a `logout('sesion-vencida')`.
-  - El cambio de rol de prueba solo aparece en modo simulado (`MODO_SIMULADO`).
+### 4. Catálogos · hecho
 
-### 4. Catálogos
+- `catalogos.api.ts`: los 5 GET sin token, con la caché que ya existía.
 
-- `src/services/api/catalogos.api.ts`: los 5 GET, sin token. Usan la caché que ya existe y se sigue filtrando `grupo: raya`.
+### 5. Observaciones · hecho
 
-### 5. Observaciones
+- `observaciones.api.ts`: envío multipart, listado con filtros, detalle y "Por validar", todo pasado por `adaptadores.ts`.
+- El envío espera la inferencia (≈30 s) y responde con el estado final; el seguimiento de Resultado se detiene en la primera consulta.
+- El listado no trae foto: las tarjetas muestran un ícono.
 
-- `src/services/api/observaciones.api.ts`:
-  - `crearObservacion`: `FormData` con `datos = JSON.stringify(ObservacionInput)` e `imagen = { uri, type, name }`.
-  - `listarObservaciones` y `listarPendientes` con `estado`, `pagina` y `tamano`.
-  - `obtenerObservacion`.
-- Con datos reales, revisar:
-  - El seguimiento (`src/hooks/use-seguimiento-observacion.ts`) se detiene al salir de `recibido` y `procesando`.
-  - La reconsulta cuando la URL firmada de la imagen vence.
-  - `fecha_hora_evento` con offset, `precision_gps_metros` y `datos` como texto JSON. Si el backend espera otra cosa, se documenta.
+### 6. Validación experta · pendiente
 
-### 6. Validación experta
+Bloqueado hasta que el Equipo 3 asigne el rol `experto` a `e1.experto@ejemplo.co`.
 
-- `src/services/api/validacion.api.ts`: `POST /observaciones/{id}/validacion`. Los errores 400, 401, 403, 404 y 409 ya tienen mensaje en `erroresValidacion`.
-- Verificar que al rechazar la observación pase a `no_concluyente` y salga de "Por validar". Si sigue apareciendo (la cola incluye `no_concluyente`), se documenta y la app oculta los controles porque ya tiene validación.
+- `src/services/api/validacion.api.ts`: `POST /observaciones/{id}/validacion` con `ValidacionInput`, y la respuesta por `aDetalle` (de `adaptadores.ts`). Los errores 400, 401, 403, 404 y 409 ya tienen mensaje en `erroresValidacion`.
+- `adaptadores.ts` ya intenta leer la validación (`validacion` o `validacion_experta`, con `especie_final` o `especie_final_codigo`), pero **su forma real no se ha visto**: al validar la primera, revisar el detalle y ajustar.
+- Verificar con la cuenta experto:
+  - "Por validar" lista las observaciones `pendiente_experto` y `no_concluyente`. Ya hay una `no_concluyente` de `e1.usuario`.
+  - Confirmar, corregir y rechazar. Al rechazar, la observación pasa a `no_concluyente`; revisar si sale de "Por validar". Si sigue apareciendo, anotarlo: la app ya oculta los controles porque tiene validación.
+  - El detalle del usuario muestra la decisión.
 
-### 7. Cola de envío con la API real
+### 7. Cola de envío con la API real · pendiente
 
-- `src/services/local/cola-envio.ts` ya cumple con el orden de creación, pasa 400 y 413 a revisión y no reintenta con 0 o 401. Falta:
-  - **Espera creciente** entre reintentos por 500.
-  - **Evitar duplicados:** si un envío terminó por tiempo agotado, antes de reenviar se consulta `GET /observaciones` y se compara `fecha_hora_evento` con las coordenadas. El contrato no tiene idempotencia.
-- Con el token vencido y sin red, la cola se conserva y se envía después de renovar la sesión.
+`src/services/local/cola-envio.ts` ya cumple el orden de creación, pasa 400 y 413 a revisión y no reintenta con 0 o 401. Falta:
 
-### 8. Cierre
+- **Evitar duplicados.** Es más probable de lo previsto, porque el envío tarda ≈30 s y con Render dormido puede pasar de 90 s. Un tiempo agotado llega como `ErrorServicio(0)` con `cuerpo.codigo === 'tiempo-agotado'` (ver `http.ts`).
+  - Ese caso se guarda en la cola marcado como "quizá enviado".
+  - Antes de reenviarlo, se consulta `GET /observaciones` y se busca una con la misma `fecha_hora_evento` (el backend la guarda en UTC sin milisegundos) y las mismas coordenadas (llegan como texto: comparar como número).
+  - Si existe, se quita de la cola sin reenviar.
+  - Revisar también `src/hooks/use-enviar-observacion.ts`, que hoy manda a la cola cualquier status 0.
+- **Espera creciente** entre reintentos por 500.
+- Verificar en Expo Go en modo avión: queda "Pendiente de envío" y se envía una sola vez al volver la señal.
 
-- Quitar `no-integrada.ts` y el aviso de `src/services/index.ts`. `EXPO_PUBLIC_USE_API` sigue eligiendo entre mock y API sin tocar pantallas.
+### 8. Cierre · pendiente
+
+- Quitar `src/services/api/no-integrada.ts` cuando la validación esté integrada.
 - Revisar que solo se llamen endpoints del contrato.
-- Marcar H2 en `docs/Dod.md` y actualizar `docs/estado_actual.md`.
+- Marcar H2 en `Dod.md` y actualizar `estado_actual.md`.
+- Registrar las pruebas en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.
 
-## Para documentar (del lado del Equipo 3)
+## Pendiente del Equipo 3
 
-- Envoltorio `error`, códigos en mayúsculas y `detalles[].mensaje` en vez de `problema`.
-- Mensajes de validación en inglés.
-- Códigos de especie mezclados (`Hypanus_guttatus` frente a `DASYA_AME`).
-- `info.version: "3"` frente a "v1.0" en la descripción.
-- Sin endpoint para editar una validación ni idempotencia en `POST /observaciones`.
-- El estado tras `rechazada` (`no_concluyente`) no está en el contrato.
+- **Asignar el rol experto** a `e1.experto@ejemplo.co` (bloquea el paso 6 y la demo).
+- **Devolver un `refresh_token` nuevo** en cada renovación, como promete el contrato: hoy la sesión vence a los 7 días del último inicio de sesión.
+- Confirmar la versión del contrato (`info.version: "3"` frente a "v1.0").
+- Mantener despiertos el backend y el servicio de visión antes de las pruebas y la demo.
+- Lo demás está documentado en `discrepancias.md` (sección 6), sin cambios a la API.
 
-## Verificación
+## Verificación final
 
 - `npx tsc --noEmit` y `npx expo lint` sin errores en cada paso.
 - Con `EXPO_PUBLIC_USE_API=true`, en Expo Go (Android, e iOS si hay equipo):
-  1. Registro, inicio de sesión, cerrar y reabrir la app: la sesión sigue activa.
-  2. Tres observaciones reales que pasan de `recibido` al resultado del modelo.
+  1. Registro, inicio de sesión, cerrar y reabrir la app: la sesión sigue activa. *(Hecho.)*
+  2. Tres observaciones reales desde la app que llegan al resultado del modelo.
   3. Registros, detalle, Especies y ficha con datos reales.
   4. En modo avión: la observación queda "Pendiente de envío" y se envía al volver la señal, una sola vez.
-- Con la cuenta experto: cola "Por validar"; confirmar, corregir y rechazar. El detalle del usuario muestra la decisión.
+- Con la cuenta experto: "Por validar"; confirmar, corregir y rechazar. El detalle del usuario muestra la decisión.
 - 401: con el token alterado se renueva solo; si la renovación falla, vuelve a inicio de sesión con el aviso.
 - Con `EXPO_PUBLIC_USE_API=false` todo sigue igual que hoy (`scripts/probar-servicios.ts`).
 - Los casos se registran en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.
