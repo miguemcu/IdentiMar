@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
 import { useAuth } from '@/contexts/auth-context';
+import { useBorradorObservacion } from '@/hooks/use-borrador-observacion';
+import type { BorradorObservacion } from '@/services/local/borrador';
 import {
   catalogosService,
   ErrorServicio,
@@ -38,7 +40,7 @@ import {
 export default function NuevaObservacionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
+  const { logout, usuario } = useAuth();
   const [imageAsset, setImageAsset] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -70,6 +72,61 @@ export default function NuevaObservacionScreen() {
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [paso, setPaso] = useState(0);
   const previousAppState = useRef(AppState.currentState);
+
+  // Al entrar, se recupera el formulario que quedó a medias.
+  function aplicarBorrador(restaurado: BorradorObservacion) {
+    const f = restaurado.foto;
+    setImageAsset(f ? ({ ...f, type: 'image' } as ImagePicker.ImagePickerAsset) : null);
+    setCoordinates(restaurado.coordenadas);
+    setCoordinateInputs(restaurado.textoCoordenadas);
+    setPrecisionGps(restaurado.precisionGps);
+    setFechaEvento(new Date(restaurado.fechaEvento));
+    setFechaFutura(new Date(restaurado.fechaEvento).getTime() > Date.now());
+    setTipoAmbiente(restaurado.tipoAmbiente);
+    setCondicion(restaurado.condicion);
+    setNotas(restaurado.notas);
+    setPaso(restaurado.paso);
+  }
+  const borrador = useBorradorObservacion(usuario?.id, aplicarBorrador);
+  const { restaurado } = borrador;
+
+  // Cada cambio del formulario se guarda en el dispositivo.
+  const { guardar } = borrador;
+  useEffect(() => {
+    guardar({
+      foto: imageAsset
+        ? {
+            uri: imageAsset.uri,
+            width: imageAsset.width,
+            height: imageAsset.height,
+            mimeType: imageAsset.mimeType ?? null,
+            fileName: imageAsset.fileName ?? null,
+          }
+        : null,
+      coordenadas: coordinates,
+      textoCoordenadas: coordinateInputs,
+      precisionGps,
+      fechaEvento: fechaEvento.toISOString(),
+      tipoAmbiente,
+      condicion,
+      notas,
+      paso,
+    });
+  }, [guardar, imageAsset, coordinates, coordinateInputs, precisionGps, fechaEvento, tipoAmbiente, condicion, notas, paso]);
+
+  function empezarDeNuevo() {
+    borrador.limpiar();
+    setImageAsset(null);
+    setCoordinates({ latitud: null, longitud: null });
+    setCoordinateInputs({ latitud: '', longitud: '' });
+    setPrecisionGps(null);
+    setFechaEvento(new Date());
+    setFechaFutura(false);
+    setTipoAmbiente(null);
+    setCondicion(null);
+    setNotas('');
+    setPaso(0);
+  }
 
   const cargarCatalogos = useCallback(async () => {
     setErrorCatalogos(false);
@@ -143,6 +200,7 @@ export default function NuevaObservacionScreen() {
         },
         imagenParaEnvio(imageAsset),
       );
+      borrador.limpiar();
       router.replace(`/observaciones/resultado/${resumen.id}` as any);
     } catch (error) {
       if (error instanceof ErrorServicio && error.status === 401) {
@@ -329,6 +387,19 @@ export default function NuevaObservacionScreen() {
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
+        {restaurado ? (
+          <Card className="border-sky-200 bg-sky-50">
+            <Text accessibilityLiveRegion="polite" className="font-nunito-bold text-base text-slate-deep">
+              Recuperamos tu observación sin terminar
+            </Text>
+            {borrador.fotoPerdida ? (
+              <Text className="mt-1 font-source text-sm text-slate-mid">
+                La foto ya no está en el teléfono. Tómala o elígela de nuevo.
+              </Text>
+            ) : null}
+            <Button title="Empezar de nuevo" variant="ghost" onPress={empezarDeNuevo} className="mt-2" />
+          </Card>
+        ) : null}
         {paso === 0 ? (
           <>
             {imageAsset ? (
