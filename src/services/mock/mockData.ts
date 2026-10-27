@@ -7,37 +7,51 @@ import type {
   UsuarioPublico,
 } from "../../types";
 
+// Familias y especies del backend desplegado (mismos UUID y códigos). Las
+// descripciones y fotos de referencia son propias del mock: el backend aún no
+// trae fotos (url_imagen_referencia nula).
 export const MOCK_FAMILIAS: Familia[] = [
   {
-    id: "f1a10001-0000-4000-a000-000000000001",
+    id: "04049a2d-60ca-4be5-b162-da3a31f01a07",
     nombre_cientifico: "Urotrygonidae",
-    descripcion: "Rayas redondas americanas",
+    descripcion: "Rayas redondas",
   },
   {
-    id: "f1a10002-0000-4000-a000-000000000002",
+    id: "de66e469-cbf0-4da6-9e6d-dc7e0bc3b593",
     nombre_cientifico: "Dasyatidae",
     descripcion: "Rayas látigo",
   },
   {
-    id: "f1a10003-0000-4000-a000-000000000003",
-    nombre_cientifico: "Gymnuridae",
-    descripcion: "Rayas mariposa",
+    id: "2d90a4cd-cd2f-462d-856d-b924e181b438",
+    nombre_cientifico: "Myliobatidae",
+    descripcion: "Rayas águila",
   },
   {
-    id: "f1a10004-0000-4000-a000-000000000004",
-    nombre_cientifico: "Aetobatidae",
-    descripcion: "Chuchos o rayas águila",
+    id: "4f168c54-d337-4007-9599-70c76099bc7c",
+    nombre_cientifico: "Potamotrygonidae",
+    descripcion: "Rayas de agua dulce sudamericanas",
   },
   {
-    id: "f1a10005-0000-4000-a000-000000000005",
-    nombre_cientifico: "Rhinobatidae",
-    descripcion: "Peces guitarra",
+    id: "8551748b-9ade-478c-a96a-26a1950805ad",
+    nombre_cientifico: "Styracuridae",
+    descripcion: "Rayas chupare",
+  },
+  {
+    id: "4da52b46-c518-4572-b9f4-6458565f7143",
+    nombre_cientifico: "Narcinidae",
+    descripcion: "Rayas eléctricas",
+  },
+  {
+    id: "7ebeadd0-4658-4149-af6d-54aaec86e008",
+    nombre_cientifico: "Rhinopteridae",
+    descripcion: "Rayas gavilán",
   },
 ];
 
+// El orden importa: las observaciones de ejemplo usan las cinco primeras por posición.
 export const MOCK_ESPECIES: Especie[] = [
   {
-    id: "e1a10001-0000-4000-a000-000000000001",
+    id: "7d0fe718-57cc-4959-9676-0b732a7ddba4",
     codigo: "URO_MICR",
     nombre_cientifico: "Urotrygon microphthalmum",
     nombre_comun: "Raya redonda de ojo pequeño",
@@ -49,8 +63,8 @@ export const MOCK_ESPECIES: Especie[] = [
       "https://www.topanglerscharters.com/marine-life/round-stingray.webp",
   },
   {
-    id: "e1a10002-0000-4000-a000-000000000002",
-    codigo: "HYP_AMER",
+    id: "e675ee15-4a6b-4b8f-b95d-a82dcfaaac25",
+    codigo: "DASYA_AME",
     nombre_cientifico: "Hypanus americanus",
     nombre_comun: "Raya látigo americana",
     familia: MOCK_FAMILIAS[1],
@@ -61,23 +75,21 @@ export const MOCK_ESPECIES: Especie[] = [
       "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2740_3540.jpg",
   },
   {
-    id: "e1a10003-0000-4000-a000-000000000003",
-    codigo: "GYM_MICR",
-    nombre_cientifico: "Gymnura micrura",
-    nombre_comun: "Raya mariposa lisa",
-    familia: MOCK_FAMILIAS[2],
+    id: "72cea799-7694-4c8e-848e-bf7e5b7c7652",
+    codigo: "Hypanus_guttatus",
+    nombre_cientifico: "Hypanus guttatus",
+    nombre_comun: "Raya látigo",
+    familia: MOCK_FAMILIAS[1],
     grupo: "raya",
-    descripcion:
-      "Disco extremadamente ancho con aletas pectorales expandidas y cola muy reducida sin espina.",
-    url_imagen_referencia:
-      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2747_3180.jpg",
+    descripcion: "Disco romboidal de hocico puntiagudo y cola larga con espina.",
+    url_imagen_referencia: null,
   },
   {
-    id: "e1a10004-0000-4000-a000-000000000004",
-    codigo: "AET_NARI",
+    id: "43dd55aa-2b57-4795-836d-143effa5326d",
+    codigo: "Aetobatus_narinari",
     nombre_cientifico: "Aetobatus narinari",
-    nombre_comun: "Raya chucho pintada",
-    familia: MOCK_FAMILIAS[3],
+    nombre_comun: "Raya gavilán",
+    familia: MOCK_FAMILIAS[2],
     grupo: "raya",
     descripcion:
       "Dorso oscuro con numerosas motas blancas, cabeza diferenciada con hocico cónico característico.",
@@ -85,16 +97,54 @@ export const MOCK_ESPECIES: Especie[] = [
       "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/263_7361.jpg",
   },
   {
-    id: "e1a10005-0000-4000-a000-000000000005",
-    codigo: "PSE_PERC",
-    nombre_cientifico: "Pseudobatos percellens",
-    nombre_comun: "Guitarra chola",
+    id: "fce1ae0a-f818-497c-8c1a-e2a52b6fba0a",
+    codigo: "Potamotrygon_magdalenae",
+    nombre_cientifico: "Potamotrygon magdalenae",
+    nombre_comun: "Raya del Magdalena",
+    familia: MOCK_FAMILIAS[3],
+    grupo: "raya",
+    descripcion: "Raya de río, de disco redondeado y manchas claras sobre fondo pardo.",
+    url_imagen_referencia: null,
+  },
+  {
+    id: "5e57f0af-d286-4696-b4be-f482f5a2b50f",
+    codigo: "Styracura_schmardae",
+    nombre_cientifico: "Styracura schmardae",
+    nombre_comun: "Raya chupare",
     familia: MOCK_FAMILIAS[4],
     grupo: "raya",
-    descripcion:
-      "Cuerpo alargado y plano con disco triangular y parte posterior robusta similar a un escualo.",
-    url_imagen_referencia:
-      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2727_5605.jpg",
+    descripcion: "Disco oscuro y redondeado, con la cola terminada en una punta corta.",
+    url_imagen_referencia: null,
+  },
+  {
+    id: "69bb9ca8-be91-49e6-82c8-1769c4b303c9",
+    codigo: "MYLIO_FRE",
+    nombre_cientifico: "Myliobatis freminvillii",
+    nombre_comun: "Raya águila",
+    familia: MOCK_FAMILIAS[2],
+    grupo: "raya",
+    descripcion: "Raya que nada en mar abierto, con el hocico prominente.",
+    url_imagen_referencia: null,
+  },
+  {
+    id: "bcb31aa5-3746-4adc-b328-0525e95ac7ad",
+    codigo: "NARC_BAN",
+    nombre_cientifico: "Narcine bancroftii",
+    nombre_comun: "Raya eléctrica caribeña",
+    familia: MOCK_FAMILIAS[5],
+    grupo: "raya",
+    descripcion: "Produce descargas eléctricas para defenderse.",
+    url_imagen_referencia: null,
+  },
+  {
+    id: "37ff19a7-08e0-4606-b496-ce593437486a",
+    codigo: "RHINOP_BON",
+    nombre_cientifico: "Rhinoptera bonasus",
+    nombre_comun: "Raya gavilán dorada",
+    familia: MOCK_FAMILIAS[6],
+    grupo: "raya",
+    descripcion: "Forma grupos grandes que se desplazan juntos.",
+    url_imagen_referencia: null,
   },
 ];
 
@@ -128,7 +178,7 @@ export const MOCK_USUARIOS: Record<
   },
 };
 
-// Códigos tomados del DoD (el contrato no los enumera). Pendiente confirmar con el Equipo 3.
+// Códigos confirmados con el backend desplegado (el contrato no los enumera).
 export const MOCK_TIPOS_AMBIENTE: CatalogoItem[] = [
   {
     id: "c1a10001-0000-4000-a000-000000000001",
@@ -170,31 +220,31 @@ export const MOCK_TIPOS_AMBIENTE: CatalogoItem[] = [
 
 export const MOCK_CONDICIONES_ORGANISMO: CatalogoItem[] = [
   {
-    id: "c2a10001-0000-4000-a000-000000000001",
+    id: "9025b3d6-5cfb-4572-ab5c-d798e41c5361",
     codigo: "vivo",
     nombre_visible: "Vivo",
     descripcion: "Se mueve o respira",
   },
   {
-    id: "c2a10002-0000-4000-a000-000000000002",
+    id: "8c90046e-b6bf-42be-9936-c8c91ebd67e0",
     codigo: "muerto_reciente",
     nombre_visible: "Muerto reciente",
     descripcion: "Murió hace poco, sin mal olor ni daño",
   },
   {
-    id: "c2a10003-0000-4000-a000-000000000003",
-    codigo: "herido",
-    nombre_visible: "Herido",
-    descripcion: "Vivo, pero con heridas visibles",
+    id: "6e0ae38c-41e0-43d6-bd11-2e6b7afa5579",
+    codigo: "capturado",
+    nombre_visible: "Capturado",
+    descripcion: "Atrapado en red, anzuelo o trampa",
   },
   {
-    id: "c2a10004-0000-4000-a000-000000000004",
-    codigo: "muerto",
-    nombre_visible: "Muerto",
-    descripcion: "Sin vida, sin saber hace cuánto",
+    id: "ecc6b078-3899-41ca-ac33-a1fa187d93cb",
+    codigo: "liberado",
+    nombre_visible: "Liberado",
+    descripcion: "Se capturó y se devolvió al agua",
   },
   {
-    id: "c2a10005-0000-4000-a000-000000000005",
+    id: "3107882d-9d80-48fa-a5e3-6a0d9daa022a",
     codigo: "descompuesto",
     nombre_visible: "Descompuesto",
     descripcion: "Con mal olor o partes deshechas",
@@ -395,7 +445,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "pendiente_experto",
     creado_en: "2026-10-01T11:00:00-05:00",
     fecha_hora_evento: "2026-10-01T10:40:00-05:00",
-    imagen_url: imagenDeEspecie(2),
+    imagen_url: imagenDeEspecie(1),
     especie_aceptada: null,
     confianza: 0.58,
     usuario: MOCK_USUARIOS.usuario,
@@ -490,7 +540,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "identificado",
     creado_en: "2026-10-05T08:15:00-05:00",
     fecha_hora_evento: "2026-10-05T08:00:00-05:00",
-    imagen_url: imagenDeEspecie(4),
+    imagen_url: imagenDeEspecie(0),
     especie_aceptada: MOCK_ESPECIES[4],
     confianza: 0.91,
     usuario: MOCK_USUARIOS.usuario,
@@ -571,7 +621,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     estado: "recibido",
     creado_en: "2026-10-07T22:00:00-05:00",
     fecha_hora_evento: "2026-10-07T21:55:00-05:00",
-    imagen_url: imagenDeEspecie(2),
+    imagen_url: imagenDeEspecie(1),
     especie_aceptada: null,
     confianza: null,
     usuario: MOCK_USUARIOS.usuario,

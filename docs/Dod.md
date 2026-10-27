@@ -87,7 +87,7 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 **Datos del organismo**
 
 - [x] `tipo_ambiente` desde `/catalogos/tipos-ambiente`. -> {dulceacuicola, marino, arrecife, estuarino, manglar, playa}
-- [x] `condicion_organismo` desde `/catalogos/condiciones-organismo`. Obligatoria. -> {vivo, muerto, herido, muerto reciente, descompuesto}
+- [x] `condicion_organismo` desde `/catalogos/condiciones-organismo`. Obligatoria. -> {vivo, muerto_reciente, capturado, liberado, descompuesto} (confirmado con el backend desplegado, 27 oct)
 - [x] `observaciones_usuario` con máximo 2000 caracteres.
 - [x] Sin campo de profundidad propio.
 
