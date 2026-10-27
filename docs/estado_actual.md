@@ -1,8 +1,9 @@
-# Estado actual de la app (26 oct 2026)
+# Estado actual de la app (27 oct 2026)
 
 Resumen de cómo está IdentiMar hoy en la rama `develop`, que ya incluye la identidad visual (`style/refactor-identidad-visual`, #15). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); las diferencias con el contrato, en [`discrepancias.md`](discrepancias.md).
 
 - **Datos:** todo funciona con datos simulados (mock). No hay llamadas de red todavía. Lo que se guarda en el teléfono (borrador, fotos, cola de envío y copias de catálogos y listados) usa `expo-file-system`; la detección de red usa `expo-network`. Con `EXPO_PUBLIC_USE_API=true` todos los servicios usan los esqueletos API, así que no se puede entrar a la app hasta H2.
+- **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. Lo verificado en Expo Go antes de esa fecha fue con SDK 57: hay que repasarlo con SDK 58.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
 
@@ -80,6 +81,8 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **Dependencias agregadas:** `@react-native-community/datetimepicker` (fecha y hora), `expo-file-system` (datos locales) y `expo-network` (detección de red).
 
+**`.npmrc` con `legacy-peer-deps`:** `datetimepicker` declara como opcional `react-native-windows`, que pide React Native 0.85 y choca con la 0.88 de SDK 58. No usamos Windows.
+
 ---
 
 ## Pendiente
@@ -95,7 +98,7 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 - Esqueletos `api` de observaciones, validación y catálogos: solo comprobados en el código (compilan con `npx tsc --noEmit`), no en Expo Go. Verificar cuando haya sesión con la API real: cada pantalla que los use muestra un error claro y no se cierra.
 - Tokens en memoria (`refresh_token`, `expires_in`): no se ven en pantalla. En Expo Go solo se verificó que registro, inicio y cierre de sesión funcionan. Verificar en H2 que la renovación con `/auth/refresh` usa el `refresh_token` guardado.
 - 401 del inicio de sesión: tiene mensaje ("El correo o la contraseña no coinciden."), pero el mock no lo puede forzar. Verificar con la API real en H2.
-- 400 del inicio de sesión: el contrato no lo define (solo 401). Confirmar con el Equipo 3 si existe; si no, no se maneja.
+- ~~400 del inicio de sesión: el contrato no lo define (solo 401).~~ El backend desplegado sí lo devuelve; la app marca los campos con textos propios en español.
 
 **H1 (Frentes A, B y validación)**, implementado en `feature/h1-pendientes`
 
@@ -124,7 +127,7 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 **Offline: Por revisar** (sin marcar como hecho)
 
 - **Prueba de una cuenta sin datos guardados: pendiente.** Esperado: con `red` y una cuenta que nunca abrió Registros, Inicio y Registros muestran "Aún no hay datos guardados…" y Reintentar, sin errores técnicos.
-- El 401 en la cola muestra el aviso "Tu sesión venció. Vuelve a entrar para enviarlas." pero no cierra la sesión.
+- ~~El 401 en la cola muestra un aviso pero no cierra la sesión.~~ Ahora vuelve a inicio de sesión con "Tu sesión venció, vuelve a entrar." y la cola se envía al volver a entrar. Falta verificarlo en Expo Go con `EXPO_PUBLIC_MOCK_ERROR=401` y una observación en cola.
 - La prueba de la cola con error 500 tres veces se verificó sin los mensajes de Metro: que el intento 3 venga de "entrar" se deduce de la espera de 10 s, no se observó.
 - `scripts/probar-servicios.ts` falla con `EXPO_PUBLIC_MOCK_ERROR=red` (esperado: los catálogos responden sin conexión); pasa sin `red`.
 - La prueba de que la franja "Sin conexión" desaparece al desactivar el modo avión depende de que `expo-network` avise el cambio de red.
@@ -134,16 +137,12 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 - H2: falta definir cómo trata el cliente real los timeouts (si cuentan como sin conexión) y qué pasa con las URLs firmadas de imágenes guardadas en la caché, que vencen.
 - Cambio de comportamiento: Registros ahora se recarga al cambiar de cuenta o de rol de prueba.
 
-**H2:** integración real con la API (autenticación, observaciones, catálogos, validación y sincronización).
+**H2:** integración real con la API (autenticación, observaciones, catálogos, validación y sincronización). En curso en `feature/h2-integracion`; pasos y avance en [`plan_integracion.md`](plan_integracion.md).
 
 **Pruebas:** las pruebas funcionales y de usabilidad del DoD aún no se han registrado en `docs/pruebas/`.
 
 ---
 
-## Preguntas abiertas para el Equipo 3
+## Preguntas para el Equipo 3
 
-- A qué estado pasa una observación cuando el experto la rechaza (`rechazada`). El mock la deja en `no_concluyente` y la saca de la cola "Por validar"; confirmar que el backend también la saca.
-- No hay endpoint para editar o borrar una validación (solo `POST`, que responde 409 si ya existe). Si el experto necesita corregir su comentario o su decisión, hay que definirlo.
-- Los catálogos de ambiente y condición usan los códigos del DoD; el contrato no los enumera.
-- La respuesta del modelo trae `umbral_minimo` y `tiempo_inferencia_ms`, que no están en el contrato, y la especie como nombre científico (`Hypanus_guttatus`) en vez de `codigo`.
-- Habrá forma de editar una validación experta ya enviada? El contrato solo tiene `POST /observaciones/{id}/validacion` (409 si ya existe), así que el comentario y la decisión no se pueden corregir.
+Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3).
