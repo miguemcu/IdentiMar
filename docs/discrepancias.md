@@ -69,7 +69,7 @@ Probado el 2026-10-27 contra `https://identimar-backend.onrender.com/api/v1`. Co
 | 29  | Códigos de especie       | Ejemplo `URO_MICR`                                           | Mezclados: `DASYA_AME`, `URO_MICR` y, para las clases del modelo, `Hypanus_guttatus`    | Usa el `codigo` que llegue; mock con los mismos códigos                  | pendiente          |
 | 30  | Textos de los catálogos  | —                                                            | Sin tildes (`Dulceacuicola`, `Raya latigo`); sin `url_imagen_referencia`               | Muestra lo que llega; sin foto, la ficha la omite y la lista muestra un ícono | pendiente          |
 | 31  | Cuentas de prueba        | Ejemplo `ana.torres@ejemplo.co`                              | Esa cuenta no existe                                                                   | Cuentas propias del Equipo 1; el E3 asigna el rol experto                | acordado con E3    |
-| 32  | Respuesta de `/auth/refresh` | `LoginResponse` (nuevo par de tokens y usuario)          | Solo `{access_token, expires_in}`                                                      | Conserva el `refresh_token` anterior (vale 7 días) y el usuario de la sesión | resuelto en la app |
+| 32  | Respuesta de `/auth/refresh` | `LoginResponse` (nuevo par de tokens y usuario)          | Solo `{access_token, expires_in}`                                                      | Conserva el `refresh_token` anterior y el usuario de la sesión. Límite: la sesión dura como máximo 7 días desde el último inicio de sesión, aunque se use la app a diario | pendiente          |
 
 ## Preguntas para el Equipo 3
 
@@ -83,6 +83,8 @@ Respondidas:
 - El alcance es solo rayas: la variable `grupo` no se usa en la interfaz.
 
 Abiertas:
+
+- **Pedido:** que `/auth/refresh` devuelva también un `refresh_token` nuevo en cada renovación, como ya promete el contrato con `LoginResponse` (fila 32). Así la sesión se mantiene abierta mientras se use la app, en vez de vencer a los 7 días del último inicio de sesión.
 
 - ¿`info.version: "3"` es la versión vigente? La descripción dice "v1.0".
 - ¿Habrá forma de editar una validación experta ya enviada? Solo existe `POST /observaciones/{id}/validacion` (409 si ya existe).
