@@ -159,16 +159,16 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 
 ### Offline first (parte 1: local y simulado)
 
-- [ ] **Borrador local:** una observación a medias se guarda al salir de la pantalla y se recupera al reabrir la app.
-- [ ] **Fotos locales:** la imagen se copia al almacenamiento de la app, para no depender de la ruta original de la galería.
-- [ ] **Cola de envío:** si el mock simula falta de red, la observación queda como `pendiente_envio`. Es un estado **del cliente**, separado de `EstadoObservacion`, con una etiqueta distinta.
-- [ ] Al volver la conexión (simulada), la cola se envía en orden de creación.
-- [ ] Catálogos y listados se muestran desde caché sin red, con indicador "Sin conexión".
+- [x] **Borrador local:** una observación a medias se guarda al salir de la pantalla y se recupera al reabrir la app. *Verificado en Expo Go (Android)*
+- [x] **Fotos locales:** la imagen se copia al almacenamiento de la app, para no depender de la ruta original de la galería. *Verificado en Expo Go (Android), incluido el aviso si la copia falla (`copia-foto`).*
+- [x] **Cola de envío:** si el mock simula falta de red, la observación queda como `pendiente_envio`. Es un estado **del cliente**, separado de `EstadoObservacion`, con una etiqueta distinta. *Verificado en Expo Go (Android), con `red` y en modo avión.*
+- [x] Al volver la conexión (simulada), la cola se envía en orden de creación. *Verificado en Expo Go (Android): se envía una sola vez; 400, 413, 500 y `foto-ausente` pasan a revisión sin bloquear la cola.*
+- [x] Catálogos y listados se muestran desde caché sin red, con indicador "Sin conexión". *Verificado en Expo Go (Android), con `red` y en modo avión.*
 
 ### Criterio de cierre de H1
 
 - [x] Un usuario inicia sesión, crea una observación, la ve pasar de `recibido` a `identificado` y la encuentra en Registros y en su detalle.
-- [ ] Una observación creada sin red queda en cola y se envía al volver la conexión.
+- [x] Una observación creada sin red queda en cola y se envía al volver la conexión. *Verificado en Expo Go (Android)*
 - [x] La app compila sin errores y corre en Expo Go.
 
 ---
