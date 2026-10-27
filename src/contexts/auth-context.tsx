@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { authService } from '../services';
+import { borrarBorrador } from '../services/local/borrador';
 import type {
   UsuarioPublico,
   Rol,
@@ -101,13 +102,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async (motivo?: MotivoCierre) => {
     setIsLoading(true);
     try {
+      // Al cerrar sesión a mano se descarta el borrador de esa cuenta. Si la
+      // sesión venció (motivo), se conserva para no perder datos de campo.
+      if (!motivo && usuario) borrarBorrador(usuario.id);
       setAvisoSesion(motivo ? AVISO_CIERRE[motivo] : null);
       setUsuario(null);
       setTokens(null);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [usuario]);
 
   // No pasa por isLoading: así el cambio de rol vuelve a dibujar la app una
   // sola vez (con el nuevo usuario) en lugar de dos.

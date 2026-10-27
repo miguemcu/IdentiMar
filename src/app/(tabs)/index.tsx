@@ -12,7 +12,9 @@ import {
 } from '@/components/ui';
 import { ObservacionCard } from '@/components/ui/observacion-card';
 import { useResumenRegistros } from '@/hooks/use-resumen-registros';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
 import { catalogosService } from '@/services';
+import { conCache } from '@/services/local/cache';
 import type { Especie } from '@/types';
 
 function saludoPorHora(hora: number): string {
@@ -32,12 +34,13 @@ function especieDelDia(especies: Especie[]): Especie | null {
 export default function InicioScreen() {
   const router = useRouter();
   const [saludo] = useState(() => saludoPorHora(new Date().getHours()));
-  const { resumen, error, recargar } = useResumenRegistros();
+  const { resumen, error, sinConexion, recargar } = useResumenRegistros();
   const [especie, setEspecie] = useState<Especie | null>(null);
 
   const cargarEspecie = useCallback(async () => {
     try {
-      setEspecie(especieDelDia(await catalogosService.obtenerEspecies()));
+      const r = await conCache('especies', () => catalogosService.obtenerEspecies());
+      setEspecie(especieDelDia(r.datos));
     } catch {
       // La tarjeta es opcional: si falla, simplemente no se muestra.
     }
@@ -68,6 +71,8 @@ export default function InicioScreen() {
         </View>
       </HeroHeader>
 
+      {sinConexion ? <SinConexion guardadoEn={sinConexion.guardadoEn} /> : null}
+
       <ActionCard
         titulo="Nueva observación"
         subtitulo="Fotografía y registra una raya"
@@ -83,7 +88,7 @@ export default function InicioScreen() {
           onAccion={() => router.push('/(tabs)/registros' as any)}
         />
 
-        {error ? (
+        {error && !sinConexion ? (
           <Card>
             <Text className="font-source text-base text-slate-deep">
               No pudimos cargar tus registros.

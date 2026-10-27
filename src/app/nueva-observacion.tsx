@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   AppState,
   Image,
   Linking,
@@ -14,143 +13,32 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Card, Chip, Icono, Input, ScreenHeader, type NombreIcono } from '@/components/ui';
+import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
 import { useAuth } from '@/contexts/auth-context';
-import {
-  catalogosService,
-  ErrorServicio,
-  mensajeError,
-  observacionesService,
-  type ImagenObservacion,
-} from '@/services';
+import { useBorradorObservacion } from '@/hooks/use-borrador-observacion';
+import { useEnviarObservacion } from '@/hooks/use-enviar-observacion';
+import type { BorradorObservacion } from '@/services/local/borrador';
+import { copiarFotoBorrador } from '@/services/local/fotos';
+import { catalogosService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
 import type { CatalogoItem } from '@/types';
-
-type TemporaryCoordinates = {
-  latitud: number | null;
-  longitud: number | null;
-};
-
-type CoordinateField = keyof TemporaryCoordinates;
-
-const MAX_NOTAS = 2000;
-
-const RANGO_COORDENADA: Record<CoordinateField, number> = {
-  latitud: 90,
-  longitud: 180,
-};
-
-function errorCoordenada(
-  field: CoordinateField,
-  texto: string,
-  valor: number | null,
-) {
-  if (texto.trim() === '') return undefined;
-  if (valor === null) return 'Escribe un número, por ejemplo 8.123456';
-  const max = RANGO_COORDENADA[field];
-  return Math.abs(valor) > max ? `Debe estar entre -${max} y ${max}` : undefined;
-}
-
-/**
- * Tipo de la imagen. Algunos Android no informan `mimeType`; en ese caso
- * se deduce de la extensión del archivo.
- */
-function tipoImagen(
-  asset: ImagePicker.ImagePickerAsset,
-): ImagenObservacion['mimeType'] | null {
-  const mimeType = asset.mimeType?.toLowerCase();
-  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') return 'image/jpeg';
-  if (mimeType === 'image/png') return 'image/png';
-  if (mimeType) return null;
-
-  const extension = /\.(\w+)(?:\?.*)?$/
-    .exec(asset.fileName ?? asset.uri)?.[1]
-    ?.toLowerCase();
-  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
-  if (extension === 'png') return 'image/png';
-  return null;
-}
-
-function imagenParaEnvio(asset: ImagePicker.ImagePickerAsset): ImagenObservacion {
-  // validateImageAsset ya garantizó JPEG o PNG.
-  const mimeType = tipoImagen(asset) ?? 'image/jpeg';
-  const extension = mimeType === 'image/png' ? 'png' : 'jpg';
-  return {
-    uri: asset.uri,
-    mimeType,
-    nombre: asset.fileName ?? `observacion.${extension}`,
-  };
-}
-
-const PASOS = ['Foto', 'Dónde y cuándo', 'Sobre el animal'] as const;
-
-/** Tarjeta de un bloque del formulario con ícono y título. */
-function Bloque({
-  icono,
-  titulo,
-  children,
-}: {
-  icono: NombreIcono;
-  titulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <View className="mb-3 flex-row items-center gap-2">
-        <View className="h-9 w-9 items-center justify-center rounded-xl bg-ocean/10">
-          <Icono nombre={icono} size={20} className="text-ocean-dark" />
-        </View>
-        <Text
-          accessibilityRole="header"
-          className="font-nunito-extrabold text-lg text-slate-deep"
-        >
-          {titulo}
-        </Text>
-      </View>
-      {children}
-    </Card>
-  );
-}
-
-function Opciones({
-  opciones,
-  seleccion,
-  onSeleccionar,
-}: {
-  opciones: CatalogoItem[];
-  seleccion: string | null;
-  onSeleccionar: (codigo: string) => void;
-}) {
-  return (
-    <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-      {opciones.map((opcion) => (
-        <Chip
-          key={opcion.id}
-          etiqueta={opcion.nombre_visible}
-          activo={opcion.codigo === seleccion}
-          onPress={() => onSeleccionar(opcion.codigo)}
-          accessibilityHint={opcion.descripcion ?? undefined}
-        />
-      ))}
-    </View>
-  );
-}
-
-function validateImageAsset(asset: ImagePicker.ImagePickerAsset) {
-  const hasValidFormat = tipoImagen(asset) !== null;
-  const hasValidSize = Math.max(asset.width, asset.height) >= 1280;
-
-  return {
-    isValid: hasValidFormat && hasValidSize,
-    hasValidFormat,
-    hasValidSize,
-  };
-}
+import { Bloque, Opciones } from '@/components/nueva-observacion/bloques';
+import {
+  errorCoordenada,
+  MAX_NOTAS,
+  PASOS,
+  validateImageAsset,
+  type CoordinateField,
+  type TemporaryCoordinates,
+} from '@/constants/nueva-observacion';
 
 export default function NuevaObservacionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
+  const { usuario } = useAuth();
   const [imageAsset, setImageAsset] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -174,26 +62,84 @@ export default function NuevaObservacionScreen() {
   const [modoFecha, setModoFecha] = useState<'date' | 'time' | null>(null);
   const [tiposAmbiente, setTiposAmbiente] = useState<CatalogoItem[]>([]);
   const [condiciones, setCondiciones] = useState<CatalogoItem[]>([]);
-  const [errorCatalogos, setErrorCatalogos] = useState(false);
+  // 'sin-conexion': no hay señal ni copia de los catálogos en el teléfono.
+  const [errorCatalogos, setErrorCatalogos] = useState<boolean | 'sin-conexion'>(false);
   const [tipoAmbiente, setTipoAmbiente] = useState<string | null>(null);
   const [condicion, setCondicion] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [paso, setPaso] = useState(0);
+  const [avisoFoto, setAvisoFoto] = useState<string | null>(null);
   const previousAppState = useRef(AppState.currentState);
+
+  // Al entrar, se recupera el formulario que quedó a medias.
+  function aplicarBorrador(restaurado: BorradorObservacion) {
+    const f = restaurado.foto;
+    setImageAsset(f ? ({ ...f, type: 'image' } as ImagePicker.ImagePickerAsset) : null);
+    setCoordinates(restaurado.coordenadas);
+    setCoordinateInputs(restaurado.textoCoordenadas);
+    setPrecisionGps(restaurado.precisionGps);
+    setFechaEvento(new Date(restaurado.fechaEvento));
+    setFechaFutura(new Date(restaurado.fechaEvento).getTime() > Date.now());
+    setTipoAmbiente(restaurado.tipoAmbiente);
+    setCondicion(restaurado.condicion);
+    setNotas(restaurado.notas);
+    setPaso(restaurado.paso);
+  }
+  const borrador = useBorradorObservacion(usuario?.id, aplicarBorrador);
+  const { restaurado } = borrador;
+  const { enviar, enviando, errorEnvio } = useEnviarObservacion(borrador.limpiar);
+
+  // Cada cambio del formulario se guarda en el dispositivo.
+  const { guardar } = borrador;
+  useEffect(() => {
+    guardar({
+      foto: imageAsset
+        ? {
+            uri: imageAsset.uri,
+            width: imageAsset.width,
+            height: imageAsset.height,
+            mimeType: imageAsset.mimeType ?? null,
+            fileName: imageAsset.fileName ?? null,
+          }
+        : null,
+      coordenadas: coordinates,
+      textoCoordenadas: coordinateInputs,
+      precisionGps,
+      fechaEvento: fechaEvento.toISOString(),
+      tipoAmbiente,
+      condicion,
+      notas,
+      paso,
+    });
+  }, [guardar, imageAsset, coordinates, coordinateInputs, precisionGps, fechaEvento, tipoAmbiente, condicion, notas, paso]);
+
+  function empezarDeNuevo() {
+    borrador.limpiar();
+    setImageAsset(null);
+    setCoordinates({ latitud: null, longitud: null });
+    setCoordinateInputs({ latitud: '', longitud: '' });
+    setPrecisionGps(null);
+    setFechaEvento(new Date());
+    setFechaFutura(false);
+    setTipoAmbiente(null);
+    setCondicion(null);
+    setNotas('');
+    setPaso(0);
+    setAvisoFoto(null);
+  }
 
   const cargarCatalogos = useCallback(async () => {
     setErrorCatalogos(false);
     try {
+      // Desde el teléfono si no hay señal: así se puede llenar el paso 3 sin red.
       const [tipos, conds] = await Promise.all([
-        catalogosService.obtenerTiposAmbiente(),
-        catalogosService.obtenerCondicionesOrganismo(),
+        conCache('tipos-ambiente', () => catalogosService.obtenerTiposAmbiente()),
+        conCache('condiciones', () => catalogosService.obtenerCondicionesOrganismo()),
       ]);
-      setTiposAmbiente(tipos);
-      setCondiciones(conds);
-    } catch {
-      setErrorCatalogos(true);
+      setTiposAmbiente(tipos.datos);
+      setCondiciones(conds.datos);
+    } catch (error) {
+      setErrorCatalogos(esSinConexion(error) ? 'sin-conexion' : true);
     }
   }, []);
 
@@ -224,48 +170,6 @@ export default function NuevaObservacionScreen() {
       setPaso(paso - 1);
     } else {
       router.back();
-    }
-  }
-
-  async function enviar() {
-    if (
-      !imageAsset ||
-      !tipoAmbiente ||
-      !condicion ||
-      coordinates.latitud === null ||
-      coordinates.longitud === null
-    ) {
-      return;
-    }
-
-    setEnviando(true);
-    setErrorEnvio(null);
-    const notasLimpias = notas.trim();
-
-    try {
-      const resumen = await observacionesService.crearObservacion(
-        {
-          fecha_hora_evento: fechaIsoLocal(fechaEvento),
-          latitud: coordinates.latitud,
-          longitud: coordinates.longitud,
-          precision_gps_metros: precisionGps,
-          tipo_ambiente: tipoAmbiente,
-          condicion_organismo: condicion,
-          observaciones_usuario: notasLimpias === '' ? null : notasLimpias,
-        },
-        imagenParaEnvio(imageAsset),
-      );
-      router.replace(`/observaciones/resultado/${resumen.id}` as any);
-    } catch (error) {
-      if (error instanceof ErrorServicio && error.status === 401) {
-        Alert.alert('Sesión expirada', mensajeError(error), [
-          { text: 'Iniciar sesión', onPress: () => void logout('sesion-vencida') },
-        ]);
-      } else {
-        setErrorEnvio(mensajeError(error));
-      }
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -373,7 +277,16 @@ export default function NuevaObservacionScreen() {
       return;
     }
 
-    setImageAsset(selectedAsset);
+    // La copia local evita perder la foto si se cierra la app antes de enviar.
+    const copia = usuario
+      ? copiarFotoBorrador(usuario.id, selectedAsset.uri, selectedAsset.fileName ?? selectedAsset.uri)
+      : null;
+    setAvisoFoto(
+      copia
+        ? null
+        : 'No pudimos guardar una copia de la foto en el teléfono. Puedes seguir, pero si cierras la app antes de enviar quizá tengas que elegirla de nuevo.',
+    );
+    setImageAsset(copia ? { ...selectedAsset, uri: copia } : selectedAsset);
     setImageValidationError(null);
     void captureLocation();
   }
@@ -441,6 +354,19 @@ export default function NuevaObservacionScreen() {
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
+        {restaurado ? (
+          <Card className="border-sky-200 bg-sky-50">
+            <Text accessibilityLiveRegion="polite" className="font-nunito-bold text-base text-slate-deep">
+              Recuperamos tu observación sin terminar
+            </Text>
+            {borrador.fotoPerdida ? (
+              <Text className="mt-1 font-source text-sm text-slate-mid">
+                La foto ya no está en el teléfono. Tómala o elígela de nuevo.
+              </Text>
+            ) : null}
+            <Button title="Empezar de nuevo" variant="ghost" onPress={empezarDeNuevo} className="mt-2" />
+          </Card>
+        ) : null}
         {paso === 0 ? (
           <>
             {imageAsset ? (
@@ -481,6 +407,11 @@ export default function NuevaObservacionScreen() {
                 className="text-center font-source text-base text-danger"
               >
                 {imageValidationError}
+              </Text>
+            ) : null}
+            {avisoFoto ? (
+              <Text accessibilityLiveRegion="polite" className="text-center font-source text-sm text-slate-mid">
+                {avisoFoto}
               </Text>
             ) : null}
 
@@ -650,6 +581,7 @@ export default function NuevaObservacionScreen() {
 
         {paso === 2 ? (
           <>
+            {errorCatalogos === 'sin-conexion' ? <SinConexion guardadoEn={null} /> : null}
             {errorCatalogos ? (
               <Card>
                 <Text className="font-source text-base text-danger">
@@ -722,7 +654,20 @@ export default function NuevaObservacionScreen() {
           size="lg"
           loading={ultimoPaso && enviando}
           disabled={faltantes.length > 0}
-          onPress={() => (ultimoPaso ? void enviar() : setPaso(paso + 1))}
+          onPress={() =>
+            ultimoPaso
+              ? void enviar({
+                  imageAsset,
+                  latitud: coordinates.latitud,
+                  longitud: coordinates.longitud,
+                  precisionGps,
+                  fechaEvento,
+                  tipoAmbiente,
+                  condicion,
+                  notas,
+                })
+              : setPaso(paso + 1)
+          }
         />
       </View>
     </View>

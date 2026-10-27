@@ -13,7 +13,7 @@ import type {
   ImagenObservacion,
   IObservacionesService,
 } from "../observaciones.service";
-import { simularRetardo } from "./delay";
+import { lanzarSiSinRed, simularRetardo } from "./delay";
 import {
   MOCK_CONDICIONES_ORGANISMO,
   MOCK_ESPECIES,
@@ -32,7 +32,7 @@ function uuidSimulado(): string {
 
 /**
  * Permite probar los errores del contrato sin backend:
- * EXPO_PUBLIC_MOCK_ERROR = 400 | 401 | 413 | red
+ * EXPO_PUBLIC_MOCK_ERROR = 400 | 401 | 413 | 500 | red
  */
 function errorSimulado(): ErrorServicio | null {
   switch (process.env.EXPO_PUBLIC_MOCK_ERROR) {
@@ -51,6 +51,11 @@ function errorSimulado(): ErrorServicio | null {
       return new ErrorServicio(413, {
         codigo: "imagen-muy-grande",
         mensaje: "Imagen demasiado grande.",
+      });
+    case "500":
+      return new ErrorServicio(500, {
+        codigo: "error-interno",
+        mensaje: "Error interno del servidor.",
       });
     case "red":
       return new ErrorServicio(0, {
@@ -309,6 +314,7 @@ export class ObservacionesMockService implements IObservacionesService {
     filtros?: FiltrosListadoObservaciones,
   ): Promise<ObservacionesPagina> {
     await simularRetardo();
+    lanzarSiSinRed();
 
     let resultado = [...this.observaciones];
 
@@ -337,6 +343,7 @@ export class ObservacionesMockService implements IObservacionesService {
 
   async obtenerObservacion(id: string): Promise<ObservacionDetalle> {
     await simularRetardo();
+    lanzarSiSinRed();
 
     const consulta = (this.consultasDetalle.get(id) ?? 0) + 1;
     this.consultasDetalle.set(id, consulta);

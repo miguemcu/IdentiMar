@@ -1,6 +1,12 @@
 import { Button, Chip, Icono, ScreenHeader, etiquetaEstado } from '@/components/ui';
 import { ObservacionCard } from '@/components/ui/observacion-card';
+import { ColaEnRegistros } from '@/components/cola-envio/cola-en-registros';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
+import { useAuth } from '@/contexts/auth-context';
+import { useAlVolverLaSenal } from '@/hooks/use-al-volver-la-senal';
 import { observacionesService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
 import type { EstadoObservacion, ObservacionResumen } from '@/types';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -24,6 +30,8 @@ type Estado = 'cargando' | 'listo' | 'error';
 
 export default function RegistrosScreen() {
   const router = useRouter();
+  const { usuario } = useAuth();
+  const [sinConexion, setSinConexion] = useState<{ guardadoEn: string | null } | null>(null);
 
   const [items, setItems] = useState<ObservacionResumen[]>([]);
   const [pagina, setPagina] = useState(0);
@@ -38,19 +46,29 @@ export default function RegistrosScreen() {
     // Al volver a la pestaña se recarga sin mostrar de nuevo el indicador.
     setEstado((actual) => (actual === 'listo' ? actual : 'cargando'));
     try {
-      const resp = await observacionesService.listarObservaciones({
-        estado: filtro ?? undefined,
-        pagina: 1,
-        tamano: TAMANO_PAGINA,
-      });
-      setItems(resp.items);
+      const pedir = () =>
+        observacionesService.listarObservaciones({
+          estado: filtro ?? undefined,
+          pagina: 1,
+          tamano: TAMANO_PAGINA,
+        });
+      // Se guarda en el teléfono solo la primera página sin filtro, por usuario.
+      const r =
+        filtro === null && usuario
+          ? await conCache(`observaciones-${usuario.id}`, pedir)
+          : { datos: await pedir(), desdeCache: false, guardadoEn: '' };
+      setItems(r.datos.items);
       setPagina(1);
-      setTotal(resp.total);
+      setTotal(r.datos.total);
+      setSinConexion(r.desdeCache ? { guardadoEn: r.guardadoEn } : null);
       setEstado('listo');
-    } catch {
+    } catch (error) {
+      setSinConexion(esSinConexion(error) ? { guardadoEn: null } : null);
       setEstado('error');
     }
-  }, [filtro]);
+  }, [filtro, usuario]);
+
+  useAlVolverLaSenal(sinConexion !== null, () => void cargarInicial());
 
   useFocusEffect(
     useCallback(() => {
@@ -106,6 +124,15 @@ export default function RegistrosScreen() {
         }
       />
 
+      {sinConexion ? (
+        <SinConexion
+          guardadoEn={sinConexion.guardadoEn}
+          sinCopia={filtro ? 'Este filtro necesita conexión.' : undefined}
+        />
+      ) : null}
+
+      <ColaEnRegistros />
+
       <View>
         <ScrollView
           horizontal
@@ -134,7 +161,13 @@ export default function RegistrosScreen() {
         </View>
       ) : null}
 
-      {estado === 'error' ? (
+      {estado === 'error' && sinConexion ? (
+        <View className="w-full p-4">
+          <Button title="Reintentar" variant="outline" onPress={cargarInicial} />
+        </View>
+      ) : null}
+
+      {estado === 'error' && !sinConexion ? (
         <View className="flex-1 items-center justify-center p-6">
           <Text className="font-nunito-bold text-base text-slate-deep text-center">
             No pudimos cargar tus registros

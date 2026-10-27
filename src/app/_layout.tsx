@@ -21,6 +21,7 @@ import {
   SourceSans3_600SemiBold,
 } from "@expo-google-fonts/source-sans-3";
 import { SessionProvider, useAuth } from "@/contexts/auth-context";
+import { ColaEnvioProvider } from "@/contexts/cola-envio-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -78,7 +79,9 @@ function RootLayoutInner() {
 export default function RootLayout() {
   return (
     <SessionProvider>
-      <RootLayoutInner />
+      <ColaEnvioProvider>
+        <RootLayoutInner />
+      </ColaEnvioProvider>
     </SessionProvider>
   );
 }
