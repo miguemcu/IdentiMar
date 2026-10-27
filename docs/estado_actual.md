@@ -44,6 +44,8 @@ cp .env.example .env
 npx expo start -c
 ```
 
+Para abrirla en Expo Go desde otra red: `npm run start:tunel`. Con SDK 58, `npx expo start --tunnel` usa el túnel firmado de Expo, que exige iniciar sesión en una cuenta de Expo; el script usa ngrok como antes.
+
 | Variable                     | Valores                                                         | Para qué                                               |
 | ---------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
 | `EXPO_PUBLIC_USE_API`        | `false` (por defecto) · `true`                                  | `true` usa el esqueleto de la API, que aún lanza error |
