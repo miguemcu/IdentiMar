@@ -46,7 +46,7 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 
 export default function PerfilScreen() {
   const router = useRouter();
-  const { usuario, rol, logout, cambiarRolMock } = useAuth();
+  const { usuario, rol, logout, actualizarUsuario, cambiarRolMock } = useAuth();
   const [cifras, setCifras] = useState<Cifras | null>(null);
   // Datos de GET /auth/perfil. Mientras llegan, o si fallan, se usan los de la sesión.
   const [perfil, setPerfil] = useState<UsuarioPublico | null>(null);
@@ -88,8 +88,11 @@ export default function PerfilScreen() {
 
   const cargarPerfil = useCallback(async () => {
     try {
-      setPerfil(await authService.obtenerPerfil());
+      const datosPerfil = await authService.obtenerPerfil();
+      setPerfil(datosPerfil);
       setPerfilFallo(false);
+      // Si el rol cambió (por ejemplo, ahora es experto), la app lo usa sin volver a entrar.
+      actualizarUsuario(datosPerfil);
     } catch (error) {
       if (error instanceof ErrorServicio && error.status === 401) {
         void logout('sesion-vencida');
@@ -97,7 +100,7 @@ export default function PerfilScreen() {
       }
       setPerfilFallo(true);
     }
-  }, [logout]);
+  }, [logout, actualizarUsuario]);
 
   // `usuario?.id` en las dependencias: tras cambiar de cuenta o de rol de
   // prueba se vuelve a pedir el perfil.

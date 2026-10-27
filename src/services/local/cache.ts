@@ -1,5 +1,5 @@
 import { ErrorServicio } from '../errores';
-import { escribirJson, leerJson } from './almacen';
+import { borrarJson, escribirJson, leerJson } from './almacen';
 import { esSinConexion } from './cola-envio';
 import { hayRed } from './red';
 
@@ -45,4 +45,13 @@ export async function conCache<T>(
     if (esSinConexion(error)) return desdeTelefono();
     throw error;
   }
+}
+
+/**
+ * Borra las copias con datos de una cuenta (sus registros y cifras) al cerrar
+ * su sesión. Los catálogos son de todos y se conservan.
+ */
+export function borrarCacheUsuario(usuarioId: string): void {
+  borrarJson(`cache-observaciones-${usuarioId}`);
+  borrarJson(`cache-resumen-${usuarioId}`);
 }
