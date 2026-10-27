@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Card, Chip, Icono, Input, ScreenHeader, type NombreIcono } from '@/components/ui';
+import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { fechaIsoLocal, formatearFechaEvento } from '@/constants/formato';
 import { useAuth } from '@/contexts/auth-context';
 import {
@@ -22,130 +22,18 @@ import {
   ErrorServicio,
   mensajeError,
   observacionesService,
-  type ImagenObservacion,
 } from '@/services';
 import type { CatalogoItem } from '@/types';
-
-type TemporaryCoordinates = {
-  latitud: number | null;
-  longitud: number | null;
-};
-
-type CoordinateField = keyof TemporaryCoordinates;
-
-const MAX_NOTAS = 2000;
-
-const RANGO_COORDENADA: Record<CoordinateField, number> = {
-  latitud: 90,
-  longitud: 180,
-};
-
-function errorCoordenada(
-  field: CoordinateField,
-  texto: string,
-  valor: number | null,
-) {
-  if (texto.trim() === '') return undefined;
-  if (valor === null) return 'Escribe un número, por ejemplo 8.123456';
-  const max = RANGO_COORDENADA[field];
-  return Math.abs(valor) > max ? `Debe estar entre -${max} y ${max}` : undefined;
-}
-
-/**
- * Tipo de la imagen. Algunos Android no informan `mimeType`; en ese caso
- * se deduce de la extensión del archivo.
- */
-function tipoImagen(
-  asset: ImagePicker.ImagePickerAsset,
-): ImagenObservacion['mimeType'] | null {
-  const mimeType = asset.mimeType?.toLowerCase();
-  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') return 'image/jpeg';
-  if (mimeType === 'image/png') return 'image/png';
-  if (mimeType) return null;
-
-  const extension = /\.(\w+)(?:\?.*)?$/
-    .exec(asset.fileName ?? asset.uri)?.[1]
-    ?.toLowerCase();
-  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
-  if (extension === 'png') return 'image/png';
-  return null;
-}
-
-function imagenParaEnvio(asset: ImagePicker.ImagePickerAsset): ImagenObservacion {
-  // validateImageAsset ya garantizó JPEG o PNG.
-  const mimeType = tipoImagen(asset) ?? 'image/jpeg';
-  const extension = mimeType === 'image/png' ? 'png' : 'jpg';
-  return {
-    uri: asset.uri,
-    mimeType,
-    nombre: asset.fileName ?? `observacion.${extension}`,
-  };
-}
-
-const PASOS = ['Foto', 'Dónde y cuándo', 'Sobre el animal'] as const;
-
-/** Tarjeta de un bloque del formulario con ícono y título. */
-function Bloque({
-  icono,
-  titulo,
-  children,
-}: {
-  icono: NombreIcono;
-  titulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <View className="mb-3 flex-row items-center gap-2">
-        <View className="h-9 w-9 items-center justify-center rounded-xl bg-ocean/10">
-          <Icono nombre={icono} size={20} className="text-ocean-dark" />
-        </View>
-        <Text
-          accessibilityRole="header"
-          className="font-nunito-extrabold text-lg text-slate-deep"
-        >
-          {titulo}
-        </Text>
-      </View>
-      {children}
-    </Card>
-  );
-}
-
-function Opciones({
-  opciones,
-  seleccion,
-  onSeleccionar,
-}: {
-  opciones: CatalogoItem[];
-  seleccion: string | null;
-  onSeleccionar: (codigo: string) => void;
-}) {
-  return (
-    <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-      {opciones.map((opcion) => (
-        <Chip
-          key={opcion.id}
-          etiqueta={opcion.nombre_visible}
-          activo={opcion.codigo === seleccion}
-          onPress={() => onSeleccionar(opcion.codigo)}
-          accessibilityHint={opcion.descripcion ?? undefined}
-        />
-      ))}
-    </View>
-  );
-}
-
-function validateImageAsset(asset: ImagePicker.ImagePickerAsset) {
-  const hasValidFormat = tipoImagen(asset) !== null;
-  const hasValidSize = Math.max(asset.width, asset.height) >= 1280;
-
-  return {
-    isValid: hasValidFormat && hasValidSize,
-    hasValidFormat,
-    hasValidSize,
-  };
-}
+import { Bloque, Opciones } from '@/components/nueva-observacion/bloques';
+import {
+  errorCoordenada,
+  imagenParaEnvio,
+  MAX_NOTAS,
+  PASOS,
+  validateImageAsset,
+  type CoordinateField,
+  type TemporaryCoordinates,
+} from '@/constants/nueva-observacion';
 
 export default function NuevaObservacionScreen() {
   const router = useRouter();
