@@ -8,7 +8,11 @@ import { useAuth } from '@/contexts/auth-context';
 import { hayRed, useColaEnvio } from '@/contexts/cola-envio-context';
 import { esSinConexion } from '@/services/local/cola-envio';
 import { ErrorServicio, mensajeError, observacionesService } from '@/services';
-import { liberarFotoReservada, reservarFotoParaEnvio } from '@/services/local/fotos';
+import {
+  liberarFotoReservada,
+  limpiarFotosEnviadas,
+  reservarFotoParaEnvio,
+} from '@/services/local/fotos';
 
 /** Datos del formulario de nueva observación listos para enviar. */
 export interface FormularioEnvio {
@@ -30,7 +34,7 @@ export interface FormularioEnvio {
 export function useEnviarObservacion(alEnviar: () => void) {
   const router = useRouter();
   const { logout } = useAuth();
-  const { encolar } = useColaEnvio();
+  const { encolar, fotosEnCola } = useColaEnvio();
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
 
@@ -73,6 +77,7 @@ export function useEnviarObservacion(alEnviar: () => void) {
         return;
       }
       const resumen = await observacionesService.crearObservacion(datos, imagen);
+      limpiarFotosEnviadas(fotosEnCola());
       alEnviar();
       router.replace(`/observaciones/resultado/${resumen.id}` as any);
     } catch (error) {

@@ -55,3 +55,26 @@ export function borrarFotosBorrador(usuarioId: string): void {
     // Si no se puede borrar, la próxima copia la reemplaza.
   }
 }
+
+/** Fotos enviadas que se conservan en el teléfono (cada una pesa cerca de 2,6 MB). */
+export const MAX_FOTOS_ENVIADAS = 20;
+
+/**
+ * Tras un envío exitoso, deja en `fotos/enviadas` solo las MAX_FOTOS_ENVIADAS
+ * más recientes (por fecha de modificación). Nunca borra las `protegidas`: las
+ * fotos de observaciones que siguen en la cola. No toca la carpeta del borrador.
+ */
+export function limpiarFotosEnviadas(protegidas: string[]): void {
+  try {
+    const fotos = carpetaLocal('fotos', 'enviadas')
+      .list()
+      .filter((f): f is File => f instanceof File)
+      .map((f) => ({ f, fecha: f.modificationTime ?? 0 }))
+      .sort((a, b) => b.fecha - a.fecha);
+    for (const { f } of fotos.slice(MAX_FOTOS_ENVIADAS)) {
+      if (!protegidas.includes(f.uri)) f.delete();
+    }
+  } catch {
+    // Si no se puede limpiar ahora, se intenta en el próximo envío.
+  }
+}

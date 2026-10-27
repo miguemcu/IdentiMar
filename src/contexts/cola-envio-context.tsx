@@ -18,6 +18,7 @@ import {
   sinElemento,
   type ObservacionEnCola,
 } from '../services/local/cola-envio';
+import { limpiarFotosEnviadas } from '../services/local/fotos';
 import type { ImagenObservacion } from '../services/observaciones.service';
 import type { ObservacionInput } from '../types';
 import { useAuth } from './auth-context';
@@ -35,6 +36,8 @@ interface ColaEnvioContextType {
   /** Aviso de por qué se detuvo el último envío (no por falta de señal). */
   aviso: string | null;
   encolar: (datos: ObservacionInput, imagen: ImagenObservacion) => void;
+  /** Fotos de la cola en este momento (no las del último render). */
+  fotosEnCola: () => string[];
   /** Intenta enviar ahora lo pendiente (también se hace solo al volver la señal). */
   enviarPendientes: (origen: OrigenEnvio) => Promise<void>;
   /** Vuelve a dejar en espera una observación que requería revisión. */
@@ -101,6 +104,9 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     try {
       const resultado = await procesarCola(colaRef.current, observacionesService);
       actualizar(resultado.cola);
+      if (resultado.enviadas > 0) {
+        limpiarFotosEnviadas(colaRef.current.map((e) => e.imagen.uri));
+      }
       setAviso(
         resultado.detenidaPor === 'sesion'
           ? AVISO_SESION
@@ -165,6 +171,8 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     [actualizar],
   );
 
+  const fotosEnCola = useCallback(() => colaRef.current.map((e) => e.imagen.uri), []);
+
   const reintentar = useCallback(
     (idLocal: string) => {
       actualizar(
@@ -185,8 +193,8 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   );
 
   const valor = useMemo(
-    () => ({ cola, enviando, aviso, encolar, enviarPendientes, reintentar, descartar }),
-    [cola, enviando, aviso, encolar, enviarPendientes, reintentar, descartar],
+    () => ({ cola, enviando, aviso, encolar, fotosEnCola, enviarPendientes, reintentar, descartar }),
+    [cola, enviando, aviso, encolar, fotosEnCola, enviarPendientes, reintentar, descartar],
   );
 
   return <ColaEnvioContext.Provider value={valor}>{children}</ColaEnvioContext.Provider>;
