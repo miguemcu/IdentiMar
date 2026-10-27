@@ -49,7 +49,6 @@ interface ColaEnvioContextType {
 /** Tras un intento, los avisos automáticos se ignoran durante este tiempo. */
 const ESPERA_AUTOMATICA_MS = 5000;
 
-const AVISO_SESION = 'Tu sesión venció. Vuelve a entrar para enviarlas.';
 const AVISO_SERVIDOR = 'El servidor no respondió bien. Lo intentaremos de nuevo más tarde.';
 
 const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefined);
@@ -59,7 +58,7 @@ const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefin
  * volver a la app. Solo una pasada a la vez, para no repetir envíos.
  */
 export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
-  const { usuario } = useAuth();
+  const { usuario, logout } = useAuth();
   const usuarioId = usuario?.id;
   const [cola, setCola] = useState<ObservacionEnCola[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -69,6 +68,12 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   // Fin del último intento: la señal y el volver a la app pueden avisar varias
   // veces seguidas, y cada aviso no debe contar como un intento más.
   const ultimoIntento = useRef(0);
+  // logout cambia con cada usuario; por referencia no vuelve a crear
+  // enviarPendientes ni a disparar el envío "al entrar".
+  const logoutRef = useRef(logout);
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
   const actualizar = useCallback(
     (nueva: ObservacionEnCola[]) => {
@@ -98,13 +103,10 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
       if (resultado.enviadas > 0) {
         limpiarFotosEnviadas(colaRef.current.map((e) => e.imagen.uri));
       }
-      setAviso(
-        resultado.detenidaPor === 'sesion'
-          ? AVISO_SESION
-          : resultado.detenidaPor === 'error'
-            ? AVISO_SERVIDOR
-            : null,
-      );
+      setAviso(resultado.detenidaPor === 'error' ? AVISO_SERVIDOR : null);
+      // Sesión vencida: se vuelve a inicio de sesión como en el resto de la
+      // app. La cola queda guardada para esta cuenta y se envía al volver a entrar.
+      if (resultado.detenidaPor === 'sesion') void logoutRef.current('sesion-vencida');
       if (resultado.nuevasEnRevision > 0) {
         Alert.alert(
           'Revisa tus observaciones guardadas',
