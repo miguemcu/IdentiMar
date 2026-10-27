@@ -18,6 +18,7 @@ import {
   sinElemento,
   type ObservacionEnCola,
 } from '../services/local/cola-envio';
+import { hayRed } from '../services/local/red';
 import { limpiarFotosEnviadas } from '../services/local/fotos';
 import type { ImagenObservacion } from '../services/observaciones.service';
 import type { ObservacionInput } from '../types';
@@ -52,16 +53,6 @@ const AVISO_SESION = 'Tu sesión venció. Vuelve a entrar para enviarlas.';
 const AVISO_SERVIDOR = 'El servidor no respondió bien. Lo intentaremos de nuevo más tarde.';
 
 const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefined);
-
-/** Sin red real (modo avión, sin señal). Si no se puede saber, se asume que hay. */
-async function hayRed(): Promise<boolean> {
-  try {
-    const estado = await Network.getNetworkStateAsync();
-    return estado.isInternetReachable ?? estado.isConnected ?? true;
-  } catch {
-    return true;
-  }
-}
 
 /**
  * Cola de envío por usuario. Se envía al entrar, al volver la señal y al

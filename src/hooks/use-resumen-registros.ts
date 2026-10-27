@@ -1,6 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
+import { useAuth } from '@/contexts/auth-context';
 import { observacionesService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
+import { useAlVolverLaSenal } from './use-al-volver-la-senal';
 import type { EstadoObservacion, ObservacionResumen } from '@/types';
 
 /** Estados en los que la observación ya tiene una especie aceptada. */
@@ -25,10 +29,14 @@ export interface ResumenRegistros {
 export function useResumenRegistros(cantidadUltimos = 3) {
   const [resumen, setResumen] = useState<ResumenRegistros | null>(null);
   const [error, setError] = useState(false);
+  const { usuario } = useAuth();
+  // Sin conexión: fecha de la copia mostrada, o null si no hay copia.
+  const [sinConexion, setSinConexion] = useState<{ guardadoEn: string | null } | null>(null);
 
   const cargar = useCallback(async () => {
     setError(false);
-    try {
+    if (!usuario) return;
+    const calcular = async (): Promise<ResumenRegistros> => {
       const contar = (estado: EstadoObservacion) =>
         observacionesService
           .listarObservaciones({ estado, tamano: 1 })
@@ -40,16 +48,24 @@ export function useResumenRegistros(cantidadUltimos = 3) {
         ...ESTADOS_IDENTIFICADOS.map(contar),
       ]);
 
-      setResumen({
+      return {
         total: recientes.total,
         identificadas: identificadas.reduce((suma, n) => suma + n, 0),
         enRevision,
         ultimos: recientes.items,
-      });
-    } catch {
+      };
+    };
+    try {
+      const r = await conCache(`resumen-${usuario.id}`, calcular);
+      setResumen(r.datos);
+      setSinConexion(r.desdeCache ? { guardadoEn: r.guardadoEn } : null);
+    } catch (e) {
+      setSinConexion(esSinConexion(e) ? { guardadoEn: null } : null);
       setError(true);
     }
-  }, [cantidadUltimos]);
+  }, [cantidadUltimos, usuario]);
+
+  useAlVolverLaSenal(sinConexion !== null, () => void cargar());
 
   useFocusEffect(
     useCallback(() => {
@@ -59,5 +75,5 @@ export function useResumenRegistros(cantidadUltimos = 3) {
     }, [cargar]),
   );
 
-  return { resumen, error, recargar: cargar };
+  return { resumen, error, sinConexion, recargar: cargar };
 }

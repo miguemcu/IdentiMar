@@ -21,6 +21,9 @@ import { useEnviarObservacion } from '@/hooks/use-enviar-observacion';
 import type { BorradorObservacion } from '@/services/local/borrador';
 import { copiarFotoBorrador } from '@/services/local/fotos';
 import { catalogosService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
 import type { CatalogoItem } from '@/types';
 import { Bloque, Opciones } from '@/components/nueva-observacion/bloques';
 import {
@@ -59,7 +62,8 @@ export default function NuevaObservacionScreen() {
   const [modoFecha, setModoFecha] = useState<'date' | 'time' | null>(null);
   const [tiposAmbiente, setTiposAmbiente] = useState<CatalogoItem[]>([]);
   const [condiciones, setCondiciones] = useState<CatalogoItem[]>([]);
-  const [errorCatalogos, setErrorCatalogos] = useState(false);
+  // 'sin-conexion': no hay señal ni copia de los catálogos en el teléfono.
+  const [errorCatalogos, setErrorCatalogos] = useState<boolean | 'sin-conexion'>(false);
   const [tipoAmbiente, setTipoAmbiente] = useState<string | null>(null);
   const [condicion, setCondicion] = useState<string | null>(null);
   const [notas, setNotas] = useState('');
@@ -127,14 +131,15 @@ export default function NuevaObservacionScreen() {
   const cargarCatalogos = useCallback(async () => {
     setErrorCatalogos(false);
     try {
+      // Desde el teléfono si no hay señal: así se puede llenar el paso 3 sin red.
       const [tipos, conds] = await Promise.all([
-        catalogosService.obtenerTiposAmbiente(),
-        catalogosService.obtenerCondicionesOrganismo(),
+        conCache('tipos-ambiente', () => catalogosService.obtenerTiposAmbiente()),
+        conCache('condiciones', () => catalogosService.obtenerCondicionesOrganismo()),
       ]);
-      setTiposAmbiente(tipos);
-      setCondiciones(conds);
-    } catch {
-      setErrorCatalogos(true);
+      setTiposAmbiente(tipos.datos);
+      setCondiciones(conds.datos);
+    } catch (error) {
+      setErrorCatalogos(esSinConexion(error) ? 'sin-conexion' : true);
     }
   }, []);
 
@@ -576,6 +581,7 @@ export default function NuevaObservacionScreen() {
 
         {paso === 2 ? (
           <>
+            {errorCatalogos === 'sin-conexion' ? <SinConexion guardadoEn={null} /> : null}
             {errorCatalogos ? (
               <Card>
                 <Text className="font-source text-base text-danger">

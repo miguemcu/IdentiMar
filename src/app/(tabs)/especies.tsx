@@ -1,6 +1,10 @@
 import { Button, Card, Icono, Input, ScreenHeader } from '@/components/ui';
 import { filtrarEspecies } from '@/constants/busqueda-especies';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
+import { useAlVolverLaSenal } from '@/hooks/use-al-volver-la-senal';
 import { catalogosService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
 import type { Especie } from '@/types';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,18 +18,24 @@ export default function EspeciesScreen() {
   const [especies, setEspecies] = useState<Especie[]>([]);
   const [estado, setEstado] = useState<Estado>('cargando');
   const [texto, setTexto] = useState('');
+  // Sin conexión: fecha de la copia mostrada, o null si no hay copia.
+  const [sinConexion, setSinConexion] = useState<{ guardadoEn: string | null } | null>(null);
 
   const cargar = useCallback(async () => {
-    setEstado('cargando');
+    setEstado((actual) => (actual === 'listo' ? actual : 'cargando'));
     try {
-      const lista = await catalogosService.obtenerEspecies();
+      const r = await conCache('especies', () => catalogosService.obtenerEspecies());
       // La app solo trabaja con rayas (DoD).
-      setEspecies(lista.filter((e) => e.grupo === 'raya'));
+      setEspecies(r.datos.filter((e) => e.grupo === 'raya'));
+      setSinConexion(r.desdeCache ? { guardadoEn: r.guardadoEn } : null);
       setEstado('listo');
-    } catch {
+    } catch (error) {
+      setSinConexion(esSinConexion(error) ? { guardadoEn: null } : null);
       setEstado('error');
     }
   }, []);
+
+  useAlVolverLaSenal(sinConexion !== null, () => void cargar());
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -50,7 +60,15 @@ export default function EspeciesScreen() {
         </View>
       ) : null}
 
-      {estado === 'error' ? (
+      {sinConexion ? <SinConexion guardadoEn={sinConexion.guardadoEn} /> : null}
+
+      {estado === 'error' && sinConexion ? (
+        <View className="w-full p-4">
+          <Button title="Reintentar" variant="outline" onPress={cargar} />
+        </View>
+      ) : null}
+
+      {estado === 'error' && !sinConexion ? (
         <View className="flex-1 items-center justify-center p-6">
           <Text className="font-nunito-bold text-base text-slate-deep text-center">
             No pudimos cargar el catálogo

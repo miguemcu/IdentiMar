@@ -1,5 +1,9 @@
 import { Button, Card, ScreenHeader } from '@/components/ui';
+import { SinConexion } from '@/components/sin-conexion/sin-conexion';
+import { useAlVolverLaSenal } from '@/hooks/use-al-volver-la-senal';
 import { catalogosService } from '@/services';
+import { conCache } from '@/services/local/cache';
+import { esSinConexion } from '@/services/local/cola-envio';
 import type { Especie, Familia } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -14,6 +18,7 @@ export default function FichaEspecieScreen() {
   const [especie, setEspecie] = useState<Especie | null>(null);
   const [familia, setFamilia] = useState<Familia | null>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
+  const [sinConexion, setSinConexion] = useState<{ guardadoEn: string | null } | null>(null);
 
   // El contrato no tiene endpoint por especie: se busca en el catálogo completo
   const cargar = useCallback(async () => {
@@ -21,10 +26,14 @@ export default function FichaEspecieScreen() {
     try {
       // Las familias completan la ficha (descripción); si fallan, se usa la
       // familia que ya trae la especie.
-      const [lista, familias] = await Promise.all([
-        catalogosService.obtenerEspecies(),
-        catalogosService.obtenerFamilias().catch(() => null),
+      const [r, familias] = await Promise.all([
+        conCache('especies', () => catalogosService.obtenerEspecies()),
+        conCache('familias', () => catalogosService.obtenerFamilias())
+          .then((f) => f.datos)
+          .catch(() => null),
       ]);
+      const lista = r.datos;
+      setSinConexion(r.desdeCache ? { guardadoEn: r.guardadoEn } : null);
       const encontrada = lista.find((e) => e.id === id);
       if (encontrada) {
         setEspecie(encontrada);
@@ -37,10 +46,13 @@ export default function FichaEspecieScreen() {
       } else {
         setEstado('no_encontrada');
       }
-    } catch {
+    } catch (error) {
+      setSinConexion(esSinConexion(error) ? { guardadoEn: null } : null);
       setEstado('error');
     }
   }, [id]);
+
+  useAlVolverLaSenal(sinConexion !== null, () => void cargar());
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -61,7 +73,15 @@ export default function FichaEspecieScreen() {
         </View>
       ) : null}
 
-      {estado === 'error' ? (
+      {sinConexion ? <SinConexion guardadoEn={sinConexion.guardadoEn} /> : null}
+
+      {estado === 'error' && sinConexion ? (
+        <View className="w-full p-4">
+          <Button title="Reintentar" variant="outline" onPress={cargar} />
+        </View>
+      ) : null}
+
+      {estado === 'error' && !sinConexion ? (
         <View className="flex-1 items-center justify-center p-6">
           <Text className="font-nunito-bold text-base text-slate-deep text-center">
             No pudimos cargar la especie
