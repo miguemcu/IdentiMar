@@ -16,17 +16,26 @@ export class ErrorServicio extends Error {
   }
 }
 
-/** Nombres amigables de los campos de ObservacionInput para los errores 400. */
-const ETIQUETA_CAMPO: Record<string, string> = {
-  fecha_hora_evento: 'Fecha y hora',
-  latitud: 'Latitud',
-  longitud: 'Longitud',
-  precision_gps_metros: 'Precisión del GPS',
-  tipo_ambiente: 'Tipo de ambiente',
-  condicion_organismo: 'Estado del animal',
-  observaciones_usuario: 'Notas',
-  imagen: 'Foto',
+/**
+ * Texto en español para cada campo de ObservacionInput con error 400. El
+ * backend explica el problema en inglés ("Required"), así que la app usa los
+ * suyos en vez de mostrar el texto que llega.
+ */
+const PROBLEMA_CAMPO: Record<string, string> = {
+  fecha_hora_evento: 'Fecha y hora: revisa que sea una fecha válida.',
+  latitud: 'Latitud: debe estar entre -90 y 90.',
+  longitud: 'Longitud: debe estar entre -180 y 180.',
+  precision_gps_metros: 'Precisión del GPS: no puede ser negativa.',
+  tipo_ambiente: 'Tipo de ambiente: elige una opción.',
+  condicion_organismo: 'Estado del animal: elige una opción.',
+  observaciones_usuario: 'Notas: máximo 2000 caracteres.',
+  imagen: 'Foto: debe ser JPEG o PNG.',
 };
+
+/** El backend puede nombrar el campo con su ruta (`datos.latitud`); se usa el último tramo. */
+function nombreCampo(campo: string | undefined): string {
+  return (campo ?? '').split('.').pop() ?? '';
+}
 
 /** Traduce cualquier error de un servicio a un mensaje en español para el usuario. */
 export function mensajeError(error: unknown): string {
@@ -38,9 +47,13 @@ export function mensajeError(error: unknown): string {
     case 0:
       return 'No tienes internet en este momento. Inténtalo de nuevo cuando tengas señal.';
     case 400: {
-      const problemas = (error.cuerpo.detalles ?? [])
-        .filter((d) => d.problema)
-        .map((d) => `${ETIQUETA_CAMPO[d.campo ?? ''] ?? 'Dato'}: ${d.problema}`);
+      const problemas = [
+        ...new Set(
+          (error.cuerpo.detalles ?? [])
+            .map((d) => PROBLEMA_CAMPO[nombreCampo(d.campo)])
+            .filter((texto): texto is string => Boolean(texto)),
+        ),
+      ];
       return problemas.length > 0
         ? `Revisa estos datos:\n${problemas.join('\n')}`
         : 'Algunos datos no son válidos. Revísalos e inténtalo de nuevo.';
@@ -62,11 +75,18 @@ export interface ErroresAuth {
   campos: Partial<Record<CampoAuth, string>>;
 }
 
-const CAMPOS_AUTH: CampoAuth[] = ['nombre_completo', 'correo', 'password', 'telefono'];
+/** Texto en español para cada campo de los formularios con error 400. */
+const PROBLEMA_AUTH: Record<CampoAuth, string> = {
+  nombre_completo: 'Escribe tu nombre completo (de 3 a 200 caracteres).',
+  correo: 'Revisa el correo. Debe verse así: nombre@correo.com',
+  password: 'La contraseña debe tener entre 8 y 128 caracteres.',
+  telefono: 'Revisa el número de teléfono.',
+};
 
 /**
  * Traduce un error de inicio de sesión o registro a mensajes en español.
- * El contrato define 401 para el inicio de sesión y 400 y 409 para el registro.
+ * El contrato define 401 para el inicio de sesión y 400 y 409 para el
+ * registro; el backend desplegado también responde 400 en el inicio de sesión.
  */
 export function erroresAuth(error: unknown, flujo: 'login' | 'registro'): ErroresAuth {
   if (!(error instanceof ErrorServicio)) {
@@ -82,10 +102,16 @@ export function erroresAuth(error: unknown, flujo: 'login' | 'registro'): Errore
     case 400: {
       const campos: ErroresAuth['campos'] = {};
       for (const d of error.cuerpo.detalles ?? []) {
-        const campo = CAMPOS_AUTH.find((c) => c === d.campo);
-        if (campo && d.problema) campos[campo] = d.problema;
+        const campo = nombreCampo(d.campo);
+        if (campo in PROBLEMA_AUTH) campos[campo as CampoAuth] = PROBLEMA_AUTH[campo as CampoAuth];
       }
-      return { general: 'Revisa los datos marcados en rojo.', campos };
+      return {
+        general:
+          Object.keys(campos).length > 0
+            ? 'Revisa los datos marcados en rojo.'
+            : 'Algunos datos no son válidos. Revísalos e inténtalo de nuevo.',
+        campos,
+      };
     }
     case 401:
       return flujo === 'login'
