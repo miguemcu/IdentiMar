@@ -94,7 +94,7 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
 
 - `observaciones.api.ts`: envío multipart, listado con filtros, detalle y "Por validar", todo pasado por `adaptadores.ts`.
 - El envío espera la inferencia (≈30 s) y responde con el estado final; el seguimiento de Resultado se detiene en la primera consulta.
-- El listado no trae foto: las tarjetas muestran un ícono.
+- El listado no trae foto: `src/hooks/use-foto-observacion.ts` hace que cada tarjeta visible pida el detalle de su observación (en memoria por 50 minutos). Si el Equipo 3 agrega `imagen_url` al listado, el hook deja de consultar solo.
 
 ### 6. Validación experta · hecho
 

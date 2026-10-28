@@ -39,7 +39,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 - **Servicio de visión dormido:** se duerme con frecuencia, y entonces la observación queda "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
 - **Rechazo del experto:** la observación queda `corregido` sin especie (se había acordado `no_concluyente`; se decidió dejarlo como lo hace el backend). Para que nadie crea que ya se identificó, la app muestra la etiqueta "No identificable" en vez de "Corregido", con la nota "Un experto revisó esta foto, pero no pudo identificar la especie", y no la cuenta como identificada.
 - **Render tarda en despertar:** el tiempo máximo de espera es de 90 s, y a los 10 s aparece el aviso amigable.
-- **Registros sin foto:** el listado del backend no trae la foto; las tarjetas muestran un ícono y la foto se ve en el detalle.
+- **Fotos en las listas:** el listado del backend no trae la foto, así que cada tarjeta visible de Registros e Inicio pide el detalle de su observación para mostrarla (se guarda en memoria unos 50 minutos). Mientras llega, o sin señal, se ve el ícono de cámara. Se pidió al Equipo 3 incluirla en el listado, como dice el contrato.
 - **Sesión de 7 días como máximo:** el backend no entrega un `refresh_token` nuevo al renovar, así que pasados 7 días desde el último inicio de sesión hay que volver a entrar (pedido al Equipo 3 en `discrepancias.md`).
 - **Al cerrar sesión** se borran la sesión guardada y la copia de los registros de esa cuenta; la cola de envío y, si la sesión venció, el borrador se conservan.
 

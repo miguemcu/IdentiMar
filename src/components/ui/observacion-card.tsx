@@ -1,4 +1,5 @@
 import { formatearConfianza, formatearFechaEvento } from '@/constants/formato';
+import { useFotoObservacion } from '@/hooks/use-foto-observacion';
 import type { ObservacionResumen } from '@/types';
 import { Image, Text, View } from 'react-native';
 import { Card } from './card';
@@ -12,6 +13,7 @@ export interface ObservacionCardProps {
 
 export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) {
   const especie = observacion.especie_aceptada;
+  const foto = useFotoObservacion(observacion);
   // `corregido` sin especie: el experto la rechazó.
   const nombre =
     especie?.nombre_comun ??
@@ -30,9 +32,10 @@ export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) 
       accessibilityLabel={`${nombre}${fecha ? `, ${fecha}` : ''}. Ver detalle`}
       className="flex-row gap-4 p-3"
     >
-      {observacion.imagen_url ? (
+      {foto.url ? (
         <Image
-          source={{ uri: observacion.imagen_url }}
+          source={{ uri: foto.url }}
+          onError={foto.alFallar}
           className="h-24 w-24 rounded-2xl bg-slate-light/20"
           resizeMode="cover"
         />
