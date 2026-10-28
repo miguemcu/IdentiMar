@@ -35,7 +35,7 @@ Comparación entre el mockup de Figma (`docs/mockup/`), el contrato OpenAPI del 
 | 12  | Decisión del experto    | "Porcentaje de validación"                          | `decision` (`confirmada`, `corregida`, `rechazada`), `especie_final_codigo`, `comentario` | Confirmar, corregir (eligiendo especie) o "No se puede identificar" | resuelto en la app |
 | 13  | Cola de pendientes      | "Como experto puedes validar cualquier observación" | Cola dedicada (`/observaciones/pendientes`, solo experto o administrador)                 | Cola "Por validar" desde Perfil, solo para experto y administrador  | resuelto en la app |
 | 14  | Conservar la predicción | No contemplado                                      | La predicción original del modelo no se sobrescribe                                       | Predicción original y decisión del experto por separado             | resuelto en la app |
-| 15  | Rechazo                 | No contemplado                                      | `rechazada` con `especie_final_codigo` nulo; el contrato no dice a qué estado pasa        | Opción "No se puede identificar". Acordado: pasa a `no_concluyente` | acordado con E3    |
+| 15  | Rechazo                 | No contemplado                                      | `rechazada` con `especie_final_codigo` nulo; el contrato no dice a qué estado pasa        | Opción "No se puede identificar". Se acordó `no_concluyente`, pero el backend la deja en `corregido` sin especie (fila 39): la app sigue al backend | resuelto en la app |
 
 ## 4. Registros, usuarios y certificación
 
@@ -73,8 +73,12 @@ Probado el 2026-10-27 contra `https://identimar-backend.onrender.com/api/v1`. Co
 | 35  | Forma de la observación  | `estado` texto; números; `imagen_url`; `prediccion_original`, `validacion_experta`, `historial_estados` | `estado` objeto; números como texto; `imagen.url_firmada`; `prediccion`, `validacion`, `historial` (estados y actor como objetos); en la predicción, `especie` y `version_modelo` como objeto | `adaptadores.ts` lo pasa a la forma del contrato                         | resuelto en la app |
 | 36  | Inferencia asíncrona     | `201` inmediato en `recibido`; la inferencia corre aparte    | El `POST` espera la inferencia (≈30 s) y responde con el estado final                 | El seguimiento se detiene solo; el envío puede tardar (aviso a los 10 s, espera de 90 s) | pendiente          |
 | 37  | Foto en el listado       | `imagen_url` en `ObservacionResumen`                         | El listado no trae la foto                                                             | Las tarjetas de Registros muestran un ícono; la foto se ve en el detalle | pendiente          |
-| 38  | Servicio de visión dormido | —                                                          | Si el servicio de visión no responde, la observación queda `no_concluyente` ("Servicio de visión no disponible") | Se muestra "No se pudo identificar"; un experto puede revisarla          | pendiente          |
-| 31  | Cuentas de prueba        | Ejemplo `ana.torres@ejemplo.co`                              | Esa cuenta no existe                                                                   | Cuentas propias del Equipo 1; el E3 asigna el rol experto                | acordado con E3    |
+| 38  | Servicio de visión dormido | —                                                          | Si el servicio de visión no responde, la observación queda `no_concluyente` ("Servicio de visión no disponible") | Se muestra "No se pudo identificar"; un experto puede revisarla. Se duerme con frecuencia: despertarlo antes de pruebas y demo | pendiente          |
+| 39  | Estado tras `rechazada`  | No lo define                                                 | `corregido` sin especie (su catálogo: "corrigió o rechazó"); sale de `/observaciones/pendientes` | Resultado y Registros muestran "No se pudo identificar"; no cuenta como identificada; el mock hace lo mismo | resuelto en la app |
+| 40  | Nulos en la validación   | `especie_final_codigo` nulo al rechazar; `comentario` opcional y nulo | Rechaza `null` en los dos ("Expected string, received null")                         | Omite los campos nulos                                                   | resuelto en la app |
+| 41  | Respuesta de la validación | `200` con `ObservacionDetalle`                             | No trae el detalle completo (sin validación ni historial)                              | Tras el POST vuelve a pedir `GET /observaciones/{id}`                    | resuelto en la app |
+| 42  | Forma de la validación   | `decision` texto y `especie_final`                           | `decision` objeto `{codigo, …}` y `especie_corregida`                                  | `adaptadores.ts`                                                         | resuelto en la app |
+| 31  | Cuentas de prueba        | Ejemplo `ana.torres@ejemplo.co`                              | Esa cuenta no existe                                                                   | Cuentas propias del Equipo 1; el E3 asignó el rol experto a `e1.experto@ejemplo.co` (28 oct) | resuelto en la app |
 | 32  | Respuesta de `/auth/refresh` | `LoginResponse` (nuevo par de tokens y usuario)          | Solo `{access_token, expires_in}`                                                      | Conserva el `refresh_token` anterior y el usuario de la sesión. Límite: la sesión dura como máximo 7 días desde el último inicio de sesión, aunque se use la app a diario | pendiente          |
 
 ## Preguntas para el Equipo 3
@@ -82,7 +86,7 @@ Probado el 2026-10-27 contra `https://identimar-backend.onrender.com/api/v1`. Co
 Respondidas:
 
 - **Códigos de los catálogos:** los de la fila 28.
-- **Estado tras `rechazada`:** `no_concluyente` (fila 15).
+- **Estado tras `rechazada`:** se acordó `no_concluyente`, pero el backend la deja en `corregido` sin especie y la saca de "Por validar" (fila 39). La app sigue al backend; **confirmar con el Equipo 3 que es lo que quieren**.
 - **Formato de error:** se queda como está; la app lo toma tal cual (fila 23).
 - **Cuenta experto:** el Equipo 1 la registra y el Equipo 3 le asigna el rol.
 - **Modelo:** el modelo del Equipo 2 ya está integrado con la API.
@@ -95,7 +99,6 @@ Abiertas:
 - ¿`info.version: "3"` es la versión vigente? La descripción dice "v1.0".
 - ¿Habrá forma de editar una validación experta ya enviada? Solo existe `POST /observaciones/{id}/validacion` (409 si ya existe).
 - `POST /observaciones` no tiene idempotencia: si un envío se corta, reenviarlo puede duplicar la observación.
-- ¿Una observación rechazada (`no_concluyente` con validación) sale de `/observaciones/pendientes`?
 - ¿Se podrán registrar observaciones sin cuenta? Sería útil para pescadores que no manejan cuentas.
 
 Todo esto también hay que verlo con el equipo de Visión Artificial: hay que encontrar un equilibrio entre lo que le sirve al usuario y lo que le sirve al modelo para dar buenas clasificaciones.

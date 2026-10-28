@@ -223,11 +223,11 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## H2. Integración con la API real
 
-**Avance al 27 oct (tarde):** en la rama `feature/h2-integracion`. Pasos 1 a 5 del [plan de integración](plan_integracion.md) hechos; faltan la validación experta (paso 6), la cola sin duplicados (paso 7) y el cierre (paso 8). Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
+**Avance al 28 oct:** en la rama `feature/h2-integracion`. Pasos 1 a 6 del [plan de integración](plan_integracion.md) hechos; faltan la cola sin duplicados (paso 7) y lo que queda del cierre (paso 8). Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
 
 ### Bloqueantes (antes del 25 oct)
 
-- [x] URL de staging y credenciales de prueba del Equipo 3. *URL: `https://identimar-backend.onrender.com/api/v1` (27 oct). Cuentas propias del Equipo 1: `e1.usuario@ejemplo.co` y `e1.experto@ejemplo.co`. Falta que el Equipo 3 asigne el rol `experto` a la segunda.*
+- [x] URL de staging y credenciales de prueba del Equipo 3. *URL: `https://identimar-backend.onrender.com/api/v1` (27 oct). Cuentas propias del Equipo 1: `e1.usuario@ejemplo.co` y `e1.experto@ejemplo.co`. El Equipo 3 asignó el rol `experto` a la segunda (28 oct).*
 - [x] Códigos de los catálogos (`tipos-ambiente`, `condiciones-organismo`, `estados`), que el contrato no enumera. *Confirmados con el backend (ver `discrepancias.md`, fila 28).*
 - [ ] Confirmar que `info.version: "3"` es la versión vigente del contrato.
 - [x] Servicio de inferencia del Equipo 2 disponible en staging, o confirmación de que el backend lo simula en ese entorno. *Integrado: identificó una raya con 94 % de confianza. Si lleva un rato sin uso, la primera observación puede quedar `no_concluyente` ("Servicio de visión no disponible").*
@@ -242,7 +242,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Validación experta**
 
-- [ ] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409. *`listarPendientes` hecho (403 probado desde el computador con rol usuario). `validarObservacion` falta (paso 6).*
+- [x] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409. *Probado desde el computador con `e1.experto`: 200 (una corrección y un rechazo reales; las dos salen de "Por validar"), 400, 403, 404 y 409. El backend rechaza `null` en especie y comentario, no devuelve el detalle completo y deja el rechazo en `corregido` sin especie: la app se adapta (filas 39 a 42). Falta recorrerlo en Expo Go.*
 - [x] Los controles del experto dejan de depender del modo simulado. *Desde H1: dependen del rol y del estado de la observación.*
 
 **Observaciones**
@@ -269,8 +269,8 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Integración**
 
-- [ ] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos. *2 enviadas desde el computador (una `no_concluyente`, una `identificado`); faltan envíos desde la app.*
-- [ ] Revisión de llamadas: solo se usan endpoints definidos en el contrato. *Paso 8.*
+- [ ] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos. *4 enviadas desde el computador con `e1.usuario` (una `identificado`, tres `no_concluyente` por el servicio de visión dormido; dos de ellas validadas por el experto); faltan envíos desde la app.*
+- [x] Revisión de llamadas: solo se usan endpoints definidos en el contrato. *Revisado el 28 oct: las 13 rutas que usa `src/services/api/` están en el contrato y no hay otros `fetch`.*
 
 ### Criterio de cierre de H2
 
@@ -290,8 +290,8 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## Riesgos conocidos
 
-- **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto`. *Pendiente: el Equipo 3 debe asignar el rol a `e1.experto@ejemplo.co`.*
-- **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. *Acordado con el Equipo 3: pasa a `no_concluyente`, como en el mock.*
+- **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto`. *Resuelto: `e1.experto@ejemplo.co` tiene el rol (28 oct).*
+- **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. *Se acordó `no_concluyente`, pero el backend la deja en `corregido` sin especie; la app y el mock siguen al backend. Confirmar con el Equipo 3.*
 - **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe. *Más probable de lo previsto: el envío espera la inferencia (≈30 s) y con Render dormido puede pasar de 90 s.*
 - **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería. _(Hecho: nota en Inicio y sesión guardada con la API, hasta 7 días.)_
 - **`pendiente_envio` es local:** no pertenece a `EstadoObservacion` ni aparece en el contrato.

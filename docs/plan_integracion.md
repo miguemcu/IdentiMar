@@ -1,6 +1,6 @@
 # Plan de integración con el backend (H2)
 
-- **Creado:** 27 oct 2026 · **Actualizado:** 27 oct 2026 (tarde)
+- **Creado:** 27 oct 2026 · **Actualizado:** 28 oct 2026
 - **Rama:** `feature/h2-integracion` (sale de `develop`; un commit por paso)
 - **Meta:** integración completa hoy; pruebas desde el 28 oct.
 - **Backend:** `https://identimar-backend.onrender.com/api/v1` (desplegado por el Equipo 3)
@@ -16,9 +16,9 @@
 | 3    | Autenticación                         | Hecho; **verificado en Expo Go**                         | `846cd67`, `0475f78`, `2e0cc2c`           |
 | 4    | Catálogos                             | Hecho; probado desde el computador                       | `4993711`                                 |
 | 5    | Observaciones                         | Hecho; probado desde el computador (2 observaciones reales) | `70e69ff`                              |
-| 6    | Validación experta                    | **Pendiente** · bloqueado por la cuenta experto          | —                                         |
+| 6    | Validación experta                    | Hecho; probado desde el computador con `e1.experto`      | `1319186`, `15fd7fe`                      |
 | 7    | Cola de envío con la API real         | **Pendiente**                                            | —                                         |
-| 8    | Cierre                                | **Pendiente**                                            | —                                         |
+| 8    | Cierre                                | En curso: esqueleto quitado y endpoints revisados        | `aac9068`                                 |
 
 "Probado desde el computador" significa que el servicio se ejecutó con `npx tsx` contra el backend desplegado; falta recorrerlo en el teléfono.
 
@@ -26,10 +26,10 @@
 
 1. `git checkout feature/h2-integracion && npm install` (usa el `.npmrc` del repo).
 2. En `.env`: `EXPO_PUBLIC_USE_API=true` y `EXPO_PUBLIC_API_URL=https://identimar-backend.onrender.com/api/v1`. Arranca con `npm run start:tunel` (ngrok) o `npx expo start -c` en la misma red.
-3. Cuentas: `e1.usuario@ejemplo.co` (usuario) y `e1.experto@ejemplo.co` (pendiente del rol experto). Las contraseñas no están en el repo; pídelas a quien las creó.
+3. Cuentas: `e1.usuario@ejemplo.co` (usuario) y `e1.experto@ejemplo.co` (experto). Las contraseñas no están en el repo; pídelas a quien las creó.
 4. Lo siguiente, en orden:
-   - **Recorrer en el teléfono** lo de los pasos 4 y 5 (envío, Resultado, Registros, detalle, Especies, ficha) y marcarlo en `Dod.md`.
-   - **Paso 7** (no depende de nadie) y **paso 6** en cuanto el Equipo 3 asigne el rol experto.
+   - **Recorrer en el teléfono** lo de los pasos 4 a 6 (envío, Resultado, Registros, detalle, Especies, ficha, "Por validar" y validar) y marcarlo en `Dod.md`. Hay una observación `no_concluyente` de `e1.usuario` esperando en "Por validar" para probar la validación desde la app.
+   - **Paso 7** (no depende de nadie).
    - **Paso 8** y las pruebas funcionales en `docs/pruebas/`.
 5. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado).
 
@@ -58,6 +58,7 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
 | `/auth/refresh` no devuelve `refresh_token` ni usuario                              | `sesion.ts` (conserva el anterior)   |
 | Al crear, pide `tipo_ambiente_codigo` y `condicion_organismo_codigo`               | `observaciones.api.ts`               |
 | Observaciones con otra forma (estado objeto, números texto, `imagen.url_firmada`, `prediccion`, `validacion`, `historial`) | `adaptadores.ts` |
+| Validación: rechaza `null`, no devuelve el detalle completo, rechazo en `corregido` | `validacion.api.ts`, pantallas y mock |
 | Con `http://` responde 301                                                          | `config.ts` usa `https`              |
 
 ## Pasos
@@ -93,16 +94,15 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
 - El envío espera la inferencia (≈30 s) y responde con el estado final; el seguimiento de Resultado se detiene en la primera consulta.
 - El listado no trae foto: las tarjetas muestran un ícono.
 
-### 6. Validación experta · pendiente
+### 6. Validación experta · hecho
 
-Bloqueado hasta que el Equipo 3 asigne el rol `experto` a `e1.experto@ejemplo.co`.
-
-- `src/services/api/validacion.api.ts`: `POST /observaciones/{id}/validacion` con `ValidacionInput`, y la respuesta por `aDetalle` (de `adaptadores.ts`). Los errores 400, 401, 403, 404 y 409 ya tienen mensaje en `erroresValidacion`.
-- `adaptadores.ts` ya intenta leer la validación (`validacion` o `validacion_experta`, con `especie_final` o `especie_final_codigo`), pero **su forma real no se ha visto**: al validar la primera, revisar el detalle y ajustar.
-- Verificar con la cuenta experto:
-  - "Por validar" lista las observaciones `pendiente_experto` y `no_concluyente`. Ya hay una `no_concluyente` de `e1.usuario`.
-  - Confirmar, corregir y rechazar. Al rechazar, la observación pasa a `no_concluyente`; revisar si sale de "Por validar". Si sigue apareciendo, anotarlo: la app ya oculta los controles porque tiene validación.
-  - El detalle del usuario muestra la decisión.
+- `validacion.api.ts`: `POST /observaciones/{id}/validacion`. Omite `especie_final_codigo` y `comentario` cuando son nulos (el backend rechaza `null`) y, como la respuesta no trae el detalle completo, vuelve a pedir `GET /observaciones/{id}`.
+- `adaptadores.ts` lee la validación del backend (`decision` como objeto, `especie_corregida`).
+- **Un rechazo termina en `corregido` sin especie**, no en `no_concluyente` como se acordó. La app sigue al backend: Resultado y Registros dicen "No se pudo identificar", Inicio no la cuenta como identificada y el mock hace lo mismo. Falta confirmarlo con el Equipo 3.
+- Probado desde el computador con `e1.experto`:
+  - Errores: 400, 403 (con `e1.usuario`), 404 y 409 (validar dos veces, o una observación `identificado`).
+  - Una corrección real (a *Hypanus americanus*) y un rechazo real. Las dos salen de "Por validar", y el detalle muestra la decisión, la especie, el comentario, el experto y el historial.
+- *Falta en Expo Go:* confirmar una predicción. No se ha podido probar contra el backend porque la única `identificado` no admite validación y las pendientes no traían predicción (servicio de visión dormido). Se puede probar con una `pendiente_experto`, cuando el modelo responda con baja confianza.
 
 ### 7. Cola de envío con la API real · pendiente
 
@@ -116,16 +116,17 @@ Bloqueado hasta que el Equipo 3 asigne el rol `experto` a `e1.experto@ejemplo.co
 - **Espera creciente** entre reintentos por 500.
 - Verificar en Expo Go en modo avión: queda "Pendiente de envío" y se envía una sola vez al volver la señal.
 
-### 8. Cierre · pendiente
+### 8. Cierre · en curso
 
-- Quitar `src/services/api/no-integrada.ts` cuando la validación esté integrada.
-- Revisar que solo se llamen endpoints del contrato.
-- Marcar H2 en `Dod.md` y actualizar `estado_actual.md`.
+- ~~Quitar `src/services/api/no-integrada.ts`.~~ Hecho.
+- ~~Revisar que solo se llamen endpoints del contrato.~~ Hecho: las 13 rutas están en el contrato.
+- Marcar H2 en `Dod.md` y actualizar `estado_actual.md` cuando termine el paso 7 y el recorrido en el teléfono.
 - Registrar las pruebas en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.
 
 ## Pendiente del Equipo 3
 
-- **Asignar el rol experto** a `e1.experto@ejemplo.co` (bloquea el paso 6 y la demo).
+- ~~Asignar el rol experto a `e1.experto@ejemplo.co`.~~ Hecho el 28 oct.
+- **Confirmar el estado tras un rechazo:** se acordó `no_concluyente`, pero el backend lo deja en `corregido` sin especie (la app sigue al backend).
 - **Devolver un `refresh_token` nuevo** en cada renovación, como promete el contrato: hoy la sesión vence a los 7 días del último inicio de sesión.
 - Confirmar la versión del contrato (`info.version: "3"` frente a "v1.0").
 - Mantener despiertos el backend y el servicio de visión antes de las pruebas y la demo.

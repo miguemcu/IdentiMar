@@ -1,10 +1,10 @@
-# Estado actual de la app (27 oct 2026, tarde)
+# Estado actual de la app (28 oct 2026)
 
 Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale de `develop`; aún no se ha fusionado). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); los pasos de la integración y lo que falta, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
 
 - **Datos:** la app funciona con dos modos, que se eligen con `EXPO_PUBLIC_USE_API`:
   - `false` (por defecto): datos simulados (mock), como hasta H1.
-  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos y observaciones. **Falta:** la validación experta (sigue siendo un esqueleto que lanza error) y la cola de envío sin duplicados.
+  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones y validación experta. **Falta:** la cola de envío sin duplicados (paso 7) y recorrer en el teléfono lo que solo se probó desde el computador.
 - **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. La app se revisó en Expo Go (Android) con SDK 58 y se ve bien.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
@@ -21,21 +21,22 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 | Catálogos (especies, familias, ambientes, condiciones, estados) | Probado contra el backend desde el computador; falta recorrerlo en el teléfono       |
 | Enviar observación, Resultado, Registros, filtro, detalle   | Probado contra el backend desde el computador (2 observaciones reales); falta en el teléfono |
 | Aviso "Esto está tardando un poco" (a los 10 s)             | En código; se verá al enviar, porque el envío tarda ≈30 s                               |
-| Cola "Por validar"                                          | En código (`listarPendientes`); falta la cuenta experto para probarla                    |
-| Validación experta (confirmar, corregir, rechazar)          | **Sin integrar** (paso 6)                                                                |
+| Cola "Por validar"                                          | Probado desde el computador con `e1.experto`; las validadas salen de la cola             |
+| Validación experta (confirmar, corregir, rechazar)          | Probado desde el computador: corregir y rechazar reales, y los errores 400, 403, 404 y 409. Falta en el teléfono y confirmar una predicción |
 | Cola de envío sin señal                                      | Usa la API real, pero puede duplicar si un envío se corta por tiempo (paso 7)            |
 
 **Cuentas de prueba en el backend** (las contraseñas no van en el repo; pedirlas a quien las creó):
 
 | Correo                  | Rol actual | Para                                                            |
 | ----------------------- | ---------- | --------------------------------------------------------------- |
-| `e1.usuario@ejemplo.co` | usuario    | Probar el flujo del observador. Ya tiene 2 observaciones de prueba |
-| `e1.experto@ejemplo.co` | usuario    | **Pendiente:** el Equipo 3 debe asignarle el rol `experto`      |
+| `e1.usuario@ejemplo.co` | usuario    | Probar el flujo del observador. Tiene 4 observaciones de prueba (una de ellas espera en "Por validar") |
+| `e1.experto@ejemplo.co` | experto    | Probar "Por validar" y la validación                            |
 
 **Cómo se comporta con el backend real:**
 
 - **El envío tarda ≈30 s:** el backend espera a que el modelo termine antes de responder, y Resultado llega con el estado final.
-- **Servicio de visión dormido:** la primera observación después de un rato sin uso puede quedar "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
+- **Servicio de visión dormido:** se duerme con frecuencia, y entonces la observación queda "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
+- **Rechazo del experto:** la observación queda `corregido` sin especie (no `no_concluyente`, como se había acordado). La app muestra "No se pudo identificar" y no la cuenta como identificada.
 - **Render tarda en despertar:** el tiempo máximo de espera es de 90 s, y a los 10 s aparece el aviso amigable.
 - **Registros sin foto:** el listado del backend no trae la foto; las tarjetas muestran un ícono y la foto se ve en el detalle.
 - **Sesión de 7 días como máximo:** el backend no entrega un `refresh_token` nuevo al renovar, así que pasados 7 días desde el último inicio de sesión hay que volver a entrar (pedido al Equipo 3 en `discrepancias.md`).
@@ -66,7 +67,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 
 Si la sesión vence (401) y no se puede renovar, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
 
-**Experto o administrador:** desde Perfil abre la cola "Por validar". En el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar", con un comentario opcional (máximo 2000 caracteres). Con datos simulados funciona completo; con la API, falta el paso 6.
+**Experto o administrador:** desde Perfil abre la cola "Por validar". En el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar", con un comentario opcional (máximo 2000 caracteres). Funciona con datos simulados y con la API.
 
 ---
 
@@ -134,10 +135,9 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **H2** (detalle en [`plan_integracion.md`](plan_integracion.md))
 
-- **Paso 6, validación experta:** implementar `validarObservacion` en `src/services/api/validacion.api.ts` (pasando la respuesta por `aDetalle`). Bloqueado hasta que el Equipo 3 asigne el rol experto a `e1.experto@ejemplo.co`.
 - **Paso 7, cola sin duplicados:** si un envío termina por tiempo agotado, consultar `GET /observaciones` antes de reenviar; espera creciente entre reintentos por 500.
-- **Paso 8, cierre:** quitar `no-integrada.ts`, revisar que solo se llamen endpoints del contrato y marcar el DoD.
-- **Recorrer en el teléfono con la API:** envío, Resultado, Registros, detalle, Especies, ficha y "Por validar". Hasta ahora se probaron desde el computador.
+- **Paso 8, cierre:** marcar el DoD (el esqueleto ya se quitó y los endpoints ya se revisaron).
+- **Recorrer en el teléfono con la API:** envío, Resultado, Registros, detalle, Especies, ficha, "Por validar" y validar (confirmar, corregir, rechazar). Hasta ahora se probaron desde el computador.
 - Pruebas que no se pueden forzar con el mock y ahora sí con la API: 401 del inicio de sesión (contraseña equivocada), 413 (foto muy pesada), renovación del token (esperar 1 hora o alterar el token) y el 409 real de la validación.
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
@@ -173,4 +173,4 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 ## Preguntas para el Equipo 3
 
-Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3). Pedidos abiertos: asignar el rol experto, devolver un `refresh_token` nuevo al renovar y confirmar la versión del contrato.
+Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3). El 28 oct asignaron el rol experto. Pedidos abiertos: confirmar el estado tras un rechazo (`corregido` en el backend), devolver un `refresh_token` nuevo al renovar y confirmar la versión del contrato.
