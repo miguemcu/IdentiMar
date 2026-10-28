@@ -15,8 +15,8 @@ async function ejecutarPrueba() {
   especies.forEach((esp) => {
     console.log(` - [${esp.codigo}] ${esp.nombre_cientifico} (${esp.nombre_comun})`);
   });
-  if (especies.length !== 9) {
-    throw new Error(`Se esperaban 9 especies, pero se obtuvieron ${especies.length}`);
+  if (especies.length !== 4) {
+    throw new Error(`Se esperaban 4 especies, pero se obtuvieron ${especies.length}`);
   }
 
   console.log('\n=== 2. Prueba de Autenticación ===');
@@ -87,7 +87,7 @@ async function ejecutarPrueba() {
         console.log('\n=== 4. Prueba de Validación Experta ===');
         const validada = await validacionService.validarObservacion(detalle.id, {
           decision: 'confirmada',
-          especie_final_codigo: 'URO_MICR',
+          especie_final_codigo: 'Hypanus_guttatus',
           comentario: 'Confirmada por el experto en prueba automatizada.',
         });
         console.log(`Nuevo estado tras validación: "${validada.estado}"`);

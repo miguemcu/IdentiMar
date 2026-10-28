@@ -7,8 +7,9 @@ import { esSinConexion } from '@/services/local/cola-envio';
 import type { Especie, Familia } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
+import { FotoAmpliable } from '@/components/visor-foto/foto-ampliable';
 
 type Estado = 'cargando' | 'listo' | 'error' | 'no_encontrada';
 
@@ -108,10 +109,11 @@ export default function FichaEspecieScreen() {
       {estado === 'listo' && especie ? (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
           {especie.url_imagen_referencia ? (
-            <Image
-              source={{ uri: especie.url_imagen_referencia }}
-              className="w-full h-56 rounded-2xl bg-slate-light/20"
-              resizeMode="cover"
+            <FotoAmpliable
+              uri={especie.url_imagen_referencia}
+              titulo={especie.nombre_comun ?? especie.nombre_cientifico}
+              nombreBase={especie.codigo.toLowerCase()}
+              className="w-full h-56 rounded-2xl"
             />
           ) : null}
 

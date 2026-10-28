@@ -16,8 +16,9 @@ import {
 import type { DecisionValidacion, Especie, ObservacionDetalle } from '@/types';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
+import { FotoAmpliable } from '@/components/visor-foto/foto-ampliable';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
   confirmada: 'Confirmada por el experto',
@@ -213,13 +214,13 @@ export default function DetalleRegistroScreen() {
               </View>
             </View>
           ) : obs.imagen_url ? (
-            <Image
+            <FotoAmpliable
               key={`${obs.imagen_url}-${intentoFoto}`}
-              source={{ uri: obs.imagen_url }}
-              className="w-full h-64 rounded-3xl bg-slate-light/20"
-              resizeMode="cover"
-              onError={() => void alFallarFoto()}
-              accessibilityLabel="Foto del registro"
+              uri={obs.imagen_url}
+              titulo="Foto del registro"
+              nombreBase={`identimar-${obs.id.slice(0, 8)}`}
+              className="w-full h-64 rounded-3xl"
+              onFallo={() => void alFallarFoto()}
             />
           ) : null}
 

@@ -60,6 +60,13 @@ const ICONOS = {
     android: 'logout',
     web: 'logout',
   },
+  ampliar: {
+    ios: 'arrow.up.left.and.arrow.down.right',
+    android: 'open_in_full',
+    web: 'open_in_full',
+  },
+  guardar: { ios: 'square.and.arrow.down', android: 'download', web: 'download' },
+  compartir: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
 } as const satisfies Record<string, SymbolViewProps['name']>;
 
 export type NombreIcono = keyof typeof ICONOS;

@@ -8,6 +8,12 @@ import {
   tokenDeRenovacion,
 } from './sesion';
 
+/**
+ * Registro en Metro solo en desarrollo. `__DEV__` no existe fuera de React
+ * Native (por ejemplo, al probar los servicios con tsx en Node).
+ */
+const EN_DESARROLLO = typeof __DEV__ !== 'undefined' && __DEV__;
+
 export interface OpcionesPeticion {
   metodo?: 'GET' | 'POST';
   /** Objeto que viaja como JSON, o FormData para multipart/form-data. */
@@ -38,7 +44,7 @@ async function fetchConEspera(url: string, init: RequestInit): Promise<Response>
   } catch (error) {
     // Solo en desarrollo: el motivo real (por ejemplo, un cuerpo que fetch no
     // sabe enviar) para no confundirlo con falta de señal. Sin datos personales.
-    if (__DEV__ && !control.signal.aborted) {
+    if (EN_DESARROLLO && !control.signal.aborted) {
       console.warn('[IdentiMar] fetch falló:', error instanceof Error ? error.message : error);
     }
     throw new ErrorServicio(0, {
@@ -149,7 +155,7 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPeticion = {}): P
 
   if (!respuesta.ok) {
     const error = new ErrorServicio(respuesta.status, await leerError(respuesta));
-    if (__DEV__) {
+    if (EN_DESARROLLO) {
       // Solo códigos y nombres de campo: nunca valores, tokens ni coordenadas.
       const campos = (error.cuerpo.detalles ?? []).map((d) => `${d.campo}: ${d.problema}`).join(' · ');
       console.warn(
@@ -160,7 +166,7 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPeticion = {}): P
     throw error;
   }
 
-  if (__DEV__) console.log(`[IdentiMar] ${metodo} ${ruta} → ${respuesta.status}`);
+  if (EN_DESARROLLO) console.log(`[IdentiMar] ${metodo} ${ruta} → ${respuesta.status}`);
   if (respuesta.status === 204) return undefined as T;
   return (await respuesta.json()) as T;
 }
