@@ -6,6 +6,7 @@ import {
   Pressable,
   Text,
   View,
+  type ImageLoadEvent,
   type LayoutChangeEvent,
 } from 'react-native';
 import {
@@ -67,64 +68,121 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
   const [accion, setAccion] = useState<'guardar' | 'compartir' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
+  // Estado de la foto: escala y desplazamiento desde el centro del área.
   const escala = useSharedValue(1);
-  const escalaGuardada = useSharedValue(1);
   const x = useSharedValue(0);
   const y = useSharedValue(0);
-  const xGuardada = useSharedValue(0);
-  const yGuardada = useSharedValue(0);
+  // Valores al empezar cada gesto.
+  const escalaInicio = useSharedValue(1);
+  const xInicio = useSharedValue(0);
+  const yInicio = useSharedValue(0);
+  const focoX = useSharedValue(0);
+  const focoY = useSharedValue(0);
+  // Área del visor y tamaño original de la foto (para saber cuánto ocupa en pantalla).
   const ancho = useSharedValue(0);
   const alto = useSharedValue(0);
+  const anchoFoto = useSharedValue(0);
+  const altoFoto = useSharedValue(0);
 
-  // Lo que la foto ampliada sobresale del área a cada lado: no se arrastra más allá.
-  const limitar = (valor: number, tamano: number, escalaActual: number) => {
+  /**
+   * Cuánto se puede desplazar la foto a cada lado con esa escala: lo que la
+   * foto (ajustada al área, como `contain`) sobresale del área.
+   */
+  const limites = (escalaActual: number) => {
     'worklet';
-    const limite = (tamano * (escalaActual - 1)) / 2;
-    return Math.min(Math.max(valor, -limite), limite);
+    const ajuste =
+      anchoFoto.get() > 0 && altoFoto.get() > 0
+        ? Math.min(ancho.get() / anchoFoto.get(), alto.get() / altoFoto.get())
+        : 1;
+    const anchoVisible = (anchoFoto.get() > 0 ? anchoFoto.get() * ajuste : ancho.get()) * escalaActual;
+    const altoVisible = (altoFoto.get() > 0 ? altoFoto.get() * ajuste : alto.get()) * escalaActual;
+    return {
+      x: Math.max(0, (anchoVisible - ancho.get()) / 2),
+      y: Math.max(0, (altoVisible - alto.get()) / 2),
+    };
   };
 
+  /** Más allá del límite la foto se mueve con resistencia, como en la galería del teléfono. */
+  const conResistencia = (valor: number, limite: number) => {
+    'worklet';
+    if (valor > limite) return limite + (valor - limite) * 0.3;
+    if (valor < -limite) return -limite + (valor + limite) * 0.3;
+    return valor;
+  };
+
+  /** Al soltar, devuelve escala y desplazamiento al rango permitido, con animación. */
+  const acomodar = () => {
+    'worklet';
+    const destino = Math.min(Math.max(escala.get(), 1), ESCALA_MAXIMA);
+    const limite = limites(destino);
+    escala.set(withTiming(destino));
+    x.set(withTiming(Math.min(Math.max(x.get(), -limite.x), limite.x)));
+    y.set(withTiming(Math.min(Math.max(y.get(), -limite.y), limite.y)));
+  };
+
+  // El punto entre los dedos se queda quieto al ampliar, y mover los dos dedos
+  // desplaza la foto. Las coordenadas son del área, que no se transforma.
   const pellizco = usePinchGesture({
+    onActivate: (evento) => {
+      'worklet';
+      escalaInicio.set(escala.get());
+      xInicio.set(x.get());
+      yInicio.set(y.get());
+      focoX.set(evento.focalX - ancho.get() / 2);
+      focoY.set(evento.focalY - alto.get() / 2);
+    },
     onUpdate: (evento) => {
       'worklet';
-      const nueva = Math.min(Math.max(escalaGuardada.get() * evento.scale, 1), ESCALA_MAXIMA);
+      // Deja pasar un poco del mínimo y del máximo; al soltar se acomoda.
+      const nueva = Math.min(Math.max(escalaInicio.get() * evento.scale, 0.8), ESCALA_MAXIMA * 1.3);
+      const proporcion = nueva / escalaInicio.get();
       escala.set(nueva);
-      // Al alejar, el desplazamiento se acomoda para no dejar bordes vacíos.
-      x.set(limitar(xGuardada.get(), ancho.get(), nueva));
-      y.set(limitar(yGuardada.get(), alto.get(), nueva));
+      x.set(evento.focalX - ancho.get() / 2 - (focoX.get() - xInicio.get()) * proporcion);
+      y.set(evento.focalY - alto.get() / 2 - (focoY.get() - yInicio.get()) * proporcion);
     },
     onDeactivate: () => {
       'worklet';
-      escalaGuardada.set(escala.get());
-      xGuardada.set(x.get());
-      yGuardada.set(y.get());
+      acomodar();
     },
   });
 
+  // Un dedo: arrastra la foto. Con dos dedos lo maneja el pellizco.
   const arrastre = usePanGesture({
-    onUpdate: (evento) => {
-      'worklet';
-      const actual = escala.get();
-      x.set(limitar(xGuardada.get() + evento.translationX, ancho.get(), actual));
-      y.set(limitar(yGuardada.get() + evento.translationY, alto.get(), actual));
-    },
-    onDeactivate: () => {
-      'worklet';
-      xGuardada.set(x.get());
-      yGuardada.set(y.get());
-    },
-  });
-
-  const dobleToque = useTapGesture({
-    numberOfTaps: 2,
+    maxPointers: 1,
     onActivate: () => {
       'worklet';
-      const nueva = escalaGuardada.get() > 1 ? 1 : ESCALA_DOBLE_TOQUE;
-      escala.set(withTiming(nueva));
-      escalaGuardada.set(nueva);
-      x.set(withTiming(0));
-      y.set(withTiming(0));
-      xGuardada.set(0);
-      yGuardada.set(0);
+      xInicio.set(x.get());
+      yInicio.set(y.get());
+    },
+    onUpdate: (evento) => {
+      'worklet';
+      const limite = limites(escala.get());
+      x.set(conResistencia(xInicio.get() + evento.translationX, limite.x));
+      y.set(conResistencia(yInicio.get() + evento.translationY, limite.y));
+    },
+    onDeactivate: () => {
+      'worklet';
+      acomodar();
+    },
+  });
+
+  // Amplía hacia el punto tocado; si ya está ampliada, vuelve al tamaño normal.
+  const dobleToque = useTapGesture({
+    numberOfTaps: 2,
+    onActivate: (evento) => {
+      'worklet';
+      if (escala.get() > 1.05) {
+        escala.set(withTiming(1));
+        x.set(withTiming(0));
+        y.set(withTiming(0));
+        return;
+      }
+      const limite = limites(ESCALA_DOBLE_TOQUE);
+      const destinoX = -(evento.x - ancho.get() / 2) * (ESCALA_DOBLE_TOQUE - 1);
+      const destinoY = -(evento.y - alto.get() / 2) * (ESCALA_DOBLE_TOQUE - 1);
+      escala.set(withTiming(ESCALA_DOBLE_TOQUE));
+      x.set(withTiming(Math.min(Math.max(destinoX, -limite.x), limite.x)));
+      y.set(withTiming(Math.min(Math.max(destinoY, -limite.y), limite.y)));
     },
   });
 
@@ -137,17 +195,19 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
 
   function reiniciar() {
     escala.set(1);
-    escalaGuardada.set(1);
     x.set(0);
     y.set(0);
-    xGuardada.set(0);
-    yGuardada.set(0);
     setAviso(null);
   }
 
   function medir(evento: LayoutChangeEvent) {
     ancho.set(evento.nativeEvent.layout.width);
     alto.set(evento.nativeEvent.layout.height);
+  }
+
+  function alCargarFoto(evento: ImageLoadEvent) {
+    anchoFoto.set(evento.nativeEvent.source.width);
+    altoFoto.set(evento.nativeEvent.source.height);
   }
 
   async function ejecutar(tipo: 'guardar' | 'compartir') {
@@ -193,21 +253,24 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
             </Pressable>
           </View>
 
-          <View className="flex-1 overflow-hidden" onLayout={medir}>
-            {uri ? (
-              <GestureDetector gesture={gestos}>
+          {/* El detector va en el área (que no se transforma): así las
+              coordenadas de los dedos no cambian con el zoom. */}
+          <GestureDetector gesture={gestos}>
+            <View className="flex-1 overflow-hidden" onLayout={medir} collapsable={false}>
+              {uri ? (
                 <Animated.View className="flex-1" style={estiloFoto}>
                   <Image
                     source={{ uri }}
                     resizeMode="contain"
                     className="h-full w-full"
+                    onLoad={alCargarFoto}
                     onError={onFallo}
                     accessibilityLabel={titulo}
                   />
                 </Animated.View>
-              </GestureDetector>
-            ) : null}
-          </View>
+              ) : null}
+            </View>
+          </GestureDetector>
 
           <View className="gap-3 px-4 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
             <Text className="text-center font-source text-sm text-slate-light">
