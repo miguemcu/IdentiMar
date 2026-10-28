@@ -16,8 +16,8 @@
 | 3    | Autenticación                         | Hecho; **verificado en Expo Go**                         | `846cd67`, `0475f78`, `2e0cc2c`           |
 | 4    | Catálogos                             | Hecho; probado desde el computador                       | `4993711`                                 |
 | 5    | Observaciones                         | Hecho; probado desde el computador (2 observaciones reales) | `70e69ff`                              |
-| 6    | Validación experta                    | Hecho; probado desde el computador con `e1.experto`      | `1319186`, `15fd7fe`                      |
-| 7    | Cola de envío con la API real         | **Pendiente**                                            | —                                         |
+| 6    | Validación experta                    | Hecho; probado desde el computador con `e1.experto`      | `1319186`, `15fd7fe`, `5d5c668`           |
+| 7    | Cola de envío con la API real         | Hecho; probado en Node con un servicio falso             | `dbf4e8b`                                 |
 | 8    | Cierre                                | En curso: esqueleto quitado y endpoints revisados        | `aac9068`                                 |
 
 "Probado desde el computador" significa que el servicio se ejecutó con `npx tsx` contra el backend desplegado; falta recorrerlo en el teléfono.
@@ -28,9 +28,8 @@
 2. En `.env`: `EXPO_PUBLIC_USE_API=true` y `EXPO_PUBLIC_API_URL=https://identimar-backend.onrender.com/api/v1`. Arranca con `npm run start:tunel` (ngrok) o `npx expo start -c` en la misma red.
 3. Cuentas: `e1.usuario@ejemplo.co` (usuario) y `e1.experto@ejemplo.co` (experto). Las contraseñas no están en el repo; pídelas a quien las creó.
 4. Lo siguiente, en orden:
-   - **Recorrer en el teléfono** lo de los pasos 4 a 6 (envío, Resultado, Registros, detalle, Especies, ficha, "Por validar" y validar) y marcarlo en `Dod.md`. Hay una observación `no_concluyente` de `e1.usuario` esperando en "Por validar" para probar la validación desde la app.
-   - **Paso 7** (no depende de nadie).
-   - **Paso 8** y las pruebas funcionales en `docs/pruebas/`.
+   - **Recorrer en el teléfono** lo de los pasos 4 a 7 (envío, Resultado, Registros, detalle, Especies, ficha, "Por validar", validar y la cola sin señal) y marcarlo en `Dod.md`. Hay una observación `no_concluyente` de `e1.usuario` esperando en "Por validar" para probar la validación desde la app.
+   - **Paso 8:** cerrar el DoD y registrar las pruebas funcionales en `docs/pruebas/`.
 5. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado).
 
 **Regla de trabajo:** las pantallas y el mock usan siempre la forma del contrato. Cualquier diferencia del backend se adapta solo dentro de `src/services/api/` y se anota en [`discrepancias.md`](discrepancias.md) (sección 6).
@@ -104,23 +103,25 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
   - Una corrección real (a *Hypanus americanus*) y un rechazo real. Las dos salen de "Por validar", y el detalle muestra la decisión, la especie, el comentario, el experto y el historial.
 - *Falta en Expo Go:* confirmar una predicción. No se ha podido probar contra el backend porque la única `identificado` no admite validación y las pendientes no traían predicción (servicio de visión dormido). Se puede probar con una `pendiente_experto`, cuando el modelo responda con baja confianza.
 
-### 7. Cola de envío con la API real · pendiente
+### 7. Cola de envío con la API real · hecho
 
-`src/services/local/cola-envio.ts` ya cumple el orden de creación, pasa 400 y 413 a revisión y no reintenta con 0 o 401. Falta:
-
-- **Evitar duplicados.** Es más probable de lo previsto, porque el envío tarda ≈30 s y con Render dormido puede pasar de 90 s. Un tiempo agotado llega como `ErrorServicio(0)` con `cuerpo.codigo === 'tiempo-agotado'` (ver `http.ts`).
-  - Ese caso se guarda en la cola marcado como "quizá enviado".
-  - Antes de reenviarlo, se consulta `GET /observaciones` y se busca una con la misma `fecha_hora_evento` (el backend la guarda en UTC sin milisegundos) y las mismas coordenadas (llegan como texto: comparar como número).
-  - Si existe, se quita de la cola sin reenviar.
-  - Revisar también `src/hooks/use-enviar-observacion.ts`, que hoy manda a la cola cualquier status 0.
-- **Espera creciente** entre reintentos por 500.
-- Verificar en Expo Go en modo avión: queda "Pendiente de envío" y se envía una sola vez al volver la señal.
+- **Sin duplicados.** Un tiempo agotado (`ErrorServicio(0)` con `cuerpo.codigo === 'tiempo-agotado'`) guarda la observación con `quizaEnviada`; lo hacen tanto `use-enviar-observacion.ts` como la cola, si se corta un reenvío.
+  - Antes de reenviarla, `procesarCola` consulta `GET /observaciones` y busca una con el mismo instante de `fecha_hora_evento`, creada desde 5 minutos antes de guardarla en la cola. Si existe, la quita sin reenviar.
+  - El listado del contrato no trae coordenadas, así que la clave es la fecha y hora del evento al segundo.
+  - El aviso para el usuario es "El servidor tardó en responder".
+- **Espera creciente.** Tras un 500, `proximoIntento` queda a 15 s y luego a 30 s, y el contexto de la cola programa el reintento. Al tercer fallo pasa a revisión. "Enviar ahora" (`forzar`) no espera.
+- **Mock:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` crea la observación pero no entrega la respuesta.
+- *Falta en Expo Go:*
+  - Con `tiempo-agotado`: la observación debe aparecer una sola vez en Registros tras "Enviar ahora".
+  - Con `500`: se reintenta solo a los 15 y a los 30 s.
+  - Con la API en modo avión: queda "Pendiente de envío" y se envía una sola vez al volver la señal.
 
 ### 8. Cierre · en curso
 
 - ~~Quitar `src/services/api/no-integrada.ts`.~~ Hecho.
 - ~~Revisar que solo se llamen endpoints del contrato.~~ Hecho: las 13 rutas están en el contrato.
-- Marcar H2 en `Dod.md` y actualizar `estado_actual.md` cuando termine el paso 7 y el recorrido en el teléfono.
+- Recorrer en Expo Go lo que solo se probó desde el computador o en Node (ver "Falta en Expo Go" en los pasos 4 a 7).
+- Marcar H2 en `Dod.md` y actualizar `estado_actual.md` con lo verificado.
 - Registrar las pruebas en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.
 
 ## Pendiente del Equipo 3

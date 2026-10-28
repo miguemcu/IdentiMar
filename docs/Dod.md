@@ -223,7 +223,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## H2. Integración con la API real
 
-**Avance al 28 oct:** en la rama `feature/h2-integracion`. Pasos 1 a 6 del [plan de integración](plan_integracion.md) hechos; faltan la cola sin duplicados (paso 7) y lo que queda del cierre (paso 8). Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
+**Avance al 28 oct:** en la rama `feature/h2-integracion`. Pasos 1 a 7 del [plan de integración](plan_integracion.md) hechos en código; falta el cierre (paso 8): recorrer en Expo Go lo que solo se probó desde el computador y las pruebas funcionales. Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
 
 ### Bloqueantes (antes del 25 oct)
 
@@ -258,9 +258,9 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Offline (parte 2: sincronización real)**
 
-- [ ] La cola usa la API real y respeta el orden de creación. *La cola usa el mismo servicio, así que ya envía a la API; falta evitar duplicados cuando un envío termina por tiempo agotado (paso 7) y verificarlo en Expo Go.*
-- [ ] Reintentos con backoff. Un 400 no se reintenta: la observación se marca para revisión. *El 400 ya pasa a revisión; falta la espera creciente entre reintentos (paso 7).*
-- [ ] Si el token expiró sin red, la cola se mantiene y se envía al renovar la sesión. *Sin red no se intenta enviar y la sesión guardada permite entrar; falta verificarlo.*
+- [x] La cola usa la API real y respeta el orden de creación. *Usa el mismo servicio que el envío. Tras un tiempo agotado no duplica: antes de reenviar busca la observación en `GET /observaciones`. Probado en Node con un servicio falso; falta verificarlo en Expo Go (con la API en modo avión, y con `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado`).*
+- [x] Reintentos con backoff. Un 400 no se reintenta: la observación se marca para revisión. *Tras un 500 espera 15 s y luego 30 s (se reintenta solo); al tercer fallo pasa a revisión. "Enviar ahora" no espera. Probado en Node; falta en Expo Go con `EXPO_PUBLIC_MOCK_ERROR=500`.*
+- [ ] Si el token expiró sin red, la cola se mantiene y se envía al renovar la sesión. *En código: sin red no se intenta enviar, la sesión guardada permite entrar y, al volver la señal, el cliente HTTP renueva el token antes de enviar. Falta verificarlo.*
 
 **Arquitectura**
 

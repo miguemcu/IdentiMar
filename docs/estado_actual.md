@@ -4,7 +4,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 
 - **Datos:** la app funciona con dos modos, que se eligen con `EXPO_PUBLIC_USE_API`:
   - `false` (por defecto): datos simulados (mock), como hasta H1.
-  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones y validación experta. **Falta:** la cola de envío sin duplicados (paso 7) y recorrer en el teléfono lo que solo se probó desde el computador.
+  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. **Falta:** recorrer en el teléfono lo que solo se probó desde el computador y registrar las pruebas (paso 8).
 - **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. La app se revisó en Expo Go (Android) con SDK 58 y se ve bien.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
@@ -23,7 +23,8 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 | Aviso "Esto está tardando un poco" (a los 10 s)             | En código; se verá al enviar, porque el envío tarda ≈30 s                               |
 | Cola "Por validar"                                          | Probado desde el computador con `e1.experto`; las validadas salen de la cola             |
 | Validación experta (confirmar, corregir, rechazar)          | Probado desde el computador: corregir y rechazar reales, y los errores 400, 403, 404 y 409. Falta en el teléfono y confirmar una predicción |
-| Cola de envío sin señal                                      | Usa la API real, pero puede duplicar si un envío se corta por tiempo (paso 7)            |
+| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node; falta en el teléfono |
+| Rechazo del experto                                          | Se muestra "No identificable" y la nota "Un experto revisó esta foto, pero no pudo identificar la especie" |
 
 **Cuentas de prueba en el backend** (las contraseñas no van en el repo; pedirlas a quien las creó):
 
@@ -36,7 +37,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 
 - **El envío tarda ≈30 s:** el backend espera a que el modelo termine antes de responder, y Resultado llega con el estado final.
 - **Servicio de visión dormido:** se duerme con frecuencia, y entonces la observación queda "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
-- **Rechazo del experto:** la observación queda `corregido` sin especie (no `no_concluyente`, como se había acordado). La app muestra "No se pudo identificar" y no la cuenta como identificada.
+- **Rechazo del experto:** la observación queda `corregido` sin especie (se había acordado `no_concluyente`; se decidió dejarlo como lo hace el backend). Para que nadie crea que ya se identificó, la app muestra la etiqueta "No identificable" en vez de "Corregido", con la nota "Un experto revisó esta foto, pero no pudo identificar la especie", y no la cuenta como identificada.
 - **Render tarda en despertar:** el tiempo máximo de espera es de 90 s, y a los 10 s aparece el aviso amigable.
 - **Registros sin foto:** el listado del backend no trae la foto; las tarjetas muestran un ícono y la foto se ve en el detalle.
 - **Sesión de 7 días como máximo:** el backend no entrega un `refresh_token` nuevo al renovar, así que pasados 7 días desde el último inicio de sesión hay que volver a entrar (pedido al Equipo 3 en `discrepancias.md`).
@@ -62,7 +63,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 8. **Usar la app sin señal.**
    - **Borrador:** el formulario a medias se guarda en el teléfono (uno por cuenta) y se recupera al volver a entrar, incluso tras cerrar la app. Se borra al enviar, con "Empezar de nuevo" o al cerrar sesión a mano; si la sesión vence, se conserva.
    - **Foto:** se copia a la carpeta de la app al elegirla. Si la copia falla, aparece un aviso y el flujo sigue. De las fotos enviadas se conservan las 20 más recientes.
-   - **Cola de envío:** sin red, la observación queda "Pendiente de envío" en Registros y se envía sola, en orden, al entrar, al volver la señal o al volver a la app (o con "Enviar ahora"). Con 400, 413 o sin foto pasa a "Requiere revisión"; con 500 u otros errores, al tercer intento. Si la sesión venció, vuelve a inicio de sesión y la cola se envía al volver a entrar.
+   - **Cola de envío:** sin red, la observación queda "Pendiente de envío" en Registros y se envía sola, en orden, al entrar, al volver la señal o al volver a la app (o con "Enviar ahora"). Con 400, 413 o sin foto pasa a "Requiere revisión"; con 500 u otros errores reintenta solo a los 15 y 30 s y, al tercer intento, pasa a revisión. Si el envío se cortó porque el servidor tardó, revisa si la observación ya llegó antes de reenviarla. Si la sesión venció, vuelve a inicio de sesión y la cola se envía al volver a entrar.
    - **Sin conexión:** Inicio, Registros, Especies, la ficha y el paso 3 del formulario muestran lo último guardado con la franja "Sin conexión" y se recargan solos al volver la señal.
 
 Si la sesión vence (401) y no se puede renovar, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
@@ -92,7 +93,7 @@ Para abrirla en Expo Go desde otra red: `npm run start:tunel`. Con SDK 58, `npx 
 
 Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiarlo):
 
-- **Enviar observación y cola de envío:** `400` · `401` · `413` · `500` · `foto-ausente` (la foto de una observación en cola ya no está en el teléfono)
+- **Enviar observación y cola de envío:** `400` · `401` · `413` · `500` · `foto-ausente` (la foto de una observación en cola ya no está en el teléfono) · `tiempo-agotado` (la observación se crea pero la respuesta no llega; la cola revisa si ya existe antes de reenviarla)
 - **Copia de la foto:** `copia-foto` (el teléfono no deja guardar la copia)
 - **Sin conexión en toda la app** (envío, catálogos, listado y detalle): `red`
 - **Registro:** `409` · `400-auth` (el correo `ya.registrado@ejemplo.co` siempre da 409)
@@ -135,9 +136,9 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **H2** (detalle en [`plan_integracion.md`](plan_integracion.md))
 
-- **Paso 7, cola sin duplicados:** si un envío termina por tiempo agotado, consultar `GET /observaciones` antes de reenviar; espera creciente entre reintentos por 500.
-- **Paso 8, cierre:** marcar el DoD (el esqueleto ya se quitó y los endpoints ya se revisaron).
-- **Recorrer en el teléfono con la API:** envío, Resultado, Registros, detalle, Especies, ficha, "Por validar" y validar (confirmar, corregir, rechazar). Hasta ahora se probaron desde el computador.
+- **Paso 8, cierre:** marcar el DoD con lo verificado en el teléfono y registrar las pruebas (el esqueleto ya se quitó y los endpoints ya se revisaron).
+- **Recorrer en el teléfono con la API:** envío, Resultado, Registros, detalle, Especies, ficha, "Por validar", validar (confirmar, corregir, rechazar) y la cola en modo avión. Hasta ahora se probaron desde el computador.
+- **Recorrer en el teléfono con el mock:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez en Registros tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
 - Pruebas que no se pueden forzar con el mock y ahora sí con la API: 401 del inicio de sesión (contraseña equivocada), 413 (foto muy pesada), renovación del token (esperar 1 hora o alterar el token) y el 409 real de la validación.
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
