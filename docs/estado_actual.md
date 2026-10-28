@@ -59,7 +59,7 @@ Resumen de cómo está IdentiMar en `develop` (con la integración H2, #19) y en
    - **No se pudo identificar:** con opción de tomar otra foto.
 5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app (con versión del modelo), validación del experto (si la hay) e historial. Si la foto no carga, el detalle se vuelve a pedir una vez y, si sigue fallando, se ofrece reintentar.
 6. **Consultar el catálogo de especies** (solo rayas; hoy las 4 que reconoce el modelo) con buscador y ficha con imagen de referencia, descripción, código y familia.
-7. **Ver una foto en grande** (`feature/foto-zoom`): al tocar la foto del detalle de un registro o de la ficha de una especie se abre a pantalla completa. Se puede pellizcar para acercar (hasta 5×), arrastrar para recorrerla y tocar dos veces para acercar o volver. Desde ahí se puede **guardar en el teléfono** o **compartir** (guardar en Fotos, WhatsApp, correo). En Android, Expo Go no tiene acceso completo a la galería: "Guardar en el teléfono" puede fallar ahí y sugiere usar "Compartir"; en la app instalada (APK) funciona.
+7. **Ver una foto en grande:** al tocar la foto del detalle de un registro o de la ficha de una especie se abre a pantalla completa. Se puede pellizcar para acercar (hasta 5×), arrastrar para recorrerla y tocar dos veces para acercar o volver. Desde ahí se puede **guardar en el teléfono** o **compartir** (guardar en Fotos, WhatsApp, correo). En Android, Expo Go no tiene acceso completo a la galería: "Guardar en el teléfono" puede fallar ahí y sugiere usar "Compartir"; en la app instalada (APK) funciona. *Verificado en Expo Go (Android): zoom, arrastre, doble toque y compartir.*
 8. **Perfil:** datos (desde `GET /auth/perfil`; si falla, los de la sesión), rol, cifras, nota para certificarse como experto y cerrar sesión. Si el rol cambió en el servidor (por ejemplo, ahora es experto), la app lo usa sin volver a entrar.
 9. **Usar la app sin señal.**
    - **Borrador:** el formulario a medias se guarda en el teléfono (uno por cuenta) y se recupera al volver a entrar, incluso tras cerrar la app. Se borra al enviar, con "Empezar de nuevo" o al cerrar sesión a mano; si la sesión vence, se conserva.
@@ -147,7 +147,8 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **Siguiente rama (propuesta)**
 
-- ~~**Ver la foto en grande**~~ con zoom, guardar y compartir: hecho en `feature/foto-zoom` (falta verificar en el teléfono).
+- ~~**Ver la foto en grande**~~ con zoom, guardar y compartir: hecho en `feature/foto-zoom` y verificado en Expo Go.
+- **Pulir el zoom al pellizcar** (`src/components/visor-foto/visor-foto.tsx`): funciona, pero todavía no se siente tan fluido como la galería del teléfono; al soltar, la vista a veces se mueve un poco. Para un MVP queda así. Si se retoma, una opción es probar una librería dedicada (por ejemplo, `@likashefqet/react-native-image-zoom`), revisando antes que sea compatible con Gesture Handler 3.
 - **APK:** definir cómo se compila e instala (EAS Build, perfil de vista previa o de producción) y el ícono de la app (otro compañero trabaja en el logo).
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
