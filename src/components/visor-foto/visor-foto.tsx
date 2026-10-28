@@ -72,12 +72,23 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
   const escala = useSharedValue(1);
   const x = useSharedValue(0);
   const y = useSharedValue(0);
-  // Valores al empezar cada gesto.
+  // Valores al empezar el pellizco y último punto entre los dedos (desde el
+  // centro del área).
   const escalaInicio = useSharedValue(1);
   const xInicio = useSharedValue(0);
   const yInicio = useSharedValue(0);
   const focoX = useSharedValue(0);
   const focoY = useSharedValue(0);
+  const ultimoFocoX = useSharedValue(0);
+  const ultimoFocoY = useSharedValue(0);
+  // Valores al empezar el arrastre (aparte: los dos gestos pueden coincidir).
+  const xArrastre = useSharedValue(0);
+  const yArrastre = useSharedValue(0);
+  // Al levantar los dedos de un pellizco casi nunca se sueltan a la vez: el que
+  // queda no debe arrastrar la foto.
+  const pellizcando = useSharedValue(false);
+  const finPellizco = useSharedValue(0);
+  const arrastreIgnorado = useSharedValue(false);
   // Área del visor y tamaño original de la foto (para saber cuánto ocupa en pantalla).
   const ancho = useSharedValue(0);
   const alto = useSharedValue(0);
@@ -110,14 +121,22 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
     return valor;
   };
 
-  /** Al soltar, devuelve escala y desplazamiento al rango permitido, con animación. */
-  const acomodar = () => {
+  /**
+   * Al soltar, devuelve escala y desplazamiento al rango permitido, con
+   * animación. Si la escala se pasó, vuelve alrededor del punto (fx, fy), para
+   * que la parte de la foto que se estaba mirando no se corra.
+   */
+  const acomodar = (fx = 0, fy = 0) => {
     'worklet';
-    const destino = Math.min(Math.max(escala.get(), 1), ESCALA_MAXIMA);
+    const actual = escala.get();
+    const destino = Math.min(Math.max(actual, 1), ESCALA_MAXIMA);
+    const proporcion = destino / actual;
     const limite = limites(destino);
+    const nuevaX = fx - (fx - x.get()) * proporcion;
+    const nuevaY = fy - (fy - y.get()) * proporcion;
     escala.set(withTiming(destino));
-    x.set(withTiming(Math.min(Math.max(x.get(), -limite.x), limite.x)));
-    y.set(withTiming(Math.min(Math.max(y.get(), -limite.y), limite.y)));
+    x.set(withTiming(Math.min(Math.max(nuevaX, -limite.x), limite.x)));
+    y.set(withTiming(Math.min(Math.max(nuevaY, -limite.y), limite.y)));
   };
 
   // El punto entre los dedos se queda quieto al ampliar, y mover los dos dedos
@@ -125,24 +144,33 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
   const pellizco = usePinchGesture({
     onActivate: (evento) => {
       'worklet';
+      pellizcando.set(true);
       escalaInicio.set(escala.get());
       xInicio.set(x.get());
       yInicio.set(y.get());
       focoX.set(evento.focalX - ancho.get() / 2);
       focoY.set(evento.focalY - alto.get() / 2);
+      ultimoFocoX.set(focoX.get());
+      ultimoFocoY.set(focoY.get());
     },
     onUpdate: (evento) => {
       'worklet';
       // Deja pasar un poco del mínimo y del máximo; al soltar se acomoda.
       const nueva = Math.min(Math.max(escalaInicio.get() * evento.scale, 0.8), ESCALA_MAXIMA * 1.3);
       const proporcion = nueva / escalaInicio.get();
+      const fx = evento.focalX - ancho.get() / 2;
+      const fy = evento.focalY - alto.get() / 2;
       escala.set(nueva);
-      x.set(evento.focalX - ancho.get() / 2 - (focoX.get() - xInicio.get()) * proporcion);
-      y.set(evento.focalY - alto.get() / 2 - (focoY.get() - yInicio.get()) * proporcion);
+      x.set(fx - (focoX.get() - xInicio.get()) * proporcion);
+      y.set(fy - (focoY.get() - yInicio.get()) * proporcion);
+      ultimoFocoX.set(fx);
+      ultimoFocoY.set(fy);
     },
     onDeactivate: () => {
       'worklet';
-      acomodar();
+      pellizcando.set(false);
+      finPellizco.set(Date.now());
+      acomodar(ultimoFocoX.get(), ultimoFocoY.get());
     },
   });
 
@@ -151,17 +179,21 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
     maxPointers: 1,
     onActivate: () => {
       'worklet';
-      xInicio.set(x.get());
-      yInicio.set(y.get());
+      // El dedo que queda al terminar un pellizco no arrastra.
+      arrastreIgnorado.set(pellizcando.get() || Date.now() - finPellizco.get() < 400);
+      xArrastre.set(x.get());
+      yArrastre.set(y.get());
     },
     onUpdate: (evento) => {
       'worklet';
+      if (arrastreIgnorado.get() || pellizcando.get()) return;
       const limite = limites(escala.get());
-      x.set(conResistencia(xInicio.get() + evento.translationX, limite.x));
-      y.set(conResistencia(yInicio.get() + evento.translationY, limite.y));
+      x.set(conResistencia(xArrastre.get() + evento.translationX, limite.x));
+      y.set(conResistencia(yArrastre.get() + evento.translationY, limite.y));
     },
     onDeactivate: () => {
       'worklet';
+      if (arrastreIgnorado.get()) return;
       acomodar();
     },
   });
