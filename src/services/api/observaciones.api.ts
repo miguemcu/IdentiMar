@@ -29,11 +29,19 @@ export class ObservacionesApiService implements IObservacionesService {
     };
     const formulario = new FormData();
     formulario.append('datos', JSON.stringify(cuerpo));
-    // En React Native un archivo se adjunta con su uri, tipo y nombre.
+    // Desde SDK 58 el fetch global es el de Expo, que no acepta archivos como
+    // `{ uri }` (los de React Native) y falla antes de enviar. Lee el contenido
+    // con `bytes()` y toma `name` y `type` para la parte. Se dejan las dos
+    // formas: `uri` sirve si se vuelve al fetch de React Native
+    // (EXPO_PUBLIC_USE_RN_FETCH). El módulo se carga aquí para que el mock
+    // (scripts/probar-servicios.ts) siga corriendo en Node.
+    const { File } = await import('expo-file-system');
+    const archivo = new File(imagen.uri);
     formulario.append('imagen', {
       uri: imagen.uri,
       type: imagen.mimeType,
       name: imagen.nombre,
+      bytes: async () => new Uint8Array(await archivo.arrayBuffer()),
     } as unknown as Blob);
     return aResumen(await pedir('/observaciones', { metodo: 'POST', cuerpo: formulario }));
   }

@@ -35,7 +35,12 @@ async function fetchConEspera(url: string, init: RequestInit): Promise<Response>
   const temporizador = setTimeout(() => control.abort(), TIEMPO_ESPERA_MS);
   try {
     return await fetch(url, { ...init, signal: control.signal });
-  } catch {
+  } catch (error) {
+    // Solo en desarrollo: el motivo real (por ejemplo, un cuerpo que fetch no
+    // sabe enviar) para no confundirlo con falta de señal. Sin datos personales.
+    if (__DEV__ && !control.signal.aborted) {
+      console.warn('[IdentiMar] fetch falló:', error instanceof Error ? error.message : error);
+    }
     throw new ErrorServicio(0, {
       codigo: control.signal.aborted ? 'tiempo-agotado' : 'sin-conexion',
       mensaje: 'No hay conexión.',

@@ -94,6 +94,7 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
 
 - `observaciones.api.ts`: envío multipart, listado con filtros, detalle y "Por validar", todo pasado por `adaptadores.ts`.
 - El envío espera la inferencia (≈30 s) y responde con el estado final; el seguimiento de Resultado se detiene en la primera consulta.
+- **Con SDK 58 el `fetch` global es el de Expo (`expo/fetch`)**, que no acepta archivos de `FormData` como `{ uri, type, name }`: fallaba antes de enviar y la app lo mostraba como "Sin conexión". La foto se adjunta con `bytes()` (lee el archivo con `expo-file-system`), `name` y `type`; se deja también `uri` por si se vuelve al `fetch` de React Native con `EXPO_PUBLIC_USE_RN_FETCH=true`. En desarrollo, `http.ts` escribe en Metro el motivo real cuando `fetch` falla.
 - El listado no trae foto: `src/hooks/use-foto-observacion.ts` hace que cada tarjeta visible pida el detalle de su observación (en memoria por 50 minutos). Si el Equipo 3 agrega `imagen_url` al listado, el hook deja de consultar solo.
 
 ### 6. Validación experta · hecho
