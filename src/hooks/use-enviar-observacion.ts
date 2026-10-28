@@ -6,7 +6,7 @@ import { fechaIsoLocal } from '@/constants/formato';
 import { imagenParaEnvio } from '@/constants/nueva-observacion';
 import { useAuth } from '@/contexts/auth-context';
 import { hayRed, useColaEnvio } from '@/contexts/cola-envio-context';
-import { esSinConexion } from '@/services/local/cola-envio';
+import { esSinConexion, esTiempoAgotado } from '@/services/local/cola-envio';
 import { ErrorServicio, mensajeError, observacionesService } from '@/services';
 import {
   liberarFotoReservada,
@@ -61,13 +61,22 @@ export function useEnviarObservacion(alEnviar: () => void) {
     const imagen = imagenParaEnvio({ ...imageAsset, uri: uriEnvio });
 
     // La foto reservada pasa a la cola; el borrador ya no hace falta.
-    const guardarEnCola = () => {
-      encolar(datos, imagen);
+    // `quizaEnviada`: el servidor tardó demasiado y pudo haberla recibido; la
+    // cola revisa si llegó antes de enviarla otra vez, para no duplicarla.
+    const guardarEnCola = (quizaEnviada = false) => {
+      encolar(datos, imagen, quizaEnviada);
       alEnviar();
-      Alert.alert(
-        'Sin conexión',
-        'Guardamos tu observación y la enviaremos cuando vuelva la señal.',
-      );
+      if (quizaEnviada) {
+        Alert.alert(
+          'El servidor tardó en responder',
+          'Guardamos tu observación. Revisaremos si ya llegó y, si no, la enviaremos de nuevo.',
+        );
+      } else {
+        Alert.alert(
+          'Sin conexión',
+          'Guardamos tu observación y la enviaremos cuando vuelva la señal.',
+        );
+      }
       router.replace('/(tabs)/registros' as any);
     };
 
@@ -82,7 +91,7 @@ export function useEnviarObservacion(alEnviar: () => void) {
       router.replace(`/observaciones/resultado/${resumen.id}` as any);
     } catch (error) {
       if (esSinConexion(error)) {
-        guardarEnCola();
+        guardarEnCola(esTiempoAgotado(error));
         return;
       }
       liberarFotoReservada(uriEnvio);

@@ -24,8 +24,11 @@ import type { ImagenObservacion } from '../services/observaciones.service';
 import type { ObservacionInput } from '../types';
 import { useAuth } from './auth-context';
 
-/** Qué disparó un intento de envío de la cola. */
-export type OrigenEnvio = 'entrar' | 'manual' | 'senal' | 'volver';
+/**
+ * Qué disparó un intento de envío de la cola. `reintento`: venció la espera
+ * tras un error del servidor.
+ */
+export type OrigenEnvio = 'entrar' | 'manual' | 'senal' | 'volver' | 'reintento';
 
 /** La señal y volver a la app avisan solos y pueden repetirse seguido. */
 const AUTOMATICOS: OrigenEnvio[] = ['senal', 'volver'];
@@ -36,7 +39,8 @@ interface ColaEnvioContextType {
   enviando: boolean;
   /** Aviso de por qué se detuvo el último envío (no por falta de señal). */
   aviso: string | null;
-  encolar: (datos: ObservacionInput, imagen: ImagenObservacion) => void;
+  /** `quizaEnviada`: el envío se cortó por tiempo agotado y el servidor pudo crearla. */
+  encolar: (datos: ObservacionInput, imagen: ImagenObservacion, quizaEnviada?: boolean) => void;
   /** Fotos de la cola en este momento (no las del último render). */
   fotosEnCola: () => string[];
   /** Intenta enviar ahora lo pendiente (también se hace solo al volver la señal). */
@@ -74,6 +78,9 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     logoutRef.current = logout;
   }, [logout]);
+  // Reintento programado tras un error del servidor (espera creciente).
+  const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const enviarRef = useRef<(origen: OrigenEnvio) => Promise<void>>(async () => undefined);
 
   const actualizar = useCallback(
     (nueva: ObservacionEnCola[]) => {
@@ -97,13 +104,21 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setEnviando(true);
+    clearTimeout(temporizador.current);
     try {
-      const resultado = await procesarCola(colaRef.current, observacionesService);
+      const resultado = await procesarCola(colaRef.current, observacionesService, {
+        forzar: origen === 'manual',
+      });
       actualizar(resultado.cola);
       if (resultado.enviadas > 0) {
         limpiarFotosEnviadas(colaRef.current.map((e) => e.imagen.uri));
       }
-      setAviso(resultado.detenidaPor === 'error' ? AVISO_SERVIDOR : null);
+      const esperando = resultado.detenidaPor === 'error' || resultado.detenidaPor === 'espera';
+      setAviso(esperando ? AVISO_SERVIDOR : null);
+      if (esperando && resultado.reintentarEn) {
+        const espera = Math.max(0, Date.parse(resultado.reintentarEn) - Date.now());
+        temporizador.current = setTimeout(() => void enviarRef.current('reintento'), espera);
+      }
       // Sesión vencida: se vuelve a inicio de sesión como en el resto de la
       // app. La cola queda guardada para esta cuenta y se envía al volver a entrar.
       if (resultado.detenidaPor === 'sesion') void logoutRef.current('sesion-vencida');
@@ -120,10 +135,15 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [usuarioId, actualizar]);
 
+  useEffect(() => {
+    enviarRef.current = enviarPendientes;
+  }, [enviarPendientes]);
+
   // Al entrar con una cuenta se lee su cola y se intenta enviar.
   useEffect(() => {
     let activo = true;
     colaRef.current = [];
+    clearTimeout(temporizador.current);
     if (!usuarioId) {
       // Sin sesión no se lee ni se envía ninguna cola.
       queueMicrotask(() => {
@@ -140,6 +160,7 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     });
     return () => {
       activo = false;
+      clearTimeout(temporizador.current);
     };
   }, [usuarioId, enviarPendientes]);
 
@@ -158,8 +179,8 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   }, [enviarPendientes]);
 
   const encolar = useCallback(
-    (datos: ObservacionInput, imagen: ImagenObservacion) => {
-      actualizar([...colaRef.current, nuevaEnCola(datos, imagen)]);
+    (datos: ObservacionInput, imagen: ImagenObservacion, quizaEnviada = false) => {
+      actualizar([...colaRef.current, nuevaEnCola(datos, imagen, quizaEnviada)]);
     },
     [actualizar],
   );
@@ -171,7 +192,7 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
       actualizar(
         colaRef.current.map((e) =>
           e.idLocal === idLocal
-            ? { ...e, estado: 'pendiente_envio', motivo: null, intentos: 0 }
+            ? { ...e, estado: 'pendiente_envio', motivo: null, intentos: 0, proximoIntento: null }
             : e,
         ),
       );

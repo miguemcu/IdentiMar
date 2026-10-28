@@ -239,6 +239,12 @@ export class ObservacionesMockService implements IObservacionesService {
     // recibido -> procesando -> identificado | no_concluyente | pendiente_experto
     this.programarAvanceAutomatico(id);
 
+    // EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado: la observación sí se crea, pero la
+    // respuesta "no llega", como cuando el servidor tarda más de la espera máxima.
+    if (process.env.EXPO_PUBLIC_MOCK_ERROR === "tiempo-agotado") {
+      throw new ErrorServicio(0, { codigo: "tiempo-agotado", mensaje: "No hay conexión." });
+    }
+
     return this.aResumen(nuevaObservacion);
   }
 
