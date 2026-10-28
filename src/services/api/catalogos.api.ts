@@ -15,7 +15,10 @@ const catalogo = <T>(ruta: string) => pedir<T[]>(`/catalogos/${ruta}`, { conToke
 
 export class CatalogosApiService implements ICatalogosService {
   async obtenerEspecies(): Promise<Especie[]> {
-    return catalogo<Especie>('especies');
+    // Algunas descripciones llegan con espacios o saltos de línea al inicio o
+    // al final, que en la ficha se verían como renglones vacíos.
+    const especies = await catalogo<Especie>('especies');
+    return especies.map((e) => ({ ...e, descripcion: e.descripcion?.trim() || null }));
   }
 
   async obtenerFamilias(): Promise<Familia[]> {

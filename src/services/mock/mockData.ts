@@ -7,9 +7,9 @@ import type {
   UsuarioPublico,
 } from "../../types";
 
-// Familias y especies del backend desplegado (mismos UUID y códigos). Las
-// descripciones y fotos de referencia son propias del mock: el backend aún no
-// trae fotos (url_imagen_referencia nula).
+// Familias y especies del backend desplegado (mismos UUID, códigos,
+// descripciones e imágenes de referencia). El catálogo tiene solo las cuatro
+// especies que reconoce el modelo.
 export const MOCK_FAMILIAS: Familia[] = [
   {
     id: "04049a2d-60ca-4be5-b162-da3a31f01a07",
@@ -48,42 +48,8 @@ export const MOCK_FAMILIAS: Familia[] = [
   },
 ];
 
-// El orden importa: las observaciones de ejemplo usan las cinco primeras por posición.
+// El orden importa: las observaciones de ejemplo usan las especies por posición.
 export const MOCK_ESPECIES: Especie[] = [
-  {
-    id: "7d0fe718-57cc-4959-9676-0b732a7ddba4",
-    codigo: "URO_MICR",
-    nombre_cientifico: "Urotrygon microphthalmum",
-    nombre_comun: "Raya redonda de ojo pequeño",
-    familia: MOCK_FAMILIAS[0],
-    grupo: "raya",
-    descripcion:
-      "Disco circular con ojos pequeños y cola moderadamente alargada con espina caudal.",
-    url_imagen_referencia:
-      "https://www.topanglerscharters.com/marine-life/round-stingray.webp",
-  },
-  {
-    id: "e675ee15-4a6b-4b8f-b95d-a82dcfaaac25",
-    codigo: "DASYA_AME",
-    nombre_cientifico: "Hypanus americanus",
-    nombre_comun: "Raya látigo americana",
-    familia: MOCK_FAMILIAS[1],
-    grupo: "raya",
-    descripcion:
-      "Disco en forma de rombo, coloración dorsal gris oscura a pardo, cola larga en forma de látigo.",
-    url_imagen_referencia:
-      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/2740_3540.jpg",
-  },
-  {
-    id: "72cea799-7694-4c8e-848e-bf7e5b7c7652",
-    codigo: "Hypanus_guttatus",
-    nombre_cientifico: "Hypanus guttatus",
-    nombre_comun: "Raya látigo",
-    familia: MOCK_FAMILIAS[1],
-    grupo: "raya",
-    descripcion: "Disco romboidal de hocico puntiagudo y cola larga con espina.",
-    url_imagen_referencia: null,
-  },
   {
     id: "43dd55aa-2b57-4795-836d-143effa5326d",
     codigo: "Aetobatus_narinari",
@@ -92,9 +58,21 @@ export const MOCK_ESPECIES: Especie[] = [
     familia: MOCK_FAMILIAS[2],
     grupo: "raya",
     descripcion:
-      "Dorso oscuro con numerosas motas blancas, cabeza diferenciada con hocico cónico característico.",
+      "Raya marina de gran tamaño y forma de cometa o rombo alargado. Es inconfundible por su coloración dorsal azul oscuro o negro cubierta completamente por un hermoso patrón de puntos y ocelos blancos, además de un vientre totalmente blanco.",
     url_imagen_referencia:
-      "https://biogeodb.stri.si.edu/caribbean/resources/img/images/species/263_7361.jpg",
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/aetobatus_narinari.jpg",
+  },
+  {
+    id: "72cea799-7694-4c8e-848e-bf7e5b7c7652",
+    codigo: "Hypanus_guttatus",
+    nombre_cientifico: "Hypanus guttatus",
+    nombre_comun: "Raya látigo",
+    familia: MOCK_FAMILIAS[1],
+    grupo: "raya",
+    descripcion:
+      "Raya marina de cuerpo en forma de rombo pronunciado con bordes rectos. Su coloración dorsal suele ser marrón oliva o grisácea, sin patrones de manchas complejos, y posee una cola larga en forma de látigo con una potente espina venenosa.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/hypanus_guttatus.jpg",
   },
   {
     id: "fce1ae0a-f818-497c-8c1a-e2a52b6fba0a",
@@ -103,8 +81,10 @@ export const MOCK_ESPECIES: Especie[] = [
     nombre_comun: "Raya del Magdalena",
     familia: MOCK_FAMILIAS[3],
     grupo: "raya",
-    descripcion: "Raya de río, de disco redondeado y manchas claras sobre fondo pardo.",
-    url_imagen_referencia: null,
+    descripcion:
+      "Especie endémica de agua dulce, de tamaño pequeño a mediano. Presenta un disco casi circular de color marrón claro u oscuro, cubierto por un retículo o patrón de manchas amarillentas/crema muy característico.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/potamotrygon_magdalenae.jpeg",
   },
   {
     id: "5e57f0af-d286-4696-b4be-f482f5a2b50f",
@@ -113,38 +93,10 @@ export const MOCK_ESPECIES: Especie[] = [
     nombre_comun: "Raya chupare",
     familia: MOCK_FAMILIAS[4],
     grupo: "raya",
-    descripcion: "Disco oscuro y redondeado, con la cola terminada en una punta corta.",
-    url_imagen_referencia: null,
-  },
-  {
-    id: "69bb9ca8-be91-49e6-82c8-1769c4b303c9",
-    codigo: "MYLIO_FRE",
-    nombre_cientifico: "Myliobatis freminvillii",
-    nombre_comun: "Raya águila",
-    familia: MOCK_FAMILIAS[2],
-    grupo: "raya",
-    descripcion: "Raya que nada en mar abierto, con el hocico prominente.",
-    url_imagen_referencia: null,
-  },
-  {
-    id: "bcb31aa5-3746-4adc-b328-0525e95ac7ad",
-    codigo: "NARC_BAN",
-    nombre_cientifico: "Narcine bancroftii",
-    nombre_comun: "Raya eléctrica caribeña",
-    familia: MOCK_FAMILIAS[5],
-    grupo: "raya",
-    descripcion: "Produce descargas eléctricas para defenderse.",
-    url_imagen_referencia: null,
-  },
-  {
-    id: "37ff19a7-08e0-4606-b496-ce593437486a",
-    codigo: "RHINOP_BON",
-    nombre_cientifico: "Rhinoptera bonasus",
-    nombre_comun: "Raya gavilán dorada",
-    familia: MOCK_FAMILIAS[6],
-    grupo: "raya",
-    descripcion: "Forma grupos grandes que se desplazan juntos.",
-    url_imagen_referencia: null,
+    descripcion:
+      "Raya marina de gran tamaño con un disco redondeado y una textura marcadamente rugosa en el lomo debido a la presencia de tubérculos y espinas dérmicas. Su color va del gris oscuro al café uniforme.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/styracura_schmardae.jpg",
   },
 ];
 
@@ -541,7 +493,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     creado_en: "2026-10-05T08:15:00-05:00",
     fecha_hora_evento: "2026-10-05T08:00:00-05:00",
     imagen_url: imagenDeEspecie(0),
-    especie_aceptada: MOCK_ESPECIES[4],
+    especie_aceptada: MOCK_ESPECIES[2],
     confianza: 0.91,
     usuario: MOCK_USUARIOS.usuario,
     latitud: 8.6142,
@@ -552,7 +504,7 @@ export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
     observaciones_usuario: "Ejemplar juvenil en zona somera.",
     prediccion_original: {
       id: "p1a10005-0000-4000-a000-000000000005",
-      especie_propuesta: MOCK_ESPECIES[4],
+      especie_propuesta: MOCK_ESPECIES[2],
       confianza: 0.91,
       version_modelo: "1.0.0",
       creado_en: "2026-10-05T08:15:04-05:00",
