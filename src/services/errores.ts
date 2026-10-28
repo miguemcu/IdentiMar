@@ -28,7 +28,10 @@ const PROBLEMA_CAMPO: Record<string, string> = {
   precision_gps_metros: 'Ubicación: vuelve a tomar tu ubicación.',
   tipo_ambiente: 'Tipo de ambiente: elige una opción.',
   condicion_organismo: 'Estado del animal: elige una opción.',
-  observaciones_usuario: 'Notas: el texto es muy largo, acórtalo un poco.',
+  // Nombres con los que el backend reporta esos mismos campos.
+  tipo_ambiente_codigo: 'Tipo de ambiente: elige una opción.',
+  condicion_organismo_codigo: 'Estado del animal: elige una opción.',
+  observaciones_usuario: 'Notas: revisa lo que escribiste.',
   imagen: 'Foto: no pudimos usarla, prueba con otra.',
 };
 

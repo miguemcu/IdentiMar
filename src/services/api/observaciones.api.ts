@@ -21,12 +21,16 @@ export class ObservacionesApiService implements IObservacionesService {
   ): Promise<ObservacionResumen> {
     // El backend pide los códigos como tipo_ambiente_codigo y
     // condicion_organismo_codigo; se envían también con los nombres del
-    // contrato, que el backend ignora.
-    const cuerpo = {
-      ...datos,
-      tipo_ambiente_codigo: datos.tipo_ambiente,
-      condicion_organismo_codigo: datos.condicion_organismo,
-    };
+    // contrato, que el backend ignora. Los opcionales nulos (sin notas, o
+    // ubicación escrita a mano sin precisión) se omiten: el contrato permite
+    // null, pero el backend lo rechaza.
+    const cuerpo = Object.fromEntries(
+      Object.entries({
+        ...datos,
+        tipo_ambiente_codigo: datos.tipo_ambiente,
+        condicion_organismo_codigo: datos.condicion_organismo,
+      }).filter(([, valor]) => valor !== null && valor !== undefined),
+    );
     const formulario = new FormData();
     formulario.append('datos', JSON.stringify(cuerpo));
     // Desde SDK 58 el fetch global es el de Expo, que no acepta archivos como

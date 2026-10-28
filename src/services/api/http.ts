@@ -149,10 +149,18 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPeticion = {}): P
 
   if (!respuesta.ok) {
     const error = new ErrorServicio(respuesta.status, await leerError(respuesta));
+    if (__DEV__) {
+      // Solo códigos y nombres de campo: nunca valores, tokens ni coordenadas.
+      const campos = (error.cuerpo.detalles ?? []).map((d) => `${d.campo}: ${d.problema}`).join(' · ');
+      console.warn(
+        `[IdentiMar] ${metodo} ${ruta} → ${respuesta.status} ${error.cuerpo.codigo}${campos ? ` (${campos})` : ''}`,
+      );
+    }
     if (respuesta.status === 401 && conToken) avisarSesionVencida();
     throw error;
   }
 
+  if (__DEV__) console.log(`[IdentiMar] ${metodo} ${ruta} → ${respuesta.status}`);
   if (respuesta.status === 204) return undefined as T;
   return (await respuesta.json()) as T;
 }
