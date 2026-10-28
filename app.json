@@ -41,7 +41,19 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-secure-store",
-      "expo-image"
+      "expo-image",
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Necesitamos acceso a tus fotos para guardar las fotos de las observaciones.",
+          "savePhotosPermission": "Necesitamos permiso para guardar las fotos de las observaciones en tu galería.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
