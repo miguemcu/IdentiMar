@@ -295,7 +295,9 @@ export default function NuevaObservacionScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 1,
+      // Con 1, algunas cámaras recientes pasan de los 10 MB que acepta el
+      // modelo; 0.8 casi no cambia la imagen y queda muy por debajo.
+      quality: 0.8,
     });
 
     const selectedAsset = result.canceled ? undefined : result.assets[0];
