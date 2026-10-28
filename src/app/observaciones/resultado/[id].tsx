@@ -81,12 +81,22 @@ function Resultado({
     }
     case 'validado':
     case 'corregido':
-      return (
+      // Un rechazo del experto también termina en `corregido`, sin especie.
+      return obs.especie_aceptada ? (
         <>
           <Text className="font-nunito-bold text-base text-slate-deep">
             Especie revisada por un experto
           </Text>
           <NombreEspecie obs={obs} />
+        </>
+      ) : (
+        <>
+          <Text className="font-nunito-bold text-base text-slate-deep">
+            Un experto revisó tu foto
+          </Text>
+          <Text className="mt-2 font-source text-base text-slate-mid">
+            No se pudo identificar la especie con esta foto.
+          </Text>
         </>
       );
     case 'pendiente_experto':

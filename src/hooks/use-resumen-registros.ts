@@ -7,12 +7,12 @@ import { esSinConexion } from '@/services/local/cola-envio';
 import { useAlVolverLaSenal } from './use-al-volver-la-senal';
 import type { EstadoObservacion, ObservacionResumen } from '@/types';
 
-/** Estados en los que la observación ya tiene una especie aceptada. */
-const ESTADOS_IDENTIFICADOS: EstadoObservacion[] = [
-  'identificado',
-  'validado',
-  'corregido',
-];
+/**
+ * Estados en los que la observación siempre tiene una especie aceptada.
+ * `corregido` se cuenta aparte: un rechazo del experto también termina ahí,
+ * pero sin especie.
+ */
+const ESTADOS_IDENTIFICADOS: EstadoObservacion[] = ['identificado', 'validado'];
 
 export interface ResumenRegistros {
   total: number;
@@ -42,15 +42,21 @@ export function useResumenRegistros(cantidadUltimos = 3) {
           .listarObservaciones({ estado, tamano: 1 })
           .then((pagina) => pagina.total);
 
-      const [recientes, enRevision, ...identificadas] = await Promise.all([
+      // Corregidas con especie, sobre una página de hasta 100 (máximo del contrato).
+      const corregidasConEspecie = observacionesService
+        .listarObservaciones({ estado: 'corregido', tamano: 100 })
+        .then((pagina) => pagina.items.filter((obs) => obs.especie_aceptada).length);
+
+      const [recientes, enRevision, corregidas, ...identificadas] = await Promise.all([
         observacionesService.listarObservaciones({ tamano: cantidadUltimos }),
         contar('pendiente_experto'),
+        corregidasConEspecie,
         ...ESTADOS_IDENTIFICADOS.map(contar),
       ]);
 
       return {
         total: recientes.total,
-        identificadas: identificadas.reduce((suma, n) => suma + n, 0),
+        identificadas: corregidas + identificadas.reduce((suma, n) => suma + n, 0),
         enRevision,
         ultimos: recientes.items,
       };

@@ -395,8 +395,7 @@ export class ObservacionesMockService implements IObservacionesService {
       });
     }
 
-    // Un rechazo del experto deja la observación en no_concluyente (pregunta
-    // abierta al Equipo 3): sin este filtro volvería a aparecer en la cola.
+    // Las ya validadas no vuelven a la cola.
     const pendientes = this.observaciones.filter(
       (o) =>
         !o.validacion_experta &&
@@ -464,7 +463,8 @@ export class ObservacionesMockService implements IObservacionesService {
         : null;
       obs.especie_aceptada = especieFinal;
     } else {
-      nuevoEstado = "no_concluyente";
+      // Como el backend: un rechazo termina en corregido, sin especie.
+      nuevoEstado = "corregido";
       obs.especie_aceptada = null;
     }
 

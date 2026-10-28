@@ -12,8 +12,11 @@ export interface ObservacionCardProps {
 
 export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) {
   const especie = observacion.especie_aceptada;
+  // `corregido` sin especie: el experto la rechazó.
   const nombre =
-    especie?.nombre_comun ?? especie?.nombre_cientifico ?? 'Especie por identificar';
+    especie?.nombre_comun ??
+    especie?.nombre_cientifico ??
+    (observacion.estado === 'corregido' ? 'No se pudo identificar' : 'Especie por identificar');
   const mostrarCientifico = !!especie?.nombre_comun && !!especie?.nombre_cientifico;
   // El porcentaje solo acompaña a una especie aceptada (no a "En revisión").
   const confianza = especie ? formatearConfianza(observacion.confianza) : null;
