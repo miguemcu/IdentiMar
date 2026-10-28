@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
 } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import { Button, Card, Chip, HeroHeader, Input } from '@/components/ui';
@@ -43,7 +44,7 @@ export default function LoginScreen() {
     if (!password) {
       nuevosErrores.password = 'Escribe tu contraseña.';
     } else if (password.length < 8 || password.length > 128) {
-      nuevosErrores.password = 'La contraseña debe tener entre 8 y 128 caracteres.';
+      nuevosErrores.password = 'La contraseña debe tener al menos 8 letras o números.';
     }
 
     setErrores(nuevosErrores);
@@ -142,7 +143,7 @@ export default function LoginScreen() {
 
           <Input
             label="Contraseña"
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Al menos 8 letras o números"
             secureTextEntry
             value={password}
             onChangeText={(val) => {
@@ -159,6 +160,7 @@ export default function LoginScreen() {
             onPress={handleLogin}
             className="mt-2"
           />
+          <CargaLenta activo={cargando} className="mt-3" />
 
           <View className="mt-4 flex-row flex-wrap items-center justify-center">
             <Text className="font-source text-base text-slate-mid">

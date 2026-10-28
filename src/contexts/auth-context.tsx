@@ -7,7 +7,15 @@ import React, {
   useState,
 } from 'react';
 import { authService } from '../services';
+import {
+  actualizarUsuarioSesion,
+  alVencerSesion,
+  borrarSesion,
+  guardarSesion,
+  leerSesionGuardada,
+} from '../services/api/sesion';
 import { borrarBorrador } from '../services/local/borrador';
+import { borrarCacheUsuario } from '../services/local/cache';
 import type {
   UsuarioPublico,
   Rol,
@@ -15,14 +23,6 @@ import type {
   LoginResponse,
   RegistroRequest,
 } from '../types';
-
-/** Tokens de la sesión según LoginResponse. Viven solo en memoria (secure-store llega en H2). */
-interface TokensSesion {
-  access_token: string;
-  refresh_token: string;
-  /** Segundos de vigencia del access token, tal como los entrega el servidor. */
-  expires_in: number;
-}
 
 /** Por qué se cerró la sesión sin que el usuario lo pidiera. */
 export type MotivoCierre = 'sesion-vencida';
@@ -34,56 +34,81 @@ const AVISO_CIERRE: Record<MotivoCierre, string> = {
 interface AuthContextType {
   usuario: UsuarioPublico | null;
   rol: Rol | null;
-  token: string | null;
-  refreshToken: string | null;
-  expiresIn: number | null;
   isLoading: boolean;
   /** Aviso para la pantalla de inicio de sesión tras un cierre automático. */
   avisoSesion: string | null;
   login: (datos: LoginRequest) => Promise<void>;
   registro: (datos: RegistroRequest) => Promise<void>;
   logout: (motivo?: MotivoCierre) => Promise<void>;
+  /** Datos más recientes de la cuenta en sesión (por ejemplo, desde /auth/perfil). */
+  actualizarUsuario: (datos: UsuarioPublico) => void;
   cambiarRolMock: (rol: Rol) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Sesión de la app. Los tokens viven en services/api/sesion.ts, donde los lee
+ * el cliente HTTP; con la API también se guardan cifrados en el teléfono.
+ */
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioPublico | null>(null);
-  const [tokens, setTokens] = useState<TokensSesion | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [avisoSesion, setAvisoSesion] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Inicialización de sesión simulada
-    async function inicializarSesion() {
-      try {
-        setIsLoading(false);
-      } catch {
-        setIsLoading(false);
-      }
-    }
-    inicializarSesion();
+  const actualizarUsuario = useCallback((datos: UsuarioPublico) => {
+    // Solo si es la misma cuenta y cambió algo: así no se vuelve a dibujar la
+    // app con cada consulta del perfil.
+    setUsuario((actual) =>
+      actual && actual.id === datos.id && JSON.stringify(actual) !== JSON.stringify(datos)
+        ? datos
+        : actual,
+    );
   }, []);
 
-  const guardarSesion = useCallback((resp: LoginResponse) => {
-    setUsuario(resp.usuario);
-    setTokens({
-      access_token: resp.access_token,
-      refresh_token: resp.refresh_token,
-      expires_in: resp.expires_in,
+  // La sesión guardada lleva siempre los datos más recientes del usuario.
+  useEffect(() => {
+    if (usuario) actualizarUsuarioSesion(usuario);
+  }, [usuario]);
+
+  useEffect(() => {
+    // Con la API se entra directo con la sesión guardada, sin consultar la red:
+    // así también se abre sin señal. La primera petición que reciba un 401
+    // renueva la sesión sola; si no se puede, avisa y se vuelve a entrar.
+    let activo = true;
+    void leerSesionGuardada().then((guardada) => {
+      if (!activo) return;
+      if (guardada) setUsuario(guardada.usuario);
+      setIsLoading(false);
+      // Con señal, se traen los datos al día (por ejemplo, un rol nuevo).
+      if (guardada) {
+        authService
+          .obtenerPerfil()
+          .then((perfil) => {
+            if (activo) actualizarUsuario(perfil);
+          })
+          .catch(() => undefined);
+      }
     });
+    return () => {
+      activo = false;
+    };
+  }, [actualizarUsuario]);
+
+  const iniciar = useCallback((resp: LoginResponse) => {
+    guardarSesion(resp);
+    setUsuario(resp.usuario);
   }, []);
 
   const login = useCallback(async (datos: LoginRequest) => {
     setIsLoading(true);
     setAvisoSesion(null);
     try {
-      guardarSesion(await authService.login(datos));
+      iniciar(await authService.login(datos));
     } finally {
       setIsLoading(false);
     }
-  }, [guardarSesion]);
+  }, [iniciar]);
 
   const registro = useCallback(async (datos: RegistroRequest) => {
     setIsLoading(true);
@@ -91,27 +116,36 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // El contrato responde 201 con UsuarioPublico, sin tokens: la sesión
       // se obtiene iniciando sesión con los mismos datos.
       await authService.registro(datos);
-      guardarSesion(
-        await authService.login({ correo: datos.correo, password: datos.password }),
-      );
+      iniciar(await authService.login({ correo: datos.correo, password: datos.password }));
     } finally {
       setIsLoading(false);
     }
-  }, [guardarSesion]);
+  }, [iniciar]);
 
   const logout = useCallback(async (motivo?: MotivoCierre) => {
     setIsLoading(true);
     try {
-      // Al cerrar sesión a mano se descarta el borrador de esa cuenta. Si la
-      // sesión venció (motivo), se conserva para no perder datos de campo.
-      if (!motivo && usuario) borrarBorrador(usuario.id);
+      if (usuario) {
+        // Al cerrar sesión a mano se descarta el borrador de esa cuenta. Si la
+        // sesión venció (motivo), se conserva para no perder datos de campo.
+        if (!motivo) borrarBorrador(usuario.id);
+        // Sus registros guardados no quedan en el teléfono sin sesión. La cola
+        // de envío sí se conserva: se envía al volver a entrar.
+        borrarCacheUsuario(usuario.id);
+      }
+      borrarSesion();
       setAvisoSesion(motivo ? AVISO_CIERRE[motivo] : null);
       setUsuario(null);
-      setTokens(null);
     } finally {
       setIsLoading(false);
     }
   }, [usuario]);
+
+  // La sesión venció y el cliente HTTP no pudo renovarla.
+  useEffect(
+    () => alVencerSesion(() => void logout('sesion-vencida')),
+    [logout],
+  );
 
   // No pasa por isLoading: así el cambio de rol vuelve a dibujar la app una
   // sola vez (con el nuevo usuario) en lugar de dos.
@@ -122,8 +156,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         : nuevoRol === 'administrador'
           ? 'admin@identimar.udea.edu.co'
           : 'ana.torres@ejemplo.co';
-    guardarSesion(await authService.login({ correo, password: 'password123' }));
-  }, [guardarSesion]);
+    iniciar(await authService.login({ correo, password: 'password123' }));
+  }, [iniciar]);
 
   // Valor estable: los componentes que usan useAuth solo se actualizan
   // cuando cambia algo de la sesión.
@@ -131,17 +165,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     () => ({
       usuario,
       rol: usuario?.rol ?? null,
-      token: tokens?.access_token ?? null,
-      refreshToken: tokens?.refresh_token ?? null,
-      expiresIn: tokens?.expires_in ?? null,
       isLoading,
       avisoSesion,
       login,
       registro,
       logout,
+      actualizarUsuario,
       cambiarRolMock,
     }),
-    [usuario, tokens, isLoading, avisoSesion, login, registro, logout, cambiarRolMock],
+    [usuario, isLoading, avisoSesion, login, registro, logout, actualizarUsuario, cambiarRolMock],
   );
 
   return (

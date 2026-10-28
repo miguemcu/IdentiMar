@@ -11,14 +11,13 @@ import { AuthApiService } from './api/auth.api';
 import { ObservacionesApiService } from './api/observaciones.api';
 import { ValidacionApiService } from './api/validacion.api';
 import { CatalogosApiService } from './api/catalogos.api';
+import { USE_API } from './api/config';
 
 export * from './auth.service';
 export * from './observaciones.service';
 export * from './validacion.service';
 export * from './catalogos.service';
 export * from './errores';
-
-const USE_API = process.env.EXPO_PUBLIC_USE_API === 'true';
 
 /** true mientras la app usa datos simulados (sin backend). */
 export const MODO_SIMULADO = !USE_API;
@@ -29,10 +28,7 @@ let validacionServiceInstance: IValidacionService;
 let catalogosServiceInstance: ICatalogosService;
 
 if (USE_API) {
-  // Todos los dominios usan su esqueleto API (lanza error explícito).
-  console.warn(
-    '[IdentiMar Services] EXPO_PUBLIC_USE_API activo: los servicios usan los esqueletos API, que aún no están integrados.'
-  );
+  // Todos los dominios usan la API real.
   authServiceInstance = new AuthApiService();
   observacionesServiceInstance = new ObservacionesApiService();
   validacionServiceInstance = new ValidacionApiService();

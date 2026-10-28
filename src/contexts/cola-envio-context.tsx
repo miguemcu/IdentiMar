@@ -24,8 +24,11 @@ import type { ImagenObservacion } from '../services/observaciones.service';
 import type { ObservacionInput } from '../types';
 import { useAuth } from './auth-context';
 
-/** Qué disparó un intento de envío de la cola. */
-export type OrigenEnvio = 'entrar' | 'manual' | 'senal' | 'volver';
+/**
+ * Qué disparó un intento de envío de la cola. `reintento`: venció la espera
+ * tras un error del servidor.
+ */
+export type OrigenEnvio = 'entrar' | 'manual' | 'senal' | 'volver' | 'reintento';
 
 /** La señal y volver a la app avisan solos y pueden repetirse seguido. */
 const AUTOMATICOS: OrigenEnvio[] = ['senal', 'volver'];
@@ -36,7 +39,8 @@ interface ColaEnvioContextType {
   enviando: boolean;
   /** Aviso de por qué se detuvo el último envío (no por falta de señal). */
   aviso: string | null;
-  encolar: (datos: ObservacionInput, imagen: ImagenObservacion) => void;
+  /** `quizaEnviada`: el envío se cortó por tiempo agotado y el servidor pudo crearla. */
+  encolar: (datos: ObservacionInput, imagen: ImagenObservacion, quizaEnviada?: boolean) => void;
   /** Fotos de la cola en este momento (no las del último render). */
   fotosEnCola: () => string[];
   /** Intenta enviar ahora lo pendiente (también se hace solo al volver la señal). */
@@ -49,8 +53,8 @@ interface ColaEnvioContextType {
 /** Tras un intento, los avisos automáticos se ignoran durante este tiempo. */
 const ESPERA_AUTOMATICA_MS = 5000;
 
-const AVISO_SESION = 'Tu sesión venció. Vuelve a entrar para enviarlas.';
-const AVISO_SERVIDOR = 'El servidor no respondió bien. Lo intentaremos de nuevo más tarde.';
+const AVISO_SERVIDOR =
+  'No pudimos conectarnos a nuestro identificador. Lo intentaremos de nuevo en un momento.';
 
 const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefined);
 
@@ -59,7 +63,7 @@ const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefin
  * volver a la app. Solo una pasada a la vez, para no repetir envíos.
  */
 export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
-  const { usuario } = useAuth();
+  const { usuario, logout } = useAuth();
   const usuarioId = usuario?.id;
   const [cola, setCola] = useState<ObservacionEnCola[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -69,6 +73,15 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   // Fin del último intento: la señal y el volver a la app pueden avisar varias
   // veces seguidas, y cada aviso no debe contar como un intento más.
   const ultimoIntento = useRef(0);
+  // logout cambia con cada usuario; por referencia no vuelve a crear
+  // enviarPendientes ni a disparar el envío "al entrar".
+  const logoutRef = useRef(logout);
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
+  // Reintento programado tras un error del servidor (espera creciente).
+  const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const enviarRef = useRef<(origen: OrigenEnvio) => Promise<void>>(async () => undefined);
 
   const actualizar = useCallback(
     (nueva: ObservacionEnCola[]) => {
@@ -92,19 +105,24 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setEnviando(true);
+    clearTimeout(temporizador.current);
     try {
-      const resultado = await procesarCola(colaRef.current, observacionesService);
+      const resultado = await procesarCola(colaRef.current, observacionesService, {
+        forzar: origen === 'manual',
+      });
       actualizar(resultado.cola);
       if (resultado.enviadas > 0) {
         limpiarFotosEnviadas(colaRef.current.map((e) => e.imagen.uri));
       }
-      setAviso(
-        resultado.detenidaPor === 'sesion'
-          ? AVISO_SESION
-          : resultado.detenidaPor === 'error'
-            ? AVISO_SERVIDOR
-            : null,
-      );
+      const esperando = resultado.detenidaPor === 'error' || resultado.detenidaPor === 'espera';
+      setAviso(esperando ? AVISO_SERVIDOR : null);
+      if (esperando && resultado.reintentarEn) {
+        const espera = Math.max(0, Date.parse(resultado.reintentarEn) - Date.now());
+        temporizador.current = setTimeout(() => void enviarRef.current('reintento'), espera);
+      }
+      // Sesión vencida: se vuelve a inicio de sesión como en el resto de la
+      // app. La cola queda guardada para esta cuenta y se envía al volver a entrar.
+      if (resultado.detenidaPor === 'sesion') void logoutRef.current('sesion-vencida');
       if (resultado.nuevasEnRevision > 0) {
         Alert.alert(
           'Revisa tus observaciones guardadas',
@@ -118,10 +136,15 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [usuarioId, actualizar]);
 
+  useEffect(() => {
+    enviarRef.current = enviarPendientes;
+  }, [enviarPendientes]);
+
   // Al entrar con una cuenta se lee su cola y se intenta enviar.
   useEffect(() => {
     let activo = true;
     colaRef.current = [];
+    clearTimeout(temporizador.current);
     if (!usuarioId) {
       // Sin sesión no se lee ni se envía ninguna cola.
       queueMicrotask(() => {
@@ -138,6 +161,7 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
     });
     return () => {
       activo = false;
+      clearTimeout(temporizador.current);
     };
   }, [usuarioId, enviarPendientes]);
 
@@ -156,8 +180,8 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
   }, [enviarPendientes]);
 
   const encolar = useCallback(
-    (datos: ObservacionInput, imagen: ImagenObservacion) => {
-      actualizar([...colaRef.current, nuevaEnCola(datos, imagen)]);
+    (datos: ObservacionInput, imagen: ImagenObservacion, quizaEnviada = false) => {
+      actualizar([...colaRef.current, nuevaEnCola(datos, imagen, quizaEnviada)]);
     },
     [actualizar],
   );
@@ -169,7 +193,7 @@ export function ColaEnvioProvider({ children }: { children: React.ReactNode }) {
       actualizar(
         colaRef.current.map((e) =>
           e.idLocal === idLocal
-            ? { ...e, estado: 'pendiente_envio', motivo: null, intentos: 0 }
+            ? { ...e, estado: 'pendiente_envio', motivo: null, intentos: 0, proximoIntento: null }
             : e,
         ),
       );

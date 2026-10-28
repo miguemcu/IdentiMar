@@ -17,6 +17,7 @@ import type { DecisionValidacion, Especie, ObservacionDetalle } from '@/types';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 const ETIQUETA_DECISION: Record<DecisionValidacion, string> = {
   confirmada: 'Confirmada por el experto',
@@ -123,6 +124,9 @@ export default function DetalleRegistroScreen() {
     !obs?.validacion_experta &&
     (obs?.estado === 'pendiente_experto' || obs?.estado === 'no_concluyente');
 
+  // El backend deja un rechazo del experto en `corregido` sin especie.
+  const rechazada = obs?.estado === 'corregido' && !obs.especie_aceptada;
+
   const codigoPropuesto = obs?.prediccion_original?.especie_propuesta.codigo ?? null;
 
   /** Muestra las rayas del catálogo (GET /catalogos/especies) para elegir la correcta. */
@@ -174,8 +178,9 @@ export default function DetalleRegistroScreen() {
       <ScreenHeader title="Detalle del registro" onBack={volver} />
 
       {estado === 'cargando' ? (
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center p-6">
           <ActivityIndicator size="large" />
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 
@@ -224,7 +229,7 @@ export default function DetalleRegistroScreen() {
                 <Text className="font-nunito-bold text-lg text-slate-deep">
                   {obs.especie_aceptada?.nombre_comun ??
                     obs.especie_aceptada?.nombre_cientifico ??
-                    'Sin especie asignada'}
+                    (rechazada ? 'No se pudo identificar' : 'Sin especie asignada')}
                 </Text>
                 {obs.especie_aceptada?.nombre_cientifico && obs.especie_aceptada?.nombre_comun ? (
                   <Text className="font-source text-sm italic text-slate-mid">
@@ -232,8 +237,13 @@ export default function DetalleRegistroScreen() {
                   </Text>
                 ) : null}
               </View>
-              <EstadoBadge estado={obs.estado} />
+              <EstadoBadge estado={obs.estado} sinEspecie={!obs.especie_aceptada} />
             </View>
+            {rechazada ? (
+              <Text className="mt-2 font-source text-base text-slate-mid">
+                Un experto revisó esta foto, pero no pudo identificar la especie.
+              </Text>
+            ) : null}
           </Card>
 
           <Seccion titulo="Datos del registro">
@@ -249,7 +259,7 @@ export default function DetalleRegistroScreen() {
               }
             />
             <Fila
-              etiqueta="Precisión del GPS"
+              etiqueta="Precisión de la ubicación"
               valor={
                 obs.precision_gps_metros !== null && obs.precision_gps_metros !== undefined
                   ? `± ${obs.precision_gps_metros.toFixed(1)} m`
@@ -465,7 +475,7 @@ export default function DetalleRegistroScreen() {
                   key={`${transicion.creado_en}-${indice}`}
                   className="py-2 border-b border-slate-light/20"
                 >
-                  <EstadoBadge estado={transicion.estado_nuevo} size="sm" />
+                  <EstadoBadge estado={transicion.estado_nuevo} sinEspecie={rechazada} size="sm" />
                   {transicion.motivo ? (
                     <Text className="font-source text-sm text-slate-deep mt-1">
                       {transicion.motivo}

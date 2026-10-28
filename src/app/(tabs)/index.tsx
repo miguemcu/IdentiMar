@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 import { useRouter } from 'expo-router';
 import {
   ActionCard,
@@ -87,6 +88,8 @@ export default function InicioScreen() {
           accion={resumen && resumen.total > 0 ? 'Ver todos' : undefined}
           onAccion={() => router.push('/(tabs)/registros' as any)}
         />
+
+        <CargaLenta activo={!resumen && !error} className="" />
 
         {error && !sinConexion ? (
           <Card>

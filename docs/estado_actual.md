@@ -1,37 +1,74 @@
-# Estado actual de la app (26 oct 2026)
+# Estado actual de la app (28 oct 2026)
 
-Resumen de cómo está IdentiMar hoy en la rama `develop`, que ya incluye la identidad visual (`style/refactor-identidad-visual`, #15). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); las diferencias con el contrato, en [`discrepancias.md`](discrepancias.md).
+Resumen de cómo está IdentiMar al cerrar la rama **`feature/h2-integracion`** (sale de `develop`; se fusiona con el PR de H2). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); los pasos de la integración, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
 
-- **Datos:** todo funciona con datos simulados (mock). No hay llamadas de red todavía. Lo que se guarda en el teléfono (borrador, fotos, cola de envío y copias de catálogos y listados) usa `expo-file-system`; la detección de red usa `expo-network`. Con `EXPO_PUBLIC_USE_API=true` todos los servicios usan los esqueletos API, así que no se puede entrar a la app hasta H2.
+- **Datos:** la app funciona con dos modos, que se eligen con `EXPO_PUBLIC_USE_API`:
+  - `false` (por defecto): datos simulados (mock), como hasta H1.
+  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. Verificado en Expo Go el flujo en línea completo; **falta** verificar en el teléfono el caso sin red con la API.
+- **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. La app se revisó en Expo Go (Android) con SDK 58 y se ve bien.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
 
 ---
 
-## Lo que puede hacer un usuario hoy
+## Con la API real (`EXPO_PUBLIC_USE_API=true`)
 
-1. **Entrar o crear cuenta.** Con datos simulados, cualquier correo y contraseña válidos entran. Hay cuentas de prueba para cada rol. Al crear cuenta, el Perfil muestra el nombre registrado. Si el correo ya está registrado o un dato no es válido, el mensaje aparece en español junto al campo.
+| Función                                                     | Estado                                                                                   |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Registro, inicio de sesión, perfil, cerrar sesión           | **Verificado en Expo Go (Android)**                                                      |
+| La sesión sigue abierta al cerrar y reabrir la app           | **Verificado en Expo Go (Android)**                                                      |
+| Renovación del token ante un 401; si falla, vuelve a entrar  | Probado contra el backend desde el computador; no se ha forzado en el teléfono           |
+| Catálogos (especies, familias, ambientes, condiciones, estados) | **Verificado en Expo Go (Android)**                                                  |
+| Enviar observación, Resultado, Registros (con fotos), filtro, detalle | **Verificado en Expo Go (Android)**, con respuesta del modelo                  |
+| Aviso "Esto está tardando un poco" (a los 10 s)             | En código; aparece si el envío o una carga pasa de 10 s                                 |
+| Cola "Por validar"                                          | **Verificado en Expo Go (Android)**: la observación no concluyente aparece y sale al validarla |
+| Validación experta (confirmar, corregir, rechazar)          | **Verificado en Expo Go** corregir. Desde el computador: rechazar y los errores 400, 403, 404 y 409. Falta confirmar una predicción |
+| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node; **falta en el teléfono** |
+| Rechazo del experto                                          | Se muestra "No identificable" y la nota "Un experto revisó esta foto, pero no pudo identificar la especie" |
+
+**Cuentas de prueba en el backend** (las contraseñas no van en el repo; pedirlas a quien las creó):
+
+| Correo                  | Rol actual | Para                                                            |
+| ----------------------- | ---------- | --------------------------------------------------------------- |
+| `e1.usuario@ejemplo.co` | usuario    | Probar el flujo del observador. Tiene varias observaciones de prueba |
+| `e1.experto@ejemplo.co` | experto    | Probar "Por validar" y la validación                            |
+
+**Cómo se comporta con el backend real:**
+
+- **El envío tarda ≈30 s:** el backend espera a que el modelo termine antes de responder, y Resultado llega con el estado final.
+- **Servicio de visión dormido:** se duerme con frecuencia, y entonces la observación queda "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
+- **Rechazo del experto:** la observación queda `corregido` sin especie (se había acordado `no_concluyente`; se decidió dejarlo como lo hace el backend). Para que nadie crea que ya se identificó, la app muestra la etiqueta "No identificable" en vez de "Corregido", con la nota "Un experto revisó esta foto, pero no pudo identificar la especie", y no la cuenta como identificada.
+- **Render tarda en despertar:** el tiempo máximo de espera es de 90 s, y a los 10 s aparece el aviso amigable.
+- **Fotos en las listas:** el listado del backend no trae la foto, así que cada tarjeta visible de Registros e Inicio pide el detalle de su observación para mostrarla (se guarda en memoria unos 50 minutos). Mientras llega, o sin señal, se ve el ícono de cámara. Se pidió al Equipo 3 incluirla en el listado, como dice el contrato.
+- **Sesión de 7 días como máximo:** el backend no entrega un `refresh_token` nuevo al renovar, así que pasados 7 días desde el último inicio de sesión hay que volver a entrar (pedido al Equipo 3 en `discrepancias.md`).
+- **Al cerrar sesión** se borran la sesión guardada y la copia de los registros de esa cuenta; la cola de envío y, si la sesión venció, el borrador se conservan.
+
+---
+
+## Lo que puede hacer un usuario (en los dos modos)
+
+1. **Entrar o crear cuenta.** Con datos simulados, cualquier correo y contraseña válidos entran y hay cuentas de prueba para cada rol. Si el correo ya está registrado o un dato no es válido, el mensaje aparece en español junto al campo.
 2. **Inicio.** Saludo, cifras de sus registros (Registros, Identificadas, En revisión), sus últimos registros, una nota para cuando no hay internet en el mar y una raya del catálogo que cambia cada día.
 3. **Registrar una raya en 3 pasos.**
-   - **Foto:** cámara o galería. Se valida que sea JPEG o PNG con lado mayor de al menos 1280 px.
+   - **Foto:** cámara o galería. Se valida que sea JPG, PNG o WEBP, de al menos 32 px por lado y hasta 10 MB (acordado con los Equipos 2 y 3 el 28 oct).
    - **Dónde y cuándo:** ubicación por GPS (o a mano si no hay permiso) y fecha y hora del teléfono, editables y sin fechas futuras.
    - **Sobre el animal:** tipo de ambiente, estado del animal y notas (máximo 2000 caracteres).
-4. **Ver el resultado.** La pantalla sigue el estado real de la observación hasta que termina:
+4. **Ver el resultado:**
    - **Identificado:** especie y qué tan segura está la app, como sugerencia.
    - **En revisión por un experto:** sin porcentaje.
    - **No se pudo identificar:** con opción de tomar otra foto.
-5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app, validación del experto (si la hay) e historial. Si la foto no carga, el detalle se vuelve a pedir una vez y, si sigue fallando, se ofrece reintentar.
+5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app (con versión del modelo), validación del experto (si la hay) e historial. Si la foto no carga, el detalle se vuelve a pedir una vez y, si sigue fallando, se ofrece reintentar.
 6. **Consultar el catálogo de especies** (solo rayas) con buscador y ficha con código y familia.
-7. **Perfil:** datos (desde `GET /auth/perfil`; si falla, los de la sesión), rol, cifras, nota para certificarse como experto y cerrar sesión.
+7. **Perfil:** datos (desde `GET /auth/perfil`; si falla, los de la sesión), rol, cifras, nota para certificarse como experto y cerrar sesión. Si el rol cambió en el servidor (por ejemplo, ahora es experto), la app lo usa sin volver a entrar.
 8. **Usar la app sin señal.**
    - **Borrador:** el formulario a medias se guarda en el teléfono (uno por cuenta) y se recupera al volver a entrar, incluso tras cerrar la app. Se borra al enviar, con "Empezar de nuevo" o al cerrar sesión a mano; si la sesión vence, se conserva.
    - **Foto:** se copia a la carpeta de la app al elegirla. Si la copia falla, aparece un aviso y el flujo sigue. De las fotos enviadas se conservan las 20 más recientes.
-   - **Cola de envío:** sin red, la observación queda "Pendiente de envío" en Registros y se envía sola, en orden, al entrar, al volver la señal o al volver a la app (o con "Enviar ahora"). Con 400, 413 o sin foto pasa a "Requiere revisión"; con 500 u otros errores, al tercer intento.
+   - **Cola de envío:** sin red, la observación queda "Pendiente de envío" en Registros y se envía sola, en orden, al entrar, al volver la señal o al volver a la app (o con "Enviar ahora"). Con 400, 413 o sin foto pasa a "Requiere revisión"; con 500 u otros errores reintenta solo a los 15 y 30 s y, al tercer intento, pasa a revisión. Si el envío se cortó porque el servidor tardó, revisa si la observación ya llegó antes de reenviarla. Si la sesión venció, vuelve a inicio de sesión y la cola se envía al volver a entrar.
    - **Sin conexión:** Inicio, Registros, Especies, la ficha y el paso 3 del formulario muestran lo último guardado con la franja "Sin conexión" y se recargan solos al volver la señal.
 
-Si la sesión vence (401) al seguir el resultado, en el detalle, en el perfil o en la cola, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
+Si la sesión vence (401) y no se puede renovar, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
 
-**Experto o administrador:** desde Perfil abre la cola "Por validar". En el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar", con un comentario opcional (máximo 2000 caracteres). El comentario no se puede editar después de enviado. Los controles ya no dependen del modo simulado; con `EXPO_PUBLIC_USE_API=true` no se puede entrar a la app hasta H2.
+**Experto o administrador:** desde Perfil abre la cola "Por validar". En el detalle de una observación pendiente o no concluyente puede confirmar la especie, corregirla eligiendo otra del catálogo o marcarla como "No se puede identificar", con un comentario opcional (máximo 2000 caracteres). Funciona con datos simulados y con la API.
 
 ---
 
@@ -43,15 +80,20 @@ cp .env.example .env
 npx expo start -c
 ```
 
-| Variable                     | Valores                                                         | Para qué                                               |
-| ---------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
-| `EXPO_PUBLIC_USE_API`        | `false` (por defecto) · `true`                                  | `true` usa el esqueleto de la API, que aún lanza error |
-| `EXPO_PUBLIC_MOCK_ERROR`     | vacío · ver la lista de abajo                                   | Fuerza un error en el mock                             |
-| `EXPO_PUBLIC_MOCK_RESULTADO` | vacío · `identificado` · `pendiente_experto` · `no_concluyente` | Fuerza el resultado de la identificación               |
+Para abrirla en Expo Go desde otra red: `npm run start:tunel`. Con SDK 58, `npx expo start --tunnel` usa el túnel firmado de Expo, que exige iniciar sesión en una cuenta de Expo; el script usa ngrok como antes.
+
+`npm install` usa el `.npmrc` del repo (`legacy-peer-deps`): `datetimepicker` declara como opcional `react-native-windows`, que pide React Native 0.85 y choca con la 0.88 de SDK 58. No usamos Windows.
+
+| Variable                     | Valores                                                         | Para qué                                                     |
+| ---------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
+| `EXPO_PUBLIC_USE_API`        | `false` (por defecto) · `true`                                  | `true` usa la API real                                       |
+| `EXPO_PUBLIC_API_URL`        | `https://identimar-backend.onrender.com/api/v1` (por defecto)   | URL de la API. Siempre con `https`                           |
+| `EXPO_PUBLIC_MOCK_ERROR`     | vacío · ver la lista de abajo                                   | Solo con datos simulados: fuerza un error                    |
+| `EXPO_PUBLIC_MOCK_RESULTADO` | vacío · `identificado` · `pendiente_experto` · `no_concluyente` | Solo con datos simulados: fuerza el resultado                |
 
 Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiarlo):
 
-- **Enviar observación y cola de envío:** `400` · `401` · `413` · `500` · `foto-ausente` (la foto de una observación en cola ya no está en el teléfono)
+- **Enviar observación y cola de envío:** `400` · `401` · `413` · `500` · `foto-ausente` (la foto de una observación en cola ya no está en el teléfono) · `tiempo-agotado` (la observación se crea pero la respuesta no llega; la cola revisa si ya existe antes de reenviarla)
 - **Copia de la foto:** `copia-foto` (el teléfono no deja guardar la copia)
 - **Sin conexión en toda la app** (envío, catálogos, listado y detalle): `red`
 - **Registro:** `409` · `400-auth` (el correo `ya.registrado@ejemplo.co` siempre da 409)
@@ -61,89 +103,83 @@ Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiar
 - **Cola "Por validar":** `pendientes` · `403-pendientes`
 - **Validación experta:** `403-validacion` · `409-validacion`
 
-Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, se cambia a **Experto** en Perfil y se valida desde el detalle. Los datos simulados viven en memoria: al recargar la app se pierden las observaciones nuevas.
+Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, se cambia a **Experto** en Perfil y se valida desde el detalle. Los datos simulados viven en memoria: al recargar la app se pierden las observaciones nuevas y la sesión (con la API, la sesión sí se conserva).
+
+**Probar la capa API desde el computador** (sin teléfono): los servicios `src/services/api/*` se pueden ejecutar con `npx tsx` contra el backend. `expo-secure-store` y `expo-file-system` no cargan en Node, así que hay que reemplazarlos por versiones en memoria (con `--require` para `require` y con un cargador ESM para los `import()` dinámicos). Así se probó todo lo marcado "desde el computador".
+
+**Ver el flujo en Metro:** solo en desarrollo (`__DEV__`), el cliente HTTP escribe una línea por petición, por ejemplo `[IdentiMar] POST /observaciones → 201`, o con el código y los campos si falla. Si `fetch` falla antes de salir del teléfono, escribe `[IdentiMar] fetch falló: …`. No escribe valores, tokens ni coordenadas, y en un build de producción (APK de release) no se ejecuta. Con `j` en la terminal de Metro se abren las herramientas de React Native.
 
 ---
 
 ## Cómo está organizado el código
 
-| Carpeta              | Contenido                                                                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/`           | Rutas (Expo Router): `(auth)`, `(tabs)`, `nueva-observacion`, `observaciones/[id]`, `observaciones/resultado/[id]`, `especies/[id]`, `validacion/pendientes` |
-| `src/components/ui/` | Componentes de la identidad visual: `HeroHeader`, `ActionCard`, `StatTile`, `Chip`, `Icono`, `Avatar`, `Card`, `Button`, `EstadoBadge`… |
-| `src/services/`      | Interfaces por dominio, implementación `mock/` y esqueleto `api/`. Las pantallas solo usan esta capa. `local/`: borrador, fotos, cola de envío, caché y detección de red |
-| `src/hooks/`         | `useSeguimientoObservacion` (consulta el estado con esperas crecientes) y `useResumenRegistros`                                         |
-| `src/types/`         | Tipos con la forma del contrato (snake_case, UUID, estados del contrato)                                                                |
-| `src/constants/`     | Formato de fechas (hora local, 12 horas) y búsqueda de especies                                                                         |
+| Carpeta                  | Contenido                                                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`               | Rutas (Expo Router): `(auth)`, `(tabs)`, `nueva-observacion`, `observaciones/[id]`, `observaciones/resultado/[id]`, `especies/[id]`, `validacion/pendientes` |
+| `src/components/ui/`     | Componentes de la identidad visual: `HeroHeader`, `ActionCard`, `StatTile`, `Chip`, `Icono`, `Avatar`, `Card`, `Button`, `EstadoBadge`… |
+| `src/components/`        | `sin-conexion/` (franja "Sin conexión"), `carga-lenta/` (aviso a los 10 s), `nueva-observacion/`, `cola-envio/`                         |
+| `src/services/`          | Interfaces por dominio, `mock/` y `api/`. Las pantallas solo usan esta capa. `errores.ts` traduce los errores a mensajes en español     |
+| `src/services/api/`      | `config.ts` (URL, modo, espera de 90 s), `http.ts` (cliente con renovación del token), `sesion.ts` (sesión cifrada con `expo-secure-store`), `adaptadores.ts` (pasa las observaciones del backend a la forma del contrato) y un servicio por dominio |
+| `src/services/local/`    | Borrador, fotos, cola de envío, caché y detección de red                                                                                |
+| `src/contexts/`          | `auth-context` (sesión y usuario) y `cola-envio-context` (envío de la cola)                                                             |
+| `src/hooks/`             | `useSeguimientoObservacion` (consulta el estado con esperas crecientes), `useResumenRegistros`, `useEnviarObservacion`, `useBorradorObservacion` |
+| `src/types/`             | Tipos con la forma del contrato (snake_case, UUID, estados del contrato)                                                                |
+| `src/constants/`         | Formato de fechas (hora local, 12 horas) y búsqueda de especies                                                                         |
+
+**Regla de la capa API:** las pantallas y el mock usan siempre la forma del contrato. Lo que el backend envía o pide distinto se adapta solo dentro de `src/services/api/` (por ejemplo, `adaptadores.ts`, el teléfono omitido en el registro o los `*_codigo` al crear) y se anota en `discrepancias.md`.
 
 **Identidad visual:** sistema Bentos Costero. Las franjas superiores usan `ocean-dark` porque el texto blanco sobre `ocean` no alcanza el contraste mínimo (4.1:1 frente a 4.5:1). Las tarjetas con color usan fondos opacos para que la sombra de Android no se vea a través. Los íconos usan SF Symbols en iOS y Material Symbols en Android, coloreados con clases de NativeWind.
 
-**Dependencias agregadas:** `@react-native-community/datetimepicker` (fecha y hora), `expo-file-system` (datos locales) y `expo-network` (detección de red).
+**Dependencias agregadas:** `@react-native-community/datetimepicker` (fecha y hora), `expo-file-system` (datos locales), `expo-network` (detección de red) y `expo-secure-store` (sesión cifrada; se carga solo con la API).
 
 ---
 
 ## Pendiente
 
-**H0**
+**H2** (detalle en [`plan_integracion.md`](plan_integracion.md))
 
-- ~~Esqueleto `api` para autenticación y catálogos (hoy solo existe el de observaciones).~~ Hecho en `feature/cierre-h0`: esqueletos de auth, catálogos y validación, y `EXPO_PUBLIC_USE_API` cambia todos los dominios a la vez. **Verificado en Expo Go (Android)** con `EXPO_PUBLIC_USE_API=true` y `npx expo start -c`, al iniciar sesión aparece "No pudimos conectarnos en este momento. Inténtalo más tarde." y la app no se cierra. Solo se recorrió en Expo Go el inicio de sesión; el resto de los esqueletos está en código pero no se reviso en Expo Go.
-- ~~Mensajes propios para 400 y 409 en inicio de sesión y registro.~~ Hecho en `feature/cierre-h0`. El contrato solo define 401 para el inicio de sesión; 400 y 409 aplican al registro. **Verificado en Expo Go (Android)** registrarse con `ya.registrado@ejemplo.co` o con `EXPO_PUBLIC_MOCK_ERROR=409` muestra "Ya hay una cuenta con ese correo" y marca el campo correo; con `EXPO_PUBLIC_MOCK_ERROR=400-auth` el error aparece bajo el campo correo; datos inválidos muestran un mensaje por campo. El 401 del inicio de sesión no se puede forzar con el mock: queda para H2.
-- ~~Guardar el `refresh_token` en la sesión.~~ Hecho en `feature/cierre-h0`: la sesión guarda `access_token`, `refresh_token` y `expires_in` en memoria (secure-store llega en H2); al registrarse se inicia sesión con los mismos datos. **Está en el codigo** la sesión guarda los tres valores y `logout` los borra. **En Expo Go (Android)** un registro válido entra a Inicio y el Perfil muestra el nombre registrado; el inicio de sesión entra a Inicio; cerrar sesión vuelve a la pantalla de inicio de sesión.
+- **Sin red con la API, en el teléfono:** modo avión al enviar → "Pendiente de envío" → se envía una sola vez al volver la señal.
+- **Con el mock, en el teléfono:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
+- **Validación:** confirmar una predicción (necesita una `pendiente_experto` con predicción) y rechazar desde el teléfono.
+- Pruebas que no se pueden forzar con el mock y ahora sí con la API: 401 del inicio de sesión (contraseña equivocada), 413 (foto muy pesada), renovación del token (esperar 1 hora o alterar el token) y el 409 real de la validación.
+- Registrar las pruebas funcionales en `docs/pruebas/`.
 
-**H0: Por revisar** (implementado en `feature/cierre-h0`, sin marcar como hecho)
+**Siguiente rama (propuesta)**
 
-- Esqueletos `api` de observaciones, validación y catálogos: solo comprobados en el código (compilan con `npx tsc --noEmit`), no en Expo Go. Verificar cuando haya sesión con la API real: cada pantalla que los use muestra un error claro y no se cierra.
-- Tokens en memoria (`refresh_token`, `expires_in`): no se ven en pantalla. En Expo Go solo se verificó que registro, inicio y cierre de sesión funcionan. Verificar en H2 que la renovación con `/auth/refresh` usa el `refresh_token` guardado.
-- 401 del inicio de sesión: tiene mensaje ("El correo o la contraseña no coinciden."), pero el mock no lo puede forzar. Verificar con la API real en H2.
-- 400 del inicio de sesión: el contrato no lo define (solo 401). Confirmar con el Equipo 3 si existe; si no, no se maneja.
+- **Ver la foto en grande:** abrir la foto del detalle (observador y experto) a pantalla completa, con zoom para revisarla a detalle; sobre todo para el experto al validar. Opcional: descargarla al teléfono.
+- **APK:** definir cómo se compila e instala (EAS Build, perfil de vista previa o de producción) y el ícono de la app (otro compañero trabaja en el logo).
 
-**H1 (Frentes A, B y validación)**, implementado en `feature/h1-pendientes`
+**Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
 
-- ~~Volver a consultar el detalle si la URL firmada de la imagen venció.~~ **Verificado en Expo Go (Android):** con `imagen-vencida` la foto aparece tras reconsultar; con `imagen-vencida-siempre` aparece "No pudimos cargar la foto" y el botón para reintentar repite el ciclo sin cerrar la app.
-- ~~Ficha de especie con `código` y familia desde `/catalogos/familias`.~~ **Verificado en Expo Go (Android):** la tarjeta "Clasificación" muestra código, familia y su descripción; con `familias` la ficha no se rompe.
-- ~~Perfil con `GET /auth/perfil`.~~ **Verificado en Expo Go (Android):** los datos cambian con la cuenta y el rol de prueba; con `perfil` se ve la nota "No pudimos actualizar tus datos"; con `401-perfil` vuelve a inicio de sesión con aviso.
-- ~~Cola "Por validar" (`GET /observaciones/pendientes`): con la API real es la única forma de que el experto vea observaciones de otros usuarios.~~ **Verificado en Expo Go (Android):** botón en Perfil solo para experto y administrador; las observaciones validadas salen de la cola; estados vacío, error y sin permiso.
-- ~~Comentario editable del experto y mensajes para 403 y 409.~~ **Verificado en Expo Go (Android):** comentario con contador y límite de 2000, visible en la validación y el historial; mensajes de 403 y 409 con `403-validacion` y `409-validacion`.
-- ~~Un 401 durante el seguimiento del resultado solo muestra el mensaje; no lleva a inicio de sesión.~~ **Verificado en Expo Go (Android):** con `401-seguimiento`, Resultado y el detalle vuelven a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."; el aviso desaparece al entrar de nuevo.
-
-**H1: Por revisar** (sin marcar como hecho)
-
+- **Cuenta sin datos guardados:** con `red` y una cuenta que nunca abrió Registros, Inicio y Registros deben mostrar "Aún no hay datos guardados…" y Reintentar, sin errores técnicos.
+- **401 en la cola:** ahora vuelve a inicio de sesión. Verificar en Expo Go con `EXPO_PUBLIC_MOCK_ERROR=401` y una observación en cola.
 - Cola "Por validar": que un observador que llegue por la ruta directa vea "Esta sección es para expertos". Desde la interfaz no se puede llegar.
-- Validación: el 409 real (los controles se ocultan antes de poder validar dos veces), la tarjeta roja que aparece cuando el 409 recarga una observación ya validada, el 404 y el 400. No hay valor para forzarlos.
-- Controles del experto, perfil y ficha con `EXPO_PUBLIC_USE_API=true`: no se puede entrar a la app hasta H2.
-- Ficha y perfil: en el mock la familia y el perfil traen el mismo dato por las dos vías; solo se verificó que los flujos no se rompen.
-
-**Offline (parte 1)**, implementado en `feature/offline`
-
-- ~~Borrador local.~~ **Verificado en Expo Go (Android):** se recupera al volver a entrar y tras cerrar la app; "Empezar de nuevo", enviar y cerrar sesión a mano lo borran; la sesión vencida lo conserva; cada cuenta ve solo el suyo.
-- ~~Copia local de la foto.~~ **Verificado en Expo Go (Android):** la foto se recupera aunque se borre la original de la galería; con `copia-foto` aparece el aviso y el envío sigue.
-- ~~Cola `pendiente_envio`.~~ **Verificado en Expo Go (Android):** con `red` y en modo avión la observación queda en la cola y se envía una sola vez al volver la conexión; 400, 413 y `foto-ausente` pasan a "Requiere revisión"; 500 al tercer intento; 401 y modo avión no suman intentos; la cola no aparece con otra cuenta.
-- ~~Caché de catálogos y listados.~~ **Verificado en Expo Go (Android):** con `red` y en modo avión se ven los datos guardados con la franja "Sin conexión"; al desactivar el modo avión se recargan solos; los filtros sin copia muestran "Este filtro necesita conexión.".
-- ~~Límite de fotos enviadas.~~ Implementado: se conservan las 20 más recientes y nunca se borran las de la cola. Su prueba sigue pendiente (ver abajo).
-
-**Offline: Por revisar** (sin marcar como hecho)
-
-- **Prueba de una cuenta sin datos guardados: pendiente.** Esperado: con `red` y una cuenta que nunca abrió Registros, Inicio y Registros muestran "Aún no hay datos guardados…" y Reintentar, sin errores técnicos.
-- El 401 en la cola muestra el aviso "Tu sesión venció. Vuelve a entrar para enviarlas." pero no cierra la sesión.
+- Validación: la tarjeta roja que aparece cuando el 409 recarga una observación ya validada, el 404 y el 400. No hay valor para forzarlos en el mock.
 - La prueba de la cola con error 500 tres veces se verificó sin los mensajes de Metro: que el intento 3 venga de "entrar" se deduce de la espera de 10 s, no se observó.
 - `scripts/probar-servicios.ts` falla con `EXPO_PUBLIC_MOCK_ERROR=red` (esperado: los catálogos responden sin conexión); pasa sin `red`.
-- La prueba de que la franja "Sin conexión" desaparece al desactivar el modo avión depende de que `expo-network` avise el cambio de red.
-- Perfil y el detalle de una observación no tienen copia: sin conexión, el Perfil muestra "–" en sus cifras y el detalle su mensaje de error.
-- La caché, la cola y el borrador se guardan sin cifrar en la carpeta privada de la app (H2).
-- Las páginas 2 en adelante de Registros y los filtros por estado no tienen copia.
-- H2: falta definir cómo trata el cliente real los timeouts (si cuentan como sin conexión) y qué pasa con las URLs firmadas de imágenes guardadas en la caché, que vencen.
-- Cambio de comportamiento: Registros ahora se recarga al cambiar de cuenta o de rol de prueba.
+- La franja "Sin conexión" desaparece al desactivar el modo avión solo si `expo-network` avisa el cambio de red.
 
-**H2:** integración real con la API (autenticación, observaciones, catálogos, validación y sincronización).
+**Limitaciones conocidas**
+
+- Perfil y el detalle de una observación no tienen copia: sin conexión, el Perfil muestra "–" en sus cifras y el detalle su mensaje de error.
+- La caché, la cola y el borrador se guardan sin cifrar en la carpeta privada de la app (la sesión sí va cifrada).
+- Las páginas 2 en adelante de Registros y los filtros por estado no tienen copia.
+- Las URLs firmadas de las fotos vencen en 1 hora; si el detalle trae una vencida, se vuelve a pedir.
+- Registros se recarga al cambiar de cuenta o de rol de prueba.
 
 **Pruebas:** las pruebas funcionales y de usabilidad del DoD aún no se han registrado en `docs/pruebas/`.
 
+<details>
+<summary>Historial de H0, H1 y modo sin conexión (parte 1)</summary>
+
+- **H0** (`feature/cierre-h0`): esqueletos `api` por dominio y `EXPO_PUBLIC_USE_API`; mensajes para 400, 401 y 409 en inicio de sesión y registro; la sesión guarda `access_token`, `refresh_token` y `expires_in`. Verificado en Expo Go (Android).
+- **H1** (`feature/h1-pendientes`): reconsulta del detalle si la foto venció; ficha con código y familia; Perfil con `GET /auth/perfil`; cola "Por validar"; comentario del experto con mensajes para 403 y 409; 401 durante el seguimiento lleva a inicio de sesión. Verificado en Expo Go (Android).
+- **Modo sin conexión, parte 1** (`feature/offline`): borrador local, copia local de la foto, cola `pendiente_envio`, caché de catálogos y listados con la franja "Sin conexión" y límite de 20 fotos enviadas. Verificado en Expo Go (Android), salvo la prueba del límite de fotos.
+
+</details>
+
 ---
 
-## Preguntas abiertas para el Equipo 3
+## Preguntas para el Equipo 3
 
-- A qué estado pasa una observación cuando el experto la rechaza (`rechazada`). El mock la deja en `no_concluyente` y la saca de la cola "Por validar"; confirmar que el backend también la saca.
-- No hay endpoint para editar o borrar una validación (solo `POST`, que responde 409 si ya existe). Si el experto necesita corregir su comentario o su decisión, hay que definirlo.
-- Los catálogos de ambiente y condición usan los códigos del DoD; el contrato no los enumera.
-- La respuesta del modelo trae `umbral_minimo` y `tiempo_inferencia_ms`, que no están en el contrato, y la especie como nombre científico (`Hypanus_guttatus`) en vez de `codigo`.
-- Habrá forma de editar una validación experta ya enviada? El contrato solo tiene `POST /observaciones/{id}/validacion` (409 si ya existe), así que el comentario y la decisión no se pueden corregir.
+Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3). El 28 oct asignaron el rol experto. Pedidos abiertos: confirmar el estado tras un rechazo (`corregido` en el backend), devolver un `refresh_token` nuevo al renovar y confirmar la versión del contrato.

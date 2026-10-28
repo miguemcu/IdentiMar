@@ -8,6 +8,7 @@ import type { Especie, Familia } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { CargaLenta } from '@/components/carga-lenta/carga-lenta';
 
 type Estado = 'cargando' | 'listo' | 'error' | 'no_encontrada';
 
@@ -68,8 +69,9 @@ export default function FichaEspecieScreen() {
       <ScreenHeader title={titulo} onBack={volver} />
 
       {estado === 'cargando' ? (
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center p-6">
           <ActivityIndicator size="large" />
+          <CargaLenta activo className="mt-4 self-stretch" />
         </View>
       ) : null}
 

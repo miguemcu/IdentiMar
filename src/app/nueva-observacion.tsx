@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AVISO_ENVIO, CargaLenta } from '@/components/carga-lenta/carga-lenta';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -257,22 +258,13 @@ export default function NuevaObservacionScreen() {
   function confirmImageAsset(selectedAsset: ImagePicker.ImagePickerAsset) {
     const validation = validateImageAsset(selectedAsset);
     if (!validation.isValid) {
-      const failedRequirements = [];
-      if (!validation.hasValidFormat) {
-        failedRequirements.push('estar en formato JPEG o PNG');
-      }
-      if (!validation.hasValidSize) {
-        failedRequirements.push(
-          'ser más grande',
-        );
-      }
-      const requirements =
-        failedRequirements.length === 2
-          ? `${failedRequirements[0]} y ${failedRequirements[1]}`
-          : failedRequirements[0];
-
+      // Sin términos como "JPEG", "píxeles" o "MB": se explica qué hacer.
       setImageValidationError(
-        `La foto seleccionada debe ${requirements}. Intenta de nuevo.`,
+        !validation.hasValidFormat
+          ? 'No podemos usar esta foto. Prueba tomándola con la cámara del teléfono.'
+          : !validation.hasValidWeight
+            ? 'La foto pesa demasiado. Prueba con otra o tómala de nuevo con la cámara.'
+            : 'La foto es muy pequeña. Prueba tomándola con la cámara del teléfono.',
       );
       return;
     }
@@ -303,7 +295,9 @@ export default function NuevaObservacionScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 1,
+      // Con 1, algunas cámaras recientes pasan de los 10 MB que acepta el
+      // modelo; 0.8 casi no cambia la imagen y queda muy por debajo.
+      quality: 0.8,
     });
 
     const selectedAsset = result.canceled ? undefined : result.assets[0];
@@ -581,6 +575,7 @@ export default function NuevaObservacionScreen() {
 
         {paso === 2 ? (
           <>
+            <CargaLenta activo={tiposAmbiente.length === 0 && !errorCatalogos} className="" />
             {errorCatalogos === 'sin-conexion' ? <SinConexion guardadoEn={null} /> : null}
             {errorCatalogos ? (
               <Card>
@@ -649,6 +644,7 @@ export default function NuevaObservacionScreen() {
             {errorEnvio}
           </Text>
         ) : null}
+        <CargaLenta activo={ultimoPaso && enviando} mensaje={AVISO_ENVIO} className="" />
         <Button
           title={ultimoPaso ? 'Enviar observación' : 'Siguiente'}
           size="lg"

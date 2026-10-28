@@ -4,6 +4,12 @@ import type { EstadoObservacion } from '../../types';
 
 export interface EstadoBadgeProps extends ViewProps {
   estado: EstadoObservacion;
+  /**
+   * true si la observación no tiene especie aceptada. Con `corregido` indica
+   * que el experto la rechazó: el backend la deja en `corregido` sin especie,
+   * y "Corregido" haría pensar que ya se identificó.
+   */
+  sinEspecie?: boolean;
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -52,6 +58,13 @@ const ESTADOS_MAP: Record<EstadoObservacion, EstadoConfig> = {
   },
 };
 
+/** `corregido` sin especie: un experto la revisó y no pudo identificarla. */
+const RECHAZADA: EstadoConfig = {
+  label: 'No identificable',
+  containerClass: ESTADOS_MAP.no_concluyente.containerClass,
+  textClass: ESTADOS_MAP.no_concluyente.textClass,
+};
+
 /** Texto en español de cada estado del contrato. */
 export function etiquetaEstado(estado: EstadoObservacion): string {
   return ESTADOS_MAP[estado]?.label ?? estado;
@@ -59,11 +72,13 @@ export function etiquetaEstado(estado: EstadoObservacion): string {
 
 export function EstadoBadge({
   estado,
+  sinEspecie = false,
   size = 'md',
   className = '',
   ...rest
 }: EstadoBadgeProps) {
-  const config = ESTADOS_MAP[estado] ?? {
+  const rechazada = estado === 'corregido' && sinEspecie;
+  const config = (rechazada ? RECHAZADA : ESTADOS_MAP[estado]) ?? {
     label: estado,
     containerClass: 'bg-slate-200 border border-slate-300',
     textClass: 'text-slate-deep font-nunito-bold',

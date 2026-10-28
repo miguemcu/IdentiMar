@@ -15,8 +15,8 @@ async function ejecutarPrueba() {
   especies.forEach((esp) => {
     console.log(` - [${esp.codigo}] ${esp.nombre_cientifico} (${esp.nombre_comun})`);
   });
-  if (especies.length !== 5) {
-    throw new Error(`Se esperaban 5 especies, pero se obtuvieron ${especies.length}`);
+  if (especies.length !== 9) {
+    throw new Error(`Se esperaban 9 especies, pero se obtuvieron ${especies.length}`);
   }
 
   console.log('\n=== 2. Prueba de Autenticación ===');
