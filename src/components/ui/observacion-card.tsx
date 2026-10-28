@@ -65,7 +65,7 @@ export function ObservacionCard({ observacion, onPress }: ObservacionCardProps) 
         ) : null}
 
         <View className="mt-2 flex-row items-center gap-2">
-          <EstadoBadge estado={observacion.estado} size="sm" />
+          <EstadoBadge estado={observacion.estado} sinEspecie={!especie} size="sm" />
           {confianza ? (
             <Text className="font-source-semibold text-sm text-slate-deep">
               {confianza}

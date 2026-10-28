@@ -140,6 +140,14 @@ export default function ResultadoObservacionScreen() {
   const { observacion: obs, error, agotado, reintentar } =
     useSeguimientoObservacion(id);
 
+  // Un rechazo del experto queda en `corregido` sin especie: se muestra como
+  // "no se pudo identificar", no con el ícono de verificado.
+  const iconoResultado = obs
+    ? ICONO_RESULTADO[
+        obs.estado === 'corregido' && !obs.especie_aceptada ? 'no_concluyente' : obs.estado
+      ]
+    : undefined;
+
   const enCurso = !obs || estaEnCurso(obs.estado);
 
   // 401 durante el seguimiento: la sesión venció. La observación ya se envió,
@@ -171,20 +179,14 @@ export default function ResultadoObservacionScreen() {
 
         <Card>
           <View className="flex-row items-center gap-3">
-            {obs && ICONO_RESULTADO[obs.estado] ? (
+            {iconoResultado ? (
               <View
-                className={`h-12 w-12 items-center justify-center rounded-2xl ${
-                  ICONO_RESULTADO[obs.estado]!.fondo
-                }`}
+                className={`h-12 w-12 items-center justify-center rounded-2xl ${iconoResultado.fondo}`}
               >
-                <Icono
-                  nombre={ICONO_RESULTADO[obs.estado]!.icono}
-                  size={26}
-                  className={ICONO_RESULTADO[obs.estado]!.color}
-                />
+                <Icono nombre={iconoResultado.icono} size={26} className={iconoResultado.color} />
               </View>
             ) : null}
-            {obs ? <EstadoBadge estado={obs.estado} /> : null}
+            {obs ? <EstadoBadge estado={obs.estado} sinEspecie={!obs.especie_aceptada} /> : null}
           </View>
 
           {error ? (
