@@ -258,22 +258,11 @@ export default function NuevaObservacionScreen() {
   function confirmImageAsset(selectedAsset: ImagePicker.ImagePickerAsset) {
     const validation = validateImageAsset(selectedAsset);
     if (!validation.isValid) {
-      const failedRequirements = [];
-      if (!validation.hasValidFormat) {
-        failedRequirements.push('estar en formato JPEG o PNG');
-      }
-      if (!validation.hasValidSize) {
-        failedRequirements.push(
-          'ser más grande',
-        );
-      }
-      const requirements =
-        failedRequirements.length === 2
-          ? `${failedRequirements[0]} y ${failedRequirements[1]}`
-          : failedRequirements[0];
-
+      // Sin términos como "JPEG" o "píxeles": se explica qué hacer.
       setImageValidationError(
-        `La foto seleccionada debe ${requirements}. Intenta de nuevo.`,
+        validation.hasValidFormat
+          ? 'La foto es muy pequeña. Prueba tomándola con la cámara del teléfono.'
+          : 'No podemos usar esta foto. Prueba tomándola con la cámara del teléfono.',
       );
       return;
     }

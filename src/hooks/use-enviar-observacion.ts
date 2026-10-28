@@ -68,8 +68,8 @@ export function useEnviarObservacion(alEnviar: () => void) {
       alEnviar();
       if (quizaEnviada) {
         Alert.alert(
-          'El servidor tardó en responder',
-          'Guardamos tu observación. Revisaremos si ya llegó y, si no, la enviaremos de nuevo.',
+          'No pudimos conectarnos a nuestro identificador',
+          'Guardamos tu observación. Si no alcanzó a llegar, la enviaremos de nuevo por ti.',
         );
       } else {
         Alert.alert(

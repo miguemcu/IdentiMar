@@ -259,7 +259,7 @@ export default function DetalleRegistroScreen() {
               }
             />
             <Fila
-              etiqueta="Precisión del GPS"
+              etiqueta="Precisión de la ubicación"
               valor={
                 obs.precision_gps_metros !== null && obs.precision_gps_metros !== undefined
                   ? `± ${obs.precision_gps_metros.toFixed(1)} m`

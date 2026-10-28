@@ -53,7 +53,8 @@ interface ColaEnvioContextType {
 /** Tras un intento, los avisos automáticos se ignoran durante este tiempo. */
 const ESPERA_AUTOMATICA_MS = 5000;
 
-const AVISO_SERVIDOR = 'El servidor no respondió bien. Lo intentaremos de nuevo más tarde.';
+const AVISO_SERVIDOR =
+  'No pudimos conectarnos a nuestro identificador. Lo intentaremos de nuevo en un momento.';
 
 const ColaEnvioContext = createContext<ColaEnvioContextType | undefined>(undefined);
 

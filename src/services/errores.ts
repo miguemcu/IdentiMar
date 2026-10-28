@@ -23,13 +23,13 @@ export class ErrorServicio extends Error {
  */
 const PROBLEMA_CAMPO: Record<string, string> = {
   fecha_hora_evento: 'Fecha y hora: revisa que sea una fecha válida.',
-  latitud: 'Latitud: debe estar entre -90 y 90.',
-  longitud: 'Longitud: debe estar entre -180 y 180.',
-  precision_gps_metros: 'Precisión del GPS: no puede ser negativa.',
+  latitud: 'Latitud: revisa el número que escribiste.',
+  longitud: 'Longitud: revisa el número que escribiste.',
+  precision_gps_metros: 'Ubicación: vuelve a tomar tu ubicación.',
   tipo_ambiente: 'Tipo de ambiente: elige una opción.',
   condicion_organismo: 'Estado del animal: elige una opción.',
-  observaciones_usuario: 'Notas: máximo 2000 caracteres.',
-  imagen: 'Foto: debe ser JPEG o PNG.',
+  observaciones_usuario: 'Notas: el texto es muy largo, acórtalo un poco.',
+  imagen: 'Foto: no pudimos usarla, prueba con otra.',
 };
 
 /** El backend puede nombrar el campo con su ruta (`datos.latitud`); se usa el último tramo. */
@@ -77,9 +77,9 @@ export interface ErroresAuth {
 
 /** Texto en español para cada campo de los formularios con error 400. */
 const PROBLEMA_AUTH: Record<CampoAuth, string> = {
-  nombre_completo: 'Escribe tu nombre completo (de 3 a 200 caracteres).',
+  nombre_completo: 'Escribe tu nombre completo.',
   correo: 'Revisa el correo. Debe verse así: nombre@correo.com',
-  password: 'La contraseña debe tener entre 8 y 128 caracteres.',
+  password: 'La contraseña debe tener al menos 8 letras o números.',
   telefono: 'Revisa el número de teléfono.',
 };
 

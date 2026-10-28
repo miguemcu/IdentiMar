@@ -128,7 +128,7 @@ export default function RegistrosScreen() {
       {sinConexion ? (
         <SinConexion
           guardadoEn={sinConexion.guardadoEn}
-          sinCopia={filtro ? 'Este filtro necesita conexión.' : undefined}
+          sinCopia={filtro ? 'Para usar este filtro necesitas internet.' : undefined}
         />
       ) : null}
 

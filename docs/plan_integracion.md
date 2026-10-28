@@ -32,7 +32,10 @@
    - **Paso 8:** cerrar el DoD y registrar las pruebas funcionales en `docs/pruebas/`.
 5. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado).
 
-**Regla de trabajo:** las pantallas y el mock usan siempre la forma del contrato. Cualquier diferencia del backend se adapta solo dentro de `src/services/api/` y se anota en [`discrepancias.md`](discrepancias.md) (sección 6).
+**Reglas de trabajo:**
+
+- Las pantallas y el mock usan siempre la forma del contrato. Cualquier diferencia del backend se adapta solo dentro de `src/services/api/` y se anota en [`discrepancias.md`](discrepancias.md) (sección 6).
+- Los textos que ve el usuario no usan palabras técnicas como servidor, API, JPEG, píxeles o caracteres. Se dice qué pasó y qué hacer (por ejemplo, "No pudimos conectarnos a nuestro identificador" o "Al menos 8 letras o números"). Los mensajes de error pasan por `src/services/errores.ts`.
 
 ## Criterio
 
@@ -108,7 +111,7 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
 - **Sin duplicados.** Un tiempo agotado (`ErrorServicio(0)` con `cuerpo.codigo === 'tiempo-agotado'`) guarda la observación con `quizaEnviada`; lo hacen tanto `use-enviar-observacion.ts` como la cola, si se corta un reenvío.
   - Antes de reenviarla, `procesarCola` consulta `GET /observaciones` y busca una con el mismo instante de `fecha_hora_evento`, creada desde 5 minutos antes de guardarla en la cola. Si existe, la quita sin reenviar.
   - El listado del contrato no trae coordenadas, así que la clave es la fecha y hora del evento al segundo.
-  - El aviso para el usuario es "El servidor tardó en responder".
+  - El aviso para el usuario es "No pudimos conectarnos a nuestro identificador".
 - **Espera creciente.** Tras un 500, `proximoIntento` queda a 15 s y luego a 30 s, y el contexto de la cola programa el reintento. Al tercer fallo pasa a revisión. "Enviar ahora" (`forzar`) no espera.
 - **Mock:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` crea la observación pero no entrega la respuesta.
 - *Falta en Expo Go:*

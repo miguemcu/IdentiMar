@@ -44,7 +44,7 @@ export default function LoginScreen() {
     if (!password) {
       nuevosErrores.password = 'Escribe tu contraseña.';
     } else if (password.length < 8 || password.length > 128) {
-      nuevosErrores.password = 'La contraseña debe tener entre 8 y 128 caracteres.';
+      nuevosErrores.password = 'La contraseña debe tener al menos 8 letras o números.';
     }
 
     setErrores(nuevosErrores);
@@ -143,7 +143,7 @@ export default function LoginScreen() {
 
           <Input
             label="Contraseña"
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Al menos 8 letras o números"
             secureTextEntry
             value={password}
             onChangeText={(val) => {
