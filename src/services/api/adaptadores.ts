@@ -19,7 +19,9 @@ import type {
  * - `prediccion`, `validacion` e `historial` en vez de `prediccion_original`,
  *   `validacion_experta` e `historial_estados`, con estados y actor como objetos;
  * - en la predicción, `especie` en vez de `especie_propuesta` y
- *   `version_modelo` como objeto `{ id, version }`.
+ *   `version_modelo` como objeto `{ id, version }`;
+ * - en la validación, `decision` como objeto y `especie_corregida` en vez de
+ *   `especie_final`.
  * Se aceptan las dos formas, así sigue funcionando si el backend se alinea.
  */
 
@@ -86,8 +88,10 @@ function validacion(v: Crudo | null | undefined): ValidacionExperta | null {
   if (!v) return null;
   return {
     id: v.id,
-    decision: v.decision,
-    especie_final: especie(v.especie_final, v.especie_final_codigo),
+    // El backend envía la decisión como objeto { codigo, … } y la especie
+    // en `especie_corregida`.
+    decision: typeof v.decision === 'string' ? v.decision : v.decision?.codigo,
+    especie_final: especie(v.especie_final ?? v.especie_corregida, v.especie_final_codigo),
     comentario: v.comentario ?? null,
     experto: usuarioMinimo(v.experto ?? v.usuario),
     creado_en: v.creado_en,
