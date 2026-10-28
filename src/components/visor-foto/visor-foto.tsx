@@ -12,7 +12,7 @@ import {
 import {
   GestureDetector,
   GestureHandlerRootView,
-  useExclusiveGestures,
+  useCompetingGestures,
   usePanGesture,
   usePinchGesture,
   useSimultaneousGestures,
@@ -169,6 +169,8 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
   // Amplía hacia el punto tocado; si ya está ampliada, vuelve al tamaño normal.
   const dobleToque = useTapGesture({
     numberOfTaps: 2,
+    // Si el dedo se mueve, no es un toque: falla enseguida y deja libre el arrastre.
+    maxDistance: 20,
     onActivate: (evento) => {
       'worklet';
       if (escala.get() > 1.05) {
@@ -186,8 +188,10 @@ export function VisorFoto({ uri, titulo, nombreArchivo, onCerrar, onFallo }: Vis
     },
   });
 
+  // Compiten: gana el primero que se activa. Con "exclusivos", el pellizco y
+  // el arrastre esperaban a que fallara el doble toque y casi nunca arrancaban.
   const pellizcoYArrastre = useSimultaneousGestures(pellizco, arrastre);
-  const gestos = useExclusiveGestures(dobleToque, pellizcoYArrastre);
+  const gestos = useCompetingGestures(pellizcoYArrastre, dobleToque);
 
   const estiloFoto = useAnimatedStyle(() => ({
     transform: [{ translateX: x.get() }, { translateY: y.get() }, { scale: escala.get() }],
