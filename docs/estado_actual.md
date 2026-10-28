@@ -50,7 +50,7 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 1. **Entrar o crear cuenta.** Con datos simulados, cualquier correo y contraseña válidos entran y hay cuentas de prueba para cada rol. Si el correo ya está registrado o un dato no es válido, el mensaje aparece en español junto al campo.
 2. **Inicio.** Saludo, cifras de sus registros (Registros, Identificadas, En revisión), sus últimos registros, una nota para cuando no hay internet en el mar y una raya del catálogo que cambia cada día.
 3. **Registrar una raya en 3 pasos.**
-   - **Foto:** cámara o galería. Se valida que sea JPEG o PNG con lado mayor de al menos 1280 px.
+   - **Foto:** cámara o galería. Se valida que sea JPG, PNG o WEBP, de al menos 32 px por lado y hasta 10 MB (acordado con los Equipos 2 y 3 el 28 oct).
    - **Dónde y cuándo:** ubicación por GPS (o a mano si no hay permiso) y fecha y hora del teléfono, editables y sin fechas futuras.
    - **Sobre el animal:** tipo de ambiente, estado del animal y notas (máximo 2000 caracteres).
 4. **Ver el resultado:**

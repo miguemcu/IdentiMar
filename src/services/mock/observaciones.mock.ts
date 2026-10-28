@@ -152,8 +152,8 @@ function validarEntrada(
       problema: "Máximo 2000 caracteres.",
     });
   }
-  if (imagen.mimeType !== "image/jpeg" && imagen.mimeType !== "image/png") {
-    detalles.push({ campo: "imagen", problema: "Debe ser JPEG o PNG." });
+  if (!["image/jpeg", "image/png", "image/webp"].includes(imagen.mimeType)) {
+    detalles.push({ campo: "imagen", problema: "Debe ser JPG, PNG o WEBP." });
   }
   return detalles;
 }

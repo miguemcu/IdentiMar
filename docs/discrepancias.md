@@ -17,7 +17,7 @@ Comparación entre el mockup de Figma (`docs/mockup/`), el contrato OpenAPI del 
 | 4   | Tipo de ambiente        | Mar / Estuario / Manglar         | `tipo_ambiente` con códigos de `/catalogos/tipos-ambiente`           | Opciones desde el catálogo; códigos confirmados con el backend (sección 6)  | resuelto en la app |
 | 5   | Profundidad             | Campo propio (opcional)          | No existe                                                            | Sin campo propio (DoD: fuera de alcance); se puede anotar en las notas      | fuera de alcance   |
 | 6   | Notas                   | "Notas adicionales"              | `observaciones_usuario`, máx. 2000 caracteres                        | Límite de 2000 caracteres con contador                                      | resuelto en la app |
-| 7   | Imagen                  | Foto de cámara o galería         | JPEG o PNG, lado mayor ≥ 1280 px; error 413 si es muy grande         | Validación de formato y tamaño antes de enviar; mensaje para el 413         | resuelto en la app |
+| 7   | Imagen                  | Foto de cámara o galería         | JPEG o PNG, lado mayor ≥ 1280 px; error 413 si es muy grande         | Validación de formato, tamaño y peso antes de enviar; mensaje para el 413. Requisitos cambiados el 28 oct (fila 43) | resuelto en la app |
 
 ## 2. Resultado, estados y confianza
 
@@ -78,6 +78,7 @@ Probado el 2026-10-27 contra `https://identimar-backend.onrender.com/api/v1`. Co
 | 40  | Nulos en la validación   | `especie_final_codigo` nulo al rechazar; `comentario` opcional y nulo | Rechaza `null` en los dos ("Expected string, received null")                         | Omite los campos nulos                                                   | resuelto en la app |
 | 41  | Respuesta de la validación | `200` con `ObservacionDetalle`                             | No trae el detalle completo (sin validación ni historial)                              | Tras el POST vuelve a pedir `GET /observaciones/{id}`                    | resuelto en la app |
 | 42  | Forma de la validación   | `decision` texto y `especie_final`                           | `decision` objeto `{codigo, …}` y `especie_corregida`                                  | `adaptadores.ts`                                                         | resuelto en la app |
+| 43  | Requisitos de la foto    | JPEG o PNG, lado mayor ≥ 1280 px                             | Acordado con los Equipos 2 y 3 (28 oct): JPG, PNG o WEBP, al menos 32 px por lado y hasta 10 MB. El Equipo 3 está cambiando su validación | La app ya valida los nuevos requisitos. Hay que actualizar el contrato | acordado con E3    |
 | 31  | Cuentas de prueba        | Ejemplo `ana.torres@ejemplo.co`                              | Esa cuenta no existe                                                                   | Cuentas propias del Equipo 1; el E3 asignó el rol experto a `e1.experto@ejemplo.co` (28 oct) | resuelto en la app |
 | 32  | Respuesta de `/auth/refresh` | `LoginResponse` (nuevo par de tokens y usuario)          | Solo `{access_token, expires_in}`                                                      | Conserva el `refresh_token` anterior y el usuario de la sesión. Límite: la sesión dura como máximo 7 días desde el último inicio de sesión, aunque se use la app a diario | pendiente          |
 

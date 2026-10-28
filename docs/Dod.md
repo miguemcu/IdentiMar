@@ -68,7 +68,7 @@ Si el backend no tiene staging listo el 25 oct, H2 se concentra en autenticació
 **Fotografía**
 
 - [x] Captura desde cámara o desde galería.
-- [x] Validación antes de enviar: JPEG o PNG, lado mayor ≥ 1280 px. Si no cumple, mensaje claro para volver a tomarla.
+- [x] Validación antes de enviar: JPG, PNG o WEBP, al menos 32 px por lado y hasta 10 MB. Si no cumple, mensaje claro para volver a tomarla. *Cambiado el 28 oct (antes: JPEG o PNG, lado mayor ≥ 1280 px), acordado con los Equipos 2 y 3; ver `discrepancias.md`, fila 43.*
 - [x] Vista previa con opción de repetir.
 
 **Ubicación**

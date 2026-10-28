@@ -258,11 +258,13 @@ export default function NuevaObservacionScreen() {
   function confirmImageAsset(selectedAsset: ImagePicker.ImagePickerAsset) {
     const validation = validateImageAsset(selectedAsset);
     if (!validation.isValid) {
-      // Sin términos como "JPEG" o "píxeles": se explica qué hacer.
+      // Sin términos como "JPEG", "píxeles" o "MB": se explica qué hacer.
       setImageValidationError(
-        validation.hasValidFormat
-          ? 'La foto es muy pequeña. Prueba tomándola con la cámara del teléfono.'
-          : 'No podemos usar esta foto. Prueba tomándola con la cámara del teléfono.',
+        !validation.hasValidFormat
+          ? 'No podemos usar esta foto. Prueba tomándola con la cámara del teléfono.'
+          : !validation.hasValidWeight
+            ? 'La foto pesa demasiado. Prueba con otra o tómala de nuevo con la cámara.'
+            : 'La foto es muy pequeña. Prueba tomándola con la cámara del teléfono.',
       );
       return;
     }

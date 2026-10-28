@@ -15,7 +15,7 @@ export interface FiltrosListadoObservaciones {
 /** Archivo que viaja en la parte `imagen` del multipart de POST /observaciones. */
 export interface ImagenObservacion {
   uri: string;
-  mimeType: 'image/jpeg' | 'image/png';
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
   nombre: string;
 }
 

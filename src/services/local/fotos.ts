@@ -1,7 +1,8 @@
 import { File } from 'expo-file-system';
 import { carpetaLocal } from './almacen';
 
-const extension = (nombre: string) => (/\.png$/i.test(nombre) ? 'png' : 'jpg');
+/** Conserva la extensión de la foto: de ella se deduce el tipo si el teléfono no lo informa. */
+const extension = (nombre: string) => /\.(png|webp)$/i.exec(nombre)?.[1].toLowerCase() ?? 'jpg';
 
 /**
  * Copia la foto elegida a la carpeta del borrador del usuario, para no
