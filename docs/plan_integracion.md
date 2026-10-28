@@ -1,6 +1,6 @@
 # Plan de integración con el backend (H2)
 
-- **Creado:** 27 oct 2026 · **Actualizado:** 28 oct 2026
+- **Creado:** 27 oct 2026 · **Actualizado:** 28 oct 2026 (cierre de la rama)
 - **Rama:** `feature/h2-integracion` (sale de `develop`; un commit por paso)
 - **Meta:** integración completa hoy; pruebas desde el 28 oct.
 - **Backend:** `https://identimar-backend.onrender.com/api/v1` (desplegado por el Equipo 3)
@@ -18,7 +18,7 @@
 | 5    | Observaciones                         | Hecho; probado desde el computador (2 observaciones reales) | `70e69ff`                              |
 | 6    | Validación experta                    | Hecho; probado desde el computador con `e1.experto`      | `1319186`, `15fd7fe`, `5d5c668`           |
 | 7    | Cola de envío con la API real         | Hecho; probado en Node con un servicio falso             | `dbf4e8b`                                 |
-| 8    | Cierre                                | En curso: esqueleto quitado y endpoints revisados        | `aac9068`                                 |
+| 8    | Cierre                                | Hecho: flujo en línea verificado en Expo Go; falta el caso sin red en el teléfono | `aac9068` y correcciones de las pruebas en el teléfono (`88ed498`, `465e4ff`) |
 
 "Probado desde el computador" significa que el servicio se ejecutó con `npx tsx` contra el backend desplegado; falta recorrerlo en el teléfono.
 

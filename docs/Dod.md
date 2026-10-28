@@ -223,7 +223,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ## H2. Integración con la API real
 
-**Avance al 28 oct:** en la rama `feature/h2-integracion`. Pasos 1 a 7 del [plan de integración](plan_integracion.md) hechos en código; falta el cierre (paso 8): recorrer en Expo Go lo que solo se probó desde el computador y las pruebas funcionales. Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android) o "desde el computador" (servicios ejecutados con `npx tsx` contra el backend desplegado).
+**Avance al 28 oct (cierre de la rama `feature/h2-integracion`):** pasos 1 a 8 del [plan de integración](plan_integracion.md). Verificado en Expo Go (Android) con la API real: todas las consultas (Inicio, Registros con fotos, detalle, Especies, ficha, perfil), el envío de una observación con respuesta del modelo y el flujo del experto (una observación no concluyente aparece en "Por validar" y el experto la corrige). Otro compañero sigue probando. Junto a cada casilla se indica dónde se verificó: "Expo Go" (teléfono Android), "desde el computador" (servicios con `npx tsx` contra el backend) o "en Node" (lógica con un servicio falso).
 
 ### Bloqueantes (antes del 25 oct)
 
@@ -242,19 +242,19 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Validación experta**
 
-- [x] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409. *Probado desde el computador con `e1.experto`: 200 (una corrección y un rechazo reales; las dos salen de "Por validar"), 400, 403, 404 y 409. El backend rechaza `null` en especie y comentario, no devuelve el detalle completo y deja el rechazo en `corregido` sin especie: la app se adapta (filas 39 a 42). Falta recorrerlo en Expo Go.*
+- [x] `api` implementa `listarPendientes` y `validarObservacion` con manejo de 200, 403 y 409. *Verificado en Expo Go: una observación no concluyente aparece en "Por validar" y el experto la corrige. Desde el computador: 400, 403, 404 y 409, y un rechazo real. El backend rechaza `null` en especie y comentario, no devuelve el detalle completo y deja el rechazo en `corregido` sin especie: la app se adapta (filas 39 a 42).*
 - [x] Los controles del experto dejan de depender del modo simulado. *Desde H1: dependen del rol y del estado de la observación.*
 
 **Observaciones**
 
-- [x] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`. *Probado desde el computador con 2 observaciones reales. El backend pide `tipo_ambiente_codigo` y `condicion_organismo_codigo`: la app envía los dos nombres (fila 34). Falta enviar desde Expo Go.*
-- [x] Manejo de 201, 400, 401 y 413. *201 y 400 probados desde el computador; 401 cubierto por la renovación. 413 sin probar con el backend.*
+- [x] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`. *Verificado en Expo Go. Con SDK 58 el `fetch` global es el de Expo, que no acepta archivos como `{ uri }`: la foto se adjunta con `bytes()`. El backend pide `tipo_ambiente_codigo` y `condicion_organismo_codigo` y rechaza opcionales en `null`: la app se adapta (filas 34 y 44).*
+- [x] Manejo de 201, 400, 401 y 413. *201 verificado en Expo Go; 400 en Expo Go y desde el computador; 401 cubierto por la renovación. 413 sin probar con el backend.*
 - [x] Como no hay notificaciones, el estado se consulta con polling a `GET /observaciones/{id}` mientras esté en `recibido` o `procesando`. Con backoff, y se detiene al llegar a otro estado. *En el backend el envío espera la inferencia (≈30 s) y responde con el estado final, así que el seguimiento se detiene en la primera consulta (fila 36).*
-- [x] Listado paginado y detalle reales. *Probado desde el computador, incluido el filtro por estado. `adaptadores.ts` pasa la forma del backend a la del contrato (fila 35). El listado no trae foto (fila 37).*
+- [x] Listado paginado y detalle reales. *Verificado en Expo Go, con fotos en las tarjetas (el listado del backend no las trae: cada tarjeta pide el detalle, fila 37). `adaptadores.ts` pasa la forma del backend a la del contrato (fila 35).*
 
 **Catálogos**
 
-- [x] Consumidos desde la API y guardados en caché local, actualizados al abrir la app con conexión. *Probado desde el computador: 9 especies, 7 familias, 6 ambientes, 5 condiciones y 7 estados. Falta recorrer Especies y la ficha en Expo Go.*
+- [x] Consumidos desde la API y guardados en caché local, actualizados al abrir la app con conexión. *Verificado en Expo Go: Especies, ficha y opciones del formulario. El backend no trae fotos de referencia de las especies.*
 
 **Offline (parte 2: sincronización real)**
 
@@ -265,26 +265,26 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 **Arquitectura**
 
 - [x] Cambiar de `mock` a `api` por variable de entorno no requiere cambios en componentes. *`EXPO_PUBLIC_USE_API`; las diferencias del backend se resuelven dentro de `src/services/api/`.*
-- [x] No se registran datos personales ni coordenadas en los logs. *El código no tiene `console.log` con datos; el cliente HTTP no escribe tokens ni cuerpos.*
+- [x] No se registran datos personales ni coordenadas en los logs. *Solo en desarrollo (`__DEV__`), el cliente HTTP escribe en Metro método, ruta y estado de cada petición y, si falla, el código y los nombres de campo; nunca valores, tokens ni coordenadas. En un build de producción (APK de release) no se ejecuta.*
 
 **Integración**
 
-- [ ] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos. *4 enviadas desde el computador con `e1.usuario` (una `identificado`, tres `no_concluyente` por el servicio de visión dormido; dos de ellas validadas por el experto); faltan envíos desde la app.*
+- [x] Al menos 3 observaciones reales enviadas de extremo a extremo, verificando persistencia y estados devueltos. *Desde el computador, 8 con `e1.usuario` (identificadas y no concluyentes por el servicio de visión dormido; dos validadas por el experto), y desde la app en Expo Go, con respuesta del modelo.*
 - [x] Revisión de llamadas: solo se usan endpoints definidos en el contrato. *Revisado el 28 oct: las 13 rutas que usa `src/services/api/` están en el contrato y no hay otros `fetch`.*
 
 ### Criterio de cierre de H2
 
-- [ ] La app funciona de extremo a extremo con el backend real, incluido el caso sin red.
+- [ ] La app funciona de extremo a extremo con el backend real, incluido el caso sin red. *En línea: verificado en Expo Go. Falta verificar en el teléfono el caso sin red con la API (modo avión y reenvío sin duplicados).*
 
 ---
 
 ## Demo del 29 oct (lo que debe mostrar la app)
 
-- [ ] Captura o selección de una foto en un teléfono Android.
-- [ ] Metadatos completados y envío al backend real.
-- [ ] Identificación propuesta por el modelo, con especie, confianza y estado.
-- [ ] Caso no concluyente y su manejo en pantalla.
-- [ ] Un experto registra su decisión desde la app y el detalle del usuario se actualiza.
+- [x] Captura o selección de una foto en un teléfono Android.
+- [x] Metadatos completados y envío al backend real.
+- [x] Identificación propuesta por el modelo, con especie, confianza y estado. *El servicio de visión se duerme: despertarlo antes de la demo.*
+- [x] Caso no concluyente y su manejo en pantalla.
+- [x] Un experto registra su decisión desde la app y el detalle del usuario se actualiza. *Verificado en Expo Go que el experto corrige; el detalle del usuario se consulta de nuevo al abrirlo.*
 
 ---
 

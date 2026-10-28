@@ -1,10 +1,10 @@
 # Estado actual de la app (28 oct 2026)
 
-Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale de `develop`; aún no se ha fusionado). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); los pasos de la integración y lo que falta, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
+Resumen de cómo está IdentiMar al cerrar la rama **`feature/h2-integracion`** (sale de `develop`; se fusiona con el PR de H2). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); los pasos de la integración, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
 
 - **Datos:** la app funciona con dos modos, que se eligen con `EXPO_PUBLIC_USE_API`:
   - `false` (por defecto): datos simulados (mock), como hasta H1.
-  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. **Falta:** recorrer en el teléfono lo que solo se probó desde el computador y registrar las pruebas (paso 8).
+  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. Verificado en Expo Go el flujo en línea completo; **falta** verificar en el teléfono el caso sin red con la API.
 - **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. La app se revisó en Expo Go (Android) con SDK 58 y se ve bien.
 - **Verificado en:** Expo Go en Android. Falta probar en iOS.
 - **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
@@ -18,19 +18,19 @@ Resumen de cómo está IdentiMar en la rama **`feature/h2-integracion`** (sale d
 | Registro, inicio de sesión, perfil, cerrar sesión           | **Verificado en Expo Go (Android)**                                                      |
 | La sesión sigue abierta al cerrar y reabrir la app           | **Verificado en Expo Go (Android)**                                                      |
 | Renovación del token ante un 401; si falla, vuelve a entrar  | Probado contra el backend desde el computador; no se ha forzado en el teléfono           |
-| Catálogos (especies, familias, ambientes, condiciones, estados) | Probado contra el backend desde el computador; falta recorrerlo en el teléfono       |
-| Enviar observación, Resultado, Registros, filtro, detalle   | Probado contra el backend desde el computador (2 observaciones reales); falta en el teléfono |
-| Aviso "Esto está tardando un poco" (a los 10 s)             | En código; se verá al enviar, porque el envío tarda ≈30 s                               |
-| Cola "Por validar"                                          | Probado desde el computador con `e1.experto`; las validadas salen de la cola             |
-| Validación experta (confirmar, corregir, rechazar)          | Probado desde el computador: corregir y rechazar reales, y los errores 400, 403, 404 y 409. Falta en el teléfono y confirmar una predicción |
-| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node; falta en el teléfono |
+| Catálogos (especies, familias, ambientes, condiciones, estados) | **Verificado en Expo Go (Android)**                                                  |
+| Enviar observación, Resultado, Registros (con fotos), filtro, detalle | **Verificado en Expo Go (Android)**, con respuesta del modelo                  |
+| Aviso "Esto está tardando un poco" (a los 10 s)             | En código; aparece si el envío o una carga pasa de 10 s                                 |
+| Cola "Por validar"                                          | **Verificado en Expo Go (Android)**: la observación no concluyente aparece y sale al validarla |
+| Validación experta (confirmar, corregir, rechazar)          | **Verificado en Expo Go** corregir. Desde el computador: rechazar y los errores 400, 403, 404 y 409. Falta confirmar una predicción |
+| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node; **falta en el teléfono** |
 | Rechazo del experto                                          | Se muestra "No identificable" y la nota "Un experto revisó esta foto, pero no pudo identificar la especie" |
 
 **Cuentas de prueba en el backend** (las contraseñas no van en el repo; pedirlas a quien las creó):
 
 | Correo                  | Rol actual | Para                                                            |
 | ----------------------- | ---------- | --------------------------------------------------------------- |
-| `e1.usuario@ejemplo.co` | usuario    | Probar el flujo del observador. Tiene 4 observaciones de prueba (una de ellas espera en "Por validar") |
+| `e1.usuario@ejemplo.co` | usuario    | Probar el flujo del observador. Tiene varias observaciones de prueba |
 | `e1.experto@ejemplo.co` | experto    | Probar "Por validar" y la validación                            |
 
 **Cómo se comporta con el backend real:**
@@ -105,7 +105,9 @@ Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiar
 
 Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, se cambia a **Experto** en Perfil y se valida desde el detalle. Los datos simulados viven en memoria: al recargar la app se pierden las observaciones nuevas y la sesión (con la API, la sesión sí se conserva).
 
-**Probar la capa API desde el computador** (sin teléfono): los servicios `src/services/api/*` se pueden ejecutar con `npx tsx` contra el backend. `expo-secure-store` no carga en Node, así que hay que reemplazarlo por uno en memoria con un `--require` que redirija el módulo. Así se probó todo lo marcado "desde el computador".
+**Probar la capa API desde el computador** (sin teléfono): los servicios `src/services/api/*` se pueden ejecutar con `npx tsx` contra el backend. `expo-secure-store` y `expo-file-system` no cargan en Node, así que hay que reemplazarlos por versiones en memoria (con `--require` para `require` y con un cargador ESM para los `import()` dinámicos). Así se probó todo lo marcado "desde el computador".
+
+**Ver el flujo en Metro:** solo en desarrollo (`__DEV__`), el cliente HTTP escribe una línea por petición, por ejemplo `[IdentiMar] POST /observaciones → 201`, o con el código y los campos si falla. Si `fetch` falla antes de salir del teléfono, escribe `[IdentiMar] fetch falló: …`. No escribe valores, tokens ni coordenadas, y en un build de producción (APK de release) no se ejecuta. Con `j` en la terminal de Metro se abren las herramientas de React Native.
 
 ---
 
@@ -136,10 +138,16 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 **H2** (detalle en [`plan_integracion.md`](plan_integracion.md))
 
-- **Paso 8, cierre:** marcar el DoD con lo verificado en el teléfono y registrar las pruebas (el esqueleto ya se quitó y los endpoints ya se revisaron).
-- **Recorrer en el teléfono con la API:** envío, Resultado, Registros, detalle, Especies, ficha, "Por validar", validar (confirmar, corregir, rechazar) y la cola en modo avión. Hasta ahora se probaron desde el computador.
-- **Recorrer en el teléfono con el mock:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez en Registros tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
+- **Sin red con la API, en el teléfono:** modo avión al enviar → "Pendiente de envío" → se envía una sola vez al volver la señal.
+- **Con el mock, en el teléfono:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
+- **Validación:** confirmar una predicción (necesita una `pendiente_experto` con predicción) y rechazar desde el teléfono.
 - Pruebas que no se pueden forzar con el mock y ahora sí con la API: 401 del inicio de sesión (contraseña equivocada), 413 (foto muy pesada), renovación del token (esperar 1 hora o alterar el token) y el 409 real de la validación.
+- Registrar las pruebas funcionales en `docs/pruebas/`.
+
+**Siguiente rama (propuesta)**
+
+- **Ver la foto en grande:** abrir la foto del detalle (observador y experto) a pantalla completa, con zoom para revisarla a detalle; sobre todo para el experto al validar. Opcional: descargarla al teléfono.
+- **APK:** definir cómo se compila e instala (EAS Build, perfil de vista previa o de producción) y el ícono de la app (otro compañero trabaja en el logo).
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
 
