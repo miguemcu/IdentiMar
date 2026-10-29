@@ -1,0 +1,598 @@
+import type {
+  CatalogoEstadoItem,
+  CatalogoItem,
+  Especie,
+  Familia,
+  ObservacionDetalle,
+  UsuarioPublico,
+} from "../../types";
+
+// Familias y especies del backend desplegado (mismos UUID, códigos,
+// descripciones e imágenes de referencia). El catálogo tiene solo las cuatro
+// especies que reconoce el modelo.
+export const MOCK_FAMILIAS: Familia[] = [
+  {
+    id: "04049a2d-60ca-4be5-b162-da3a31f01a07",
+    nombre_cientifico: "Urotrygonidae",
+    descripcion: "Rayas redondas",
+  },
+  {
+    id: "de66e469-cbf0-4da6-9e6d-dc7e0bc3b593",
+    nombre_cientifico: "Dasyatidae",
+    descripcion: "Rayas látigo",
+  },
+  {
+    id: "2d90a4cd-cd2f-462d-856d-b924e181b438",
+    nombre_cientifico: "Myliobatidae",
+    descripcion: "Rayas águila",
+  },
+  {
+    id: "4f168c54-d337-4007-9599-70c76099bc7c",
+    nombre_cientifico: "Potamotrygonidae",
+    descripcion: "Rayas de agua dulce sudamericanas",
+  },
+  {
+    id: "8551748b-9ade-478c-a96a-26a1950805ad",
+    nombre_cientifico: "Styracuridae",
+    descripcion: "Rayas chupare",
+  },
+  {
+    id: "4da52b46-c518-4572-b9f4-6458565f7143",
+    nombre_cientifico: "Narcinidae",
+    descripcion: "Rayas eléctricas",
+  },
+  {
+    id: "7ebeadd0-4658-4149-af6d-54aaec86e008",
+    nombre_cientifico: "Rhinopteridae",
+    descripcion: "Rayas gavilán",
+  },
+];
+
+// El orden importa: las observaciones de ejemplo usan las especies por posición.
+export const MOCK_ESPECIES: Especie[] = [
+  {
+    id: "43dd55aa-2b57-4795-836d-143effa5326d",
+    codigo: "Aetobatus_narinari",
+    nombre_cientifico: "Aetobatus narinari",
+    nombre_comun: "Raya gavilán",
+    familia: MOCK_FAMILIAS[2],
+    grupo: "raya",
+    descripcion:
+      "Raya marina de gran tamaño y forma de cometa o rombo alargado. Es inconfundible por su coloración dorsal azul oscuro o negro cubierta completamente por un hermoso patrón de puntos y ocelos blancos, además de un vientre totalmente blanco.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/aetobatus_narinari.jpg",
+  },
+  {
+    id: "72cea799-7694-4c8e-848e-bf7e5b7c7652",
+    codigo: "Hypanus_guttatus",
+    nombre_cientifico: "Hypanus guttatus",
+    nombre_comun: "Raya látigo",
+    familia: MOCK_FAMILIAS[1],
+    grupo: "raya",
+    descripcion:
+      "Raya marina de cuerpo en forma de rombo pronunciado con bordes rectos. Su coloración dorsal suele ser marrón oliva o grisácea, sin patrones de manchas complejos, y posee una cola larga en forma de látigo con una potente espina venenosa.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/hypanus_guttatus.jpg",
+  },
+  {
+    id: "fce1ae0a-f818-497c-8c1a-e2a52b6fba0a",
+    codigo: "Potamotrygon_magdalenae",
+    nombre_cientifico: "Potamotrygon magdalenae",
+    nombre_comun: "Raya del Magdalena",
+    familia: MOCK_FAMILIAS[3],
+    grupo: "raya",
+    descripcion:
+      "Especie endémica de agua dulce, de tamaño pequeño a mediano. Presenta un disco casi circular de color marrón claro u oscuro, cubierto por un retículo o patrón de manchas amarillentas/crema muy característico.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/potamotrygon_magdalenae.jpeg",
+  },
+  {
+    id: "5e57f0af-d286-4696-b4be-f482f5a2b50f",
+    codigo: "Styracura_schmardae",
+    nombre_cientifico: "Styracura schmardae",
+    nombre_comun: "Raya chupare",
+    familia: MOCK_FAMILIAS[4],
+    grupo: "raya",
+    descripcion:
+      "Raya marina de gran tamaño con un disco redondeado y una textura marcadamente rugosa en el lomo debido a la presencia de tubérculos y espinas dérmicas. Su color va del gris oscuro al café uniforme.",
+    url_imagen_referencia:
+      "https://zqnzoyqypbeckaafmhxd.supabase.co/storage/v1/object/public/catalogo-especies/styracura_schmardae.jpg",
+  },
+];
+
+export const MOCK_USUARIOS: Record<
+  "usuario" | "experto" | "administrador",
+  UsuarioPublico
+> = {
+  usuario: {
+    id: "u1a10001-0000-4000-a000-000000000001",
+    nombre_completo: "Ana María Torres",
+    correo: "ana.torres@ejemplo.co",
+    rol: "usuario",
+    activo: true,
+    creado_en: "2026-09-01T10:00:00-05:00",
+  },
+  experto: {
+    id: "u1a10002-0000-4000-a000-000000000002",
+    nombre_completo: "Dr. Carlos Mendoza",
+    correo: "carlos.mendoza@invemar.org.co",
+    rol: "experto",
+    activo: true,
+    creado_en: "2026-08-15T08:30:00-05:00",
+  },
+  administrador: {
+    id: "u1a10003-0000-4000-a000-000000000003",
+    nombre_completo: "Administrador IdentiMar",
+    correo: "admin@identimar.udea.edu.co",
+    rol: "administrador",
+    activo: true,
+    creado_en: "2026-08-01T00:00:00-05:00",
+  },
+};
+
+// Códigos confirmados con el backend desplegado (el contrato no los enumera).
+export const MOCK_TIPOS_AMBIENTE: CatalogoItem[] = [
+  {
+    id: "c1a10001-0000-4000-a000-000000000001",
+    codigo: "marino",
+    nombre_visible: "Mar abierto",
+    descripcion: "Aguas saladas lejos de la orilla",
+  },
+  {
+    id: "c1a10002-0000-4000-a000-000000000002",
+    codigo: "estuarino",
+    nombre_visible: "Estuario o desembocadura",
+    descripcion: "Donde el río se mezcla con el mar",
+  },
+  {
+    id: "c1a10003-0000-4000-a000-000000000003",
+    codigo: "manglar",
+    nombre_visible: "Manglar",
+    descripcion: "Canales y raíces de manglar",
+  },
+  {
+    id: "c1a10004-0000-4000-a000-000000000004",
+    codigo: "playa",
+    nombre_visible: "Playa",
+    descripcion: "Orilla de arena o bajial",
+  },
+  {
+    id: "c1a10005-0000-4000-a000-000000000005",
+    codigo: "arrecife",
+    nombre_visible: "Arrecife",
+    descripcion: "Fondos de coral o roca",
+  },
+  {
+    id: "c1a10006-0000-4000-a000-000000000006",
+    codigo: "dulceacuicola",
+    nombre_visible: "Río o agua dulce",
+    descripcion: "Ríos, ciénagas y caños de agua dulce",
+  },
+];
+
+export const MOCK_CONDICIONES_ORGANISMO: CatalogoItem[] = [
+  {
+    id: "9025b3d6-5cfb-4572-ab5c-d798e41c5361",
+    codigo: "vivo",
+    nombre_visible: "Vivo",
+    descripcion: "Se mueve o respira",
+  },
+  {
+    id: "8c90046e-b6bf-42be-9936-c8c91ebd67e0",
+    codigo: "muerto_reciente",
+    nombre_visible: "Muerto reciente",
+    descripcion: "Murió hace poco, sin mal olor ni daño",
+  },
+  {
+    id: "6e0ae38c-41e0-43d6-bd11-2e6b7afa5579",
+    codigo: "capturado",
+    nombre_visible: "Capturado",
+    descripcion: "Atrapado en red, anzuelo o trampa",
+  },
+  {
+    id: "ecc6b078-3899-41ca-ac33-a1fa187d93cb",
+    codigo: "liberado",
+    nombre_visible: "Liberado",
+    descripcion: "Se capturó y se devolvió al agua",
+  },
+  {
+    id: "3107882d-9d80-48fa-a5e3-6a0d9daa022a",
+    codigo: "descompuesto",
+    nombre_visible: "Descompuesto",
+    descripcion: "Con mal olor o partes deshechas",
+  },
+];
+
+export const MOCK_ESTADOS: CatalogoEstadoItem[] = [
+  {
+    id: "c3a10001-0000-4000-a000-000000000001",
+    codigo: "recibido",
+    nombre_visible: "Recibido",
+    descripcion: "Observación registrada en espera de procesamiento",
+    es_terminal: false,
+    orden: 1,
+  },
+  {
+    id: "c3a10002-0000-4000-a000-000000000002",
+    codigo: "procesando",
+    nombre_visible: "En procesamiento",
+    descripcion: "Inferencia del modelo en ejecución",
+    es_terminal: false,
+    orden: 2,
+  },
+  {
+    id: "c3a10003-0000-4000-a000-000000000003",
+    codigo: "identificado",
+    nombre_visible: "Identificado",
+    descripcion: "Identificación automática completada con alta confianza",
+    es_terminal: false,
+    orden: 3,
+  },
+  {
+    id: "c3a10004-0000-4000-a000-000000000004",
+    codigo: "no_concluyente",
+    nombre_visible: "No concluyente",
+    descripcion: "Confianza insuficiente para asignación automática",
+    es_terminal: false,
+    orden: 3,
+  },
+  {
+    id: "c3a10005-0000-4000-a000-000000000005",
+    codigo: "pendiente_experto",
+    nombre_visible: "Pendiente de experto",
+    descripcion: "En cola para revisión por biólogo o especialista",
+    es_terminal: false,
+    orden: 3,
+  },
+  {
+    id: "c3a10006-0000-4000-a000-000000000006",
+    codigo: "validado",
+    nombre_visible: "Validado",
+    descripcion: "Confirmado por experto humano",
+    es_terminal: true,
+    orden: 4,
+  },
+  {
+    id: "c3a10007-0000-4000-a000-000000000007",
+    codigo: "corregido",
+    nombre_visible: "Corregido",
+    descripcion: "Especie corregida por experto humano",
+    es_terminal: true,
+    orden: 4,
+  },
+];
+
+/** Las observaciones de ejemplo muestran la foto real de la raya de su especie. */
+function imagenDeEspecie(indice: number): string | undefined {
+  return MOCK_ESPECIES[indice].url_imagen_referencia ?? undefined;
+}
+
+export const MOCK_OBSERVACIONES_INICIALES: ObservacionDetalle[] = [
+  {
+    id: "o1a10001-0000-4000-a000-000000000001",
+    estado: "validado",
+    creado_en: "2026-09-20T14:35:00-05:00",
+    fecha_hora_evento: "2026-09-20T14:30:00-05:00",
+    imagen_url: imagenDeEspecie(0),
+    especie_aceptada: MOCK_ESPECIES[0],
+    confianza: 0.94,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.7476,
+    longitud: -76.6414,
+    precision_gps_metros: 4.5,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[0],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[0],
+    observaciones_usuario:
+      "Avistada cerca de la desembocadura en aguas someras.",
+    prediccion_original: {
+      id: "p1a10001-0000-4000-a000-000000000001",
+      especie_propuesta: MOCK_ESPECIES[0],
+      confianza: 0.94,
+      version_modelo: "1.0.0",
+      creado_en: "2026-09-20T14:35:05-05:00",
+    },
+    validacion_experta: {
+      id: "v1a10001-0000-4000-a000-000000000001",
+      decision: "confirmada",
+      especie_final: MOCK_ESPECIES[0],
+      comentario: "Coinciden las manchas, espina y forma circular del disco.",
+      experto: MOCK_USUARIOS.experto,
+      creado_en: "2026-09-20T16:10:00-05:00",
+    },
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial desde app móvil",
+        creado_en: "2026-09-20T14:35:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inicio de inferencia asíncrona",
+        creado_en: "2026-09-20T14:35:02-05:00",
+      },
+      {
+        estado_anterior: "procesando",
+        estado_nuevo: "identificado",
+        actor: null,
+        motivo: "Inferencia exitosa con confianza >= 0.85",
+        creado_en: "2026-09-20T14:35:05-05:00",
+      },
+      {
+        estado_anterior: "identificado",
+        estado_nuevo: "validado",
+        actor: "Dr. Carlos Mendoza",
+        motivo: "Confirmación experta de la especie",
+        creado_en: "2026-09-20T16:10:00-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10002-0000-4000-a000-000000000002",
+    estado: "corregido",
+    creado_en: "2026-09-22T09:12:00-05:00",
+    fecha_hora_evento: "2026-09-22T08:50:00-05:00",
+    imagen_url: imagenDeEspecie(1),
+    especie_aceptada: MOCK_ESPECIES[1],
+    confianza: 0.62,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.0934,
+    longitud: -76.7321,
+    precision_gps_metros: 6.0,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[1],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[1],
+    observaciones_usuario: "Encontrada en orilla fangosa.",
+    prediccion_original: {
+      id: "p1a10002-0000-4000-a000-000000000002",
+      especie_propuesta: MOCK_ESPECIES[0],
+      confianza: 0.62,
+      version_modelo: "1.0.0",
+      creado_en: "2026-09-22T09:12:04-05:00",
+    },
+    validacion_experta: {
+      id: "v1a10002-0000-4000-a000-000000000002",
+      decision: "corregida",
+      especie_final: MOCK_ESPECIES[1],
+      comentario:
+        "Es Hypanus americanus, se aprecia el disco romboide y cola látigo.",
+      experto: MOCK_USUARIOS.experto,
+      creado_en: "2026-09-22T11:00:00-05:00",
+    },
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-09-22T09:12:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inferencia en curso",
+        creado_en: "2026-09-22T09:12:02-05:00",
+      },
+      {
+        estado_anterior: "procesando",
+        estado_nuevo: "pendiente_experto",
+        actor: null,
+        motivo: "Confianza moderada requiere revisión",
+        creado_en: "2026-09-22T09:12:04-05:00",
+      },
+      {
+        estado_anterior: "pendiente_experto",
+        estado_nuevo: "corregido",
+        actor: "Dr. Carlos Mendoza",
+        motivo: "Corrección taxonómica por experto",
+        creado_en: "2026-09-22T11:00:00-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10003-0000-4000-a000-000000000003",
+    estado: "pendiente_experto",
+    creado_en: "2026-10-01T11:00:00-05:00",
+    fecha_hora_evento: "2026-10-01T10:40:00-05:00",
+    imagen_url: imagenDeEspecie(1),
+    especie_aceptada: null,
+    confianza: 0.58,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.3512,
+    longitud: -76.8924,
+    precision_gps_metros: 8.0,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[2],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[0],
+    observaciones_usuario:
+      "Foto tomada desde la lancha con reflejos en el agua.",
+    prediccion_original: {
+      id: "p1a10003-0000-4000-a000-000000000003",
+      especie_propuesta: MOCK_ESPECIES[2],
+      confianza: 0.58,
+      version_modelo: "1.0.0",
+      creado_en: "2026-10-01T11:00:04-05:00",
+    },
+    validacion_experta: null,
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-10-01T11:00:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inferencia en curso",
+        creado_en: "2026-10-01T11:00:02-05:00",
+      },
+      {
+        estado_anterior: "procesando",
+        estado_nuevo: "pendiente_experto",
+        actor: null,
+        motivo: "Baja certeza del modelo, derivado a validación",
+        creado_en: "2026-10-01T11:00:04-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10004-0000-4000-a000-000000000004",
+    estado: "no_concluyente",
+    creado_en: "2026-10-02T16:20:00-05:00",
+    fecha_hora_evento: "2026-10-02T16:00:00-05:00",
+    imagen_url: imagenDeEspecie(3),
+    especie_aceptada: null,
+    confianza: 0.31,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.5123,
+    longitud: -76.7112,
+    precision_gps_metros: 12.0,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[3],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[2],
+    observaciones_usuario: "Agua muy turbia, solo se distingue una silueta.",
+    prediccion_original: {
+      id: "p1a10004-0000-4000-a000-000000000004",
+      especie_propuesta: MOCK_ESPECIES[3],
+      confianza: 0.31,
+      version_modelo: "1.0.0",
+      creado_en: "2026-10-02T16:20:04-05:00",
+    },
+    validacion_experta: null,
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-10-02T16:20:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inferencia en curso",
+        creado_en: "2026-10-02T16:20:02-05:00",
+      },
+      {
+        estado_anterior: "procesando",
+        estado_nuevo: "no_concluyente",
+        actor: null,
+        motivo: "Calidad de imagen insuficiente para identificación",
+        creado_en: "2026-10-02T16:20:04-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10005-0000-4000-a000-000000000005",
+    estado: "identificado",
+    creado_en: "2026-10-05T08:15:00-05:00",
+    fecha_hora_evento: "2026-10-05T08:00:00-05:00",
+    imagen_url: imagenDeEspecie(0),
+    especie_aceptada: MOCK_ESPECIES[2],
+    confianza: 0.91,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.6142,
+    longitud: -76.6719,
+    precision_gps_metros: 3.2,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[0],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[0],
+    observaciones_usuario: "Ejemplar juvenil en zona somera.",
+    prediccion_original: {
+      id: "p1a10005-0000-4000-a000-000000000005",
+      especie_propuesta: MOCK_ESPECIES[2],
+      confianza: 0.91,
+      version_modelo: "1.0.0",
+      creado_en: "2026-10-05T08:15:04-05:00",
+    },
+    validacion_experta: null,
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-10-05T08:15:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inferencia en curso",
+        creado_en: "2026-10-05T08:15:02-05:00",
+      },
+      {
+        estado_anterior: "procesando",
+        estado_nuevo: "identificado",
+        actor: null,
+        motivo: "Inferencia exitosa con confianza >= 0.85",
+        creado_en: "2026-10-05T08:15:04-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10006-0000-4000-a000-000000000006",
+    estado: "procesando",
+    creado_en: "2026-10-07T21:45:00-05:00",
+    fecha_hora_evento: "2026-10-07T21:30:00-05:00",
+    imagen_url: imagenDeEspecie(1),
+    especie_aceptada: null,
+    confianza: null,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.7121,
+    longitud: -76.6215,
+    precision_gps_metros: 5.0,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[0],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[0],
+    observaciones_usuario: "Esperando procesamiento de visión artificial.",
+    prediccion_original: null,
+    validacion_experta: null,
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-10-07T21:45:00-05:00",
+      },
+      {
+        estado_anterior: "recibido",
+        estado_nuevo: "procesando",
+        actor: null,
+        motivo: "Inferencia en curso",
+        creado_en: "2026-10-07T21:45:02-05:00",
+      },
+    ],
+  },
+  {
+    id: "o1a10007-0000-4000-a000-000000000007",
+    estado: "recibido",
+    creado_en: "2026-10-07T22:00:00-05:00",
+    fecha_hora_evento: "2026-10-07T21:55:00-05:00",
+    imagen_url: imagenDeEspecie(1),
+    especie_aceptada: null,
+    confianza: null,
+    usuario: MOCK_USUARIOS.usuario,
+    latitud: 8.7301,
+    longitud: -76.6342,
+    precision_gps_metros: 4.0,
+    tipo_ambiente: MOCK_TIPOS_AMBIENTE[1],
+    condicion_organismo: MOCK_CONDICIONES_ORGANISMO[0],
+    observaciones_usuario: "Recién subida a la plataforma.",
+    prediccion_original: null,
+    validacion_experta: null,
+    historial_estados: [
+      {
+        estado_anterior: null,
+        estado_nuevo: "recibido",
+        actor: "Ana María Torres",
+        motivo: "Registro inicial",
+        creado_en: "2026-10-07T22:00:00-05:00",
+      },
+    ],
+  },
+];

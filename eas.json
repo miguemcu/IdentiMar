@@ -1,0 +1,14 @@
+{
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_API": "true",
+        "EXPO_PUBLIC_API_URL": "https://identimar-backend.onrender.com/api/v1"
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+import React from 'react';
+import { View, Pressable, type ViewProps, type PressableProps } from 'react-native';
+
+export interface CardProps extends ViewProps {
+  children: React.ReactNode;
+  className?: string;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+}
+
+export function Card({
+  children,
+  className = '',
+  onPress,
+  accessibilityLabel,
+  ...rest
+}: CardProps) {
+  // El fondo debe ser opaco (bg-white, bg-amber-50…): en Android la sombra
+  // se ve a través de un fondo translúcido (bg-ocre/15) y deja un marco oscuro.
+  const baseStyles =
+    'bg-card rounded-3xl p-4 border border-slate-light/20 shadow-sm';
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        className={`${baseStyles} active:opacity-90 active:scale-[0.99] ${className}`}
+        {...(rest as PressableProps)}
+      >
+        {children}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View
+      accessibilityLabel={accessibilityLabel}
+      className={`${baseStyles} ${className}`}
+      {...rest}
+    >
+      {children}
+    </View>
+  );
+}

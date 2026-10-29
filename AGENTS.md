@@ -15,10 +15,15 @@ App móvil de registro e identificación de batoideos en el Urabá antioqueño
 ## Estructura
 
 - src/app/ rutas · src/components/ UI reutilizable · src/constants/ constantes
-- src/hooks/ hooks · src/types/ tipos y datos simulados con la forma del contrato
-- src/services/ solo cuando se integre el backend
-- docs/ contrato y mockup (solo lectura, fuera de la compilación)
-- No crees archivos en docs/ ni toques .agents/ salvo que se pida.
+- src/hooks/ hooks · src/contexts/ sesión y cola de envío
+- src/types/ tipos con la forma del contrato
+- src/services/ única capa que usan las pantallas: interfaces por dominio,
+  mock/ (datos simulados), api/ (backend real) y local/ (borrador, fotos,
+  cola de envío, caché y red)
+- scripts/ pruebas de los servicios desde el computador (ver docs/pruebas/)
+- docs/ contrato, mockup, DoD, estado, discrepancias y pruebas (fuera de la
+  compilación). El estado vigente está en docs/estado_actual.md.
+- No crees archivos en docs/ salvo que se pida.
 
 ## Diseño (NO inventes otro)
 
@@ -46,25 +51,25 @@ superficie #F4F6F8, texto pizarra #1E293B, más los de estado
 
 ## Referencia visual
 
-El mockup está en docs/mockup/ (solo App.tsx e index.css, hecho en React +
+El mockup está en docs/mockup_figma/ (solo App.tsx e index.css, hecho en React +
 Vite + Tailwind v4). Es únicamente referencia visual: no copies su código,
 reescribe cada pantalla en React Native y traduce sus clases a lo soportado.
 
 ## Contrato con el backend
 
-El contrato OpenAPI está en docs/contrato_integracion.yaml.
-Todavía NO se integra: no escribas llamadas de red. Usa datos simulados con la
-misma forma que el contrato (campos en español, UUID, estados del contrato).
-Si una pantalla necesita un dato que el contrato no tiene, o el contrato exige
-uno que la pantalla no recoge, avísalo en vez de inventarlo. Las diferencias
-conocidas están en docs/discrepancias.md.
+El contrato OpenAPI está en docs/contrato_integracion.yaml. La API la hace el
+Equipo 3 y el modelo de identificación el Equipo 2. La app ya está integrada:
+EXPO_PUBLIC_USE_API elige entre datos simulados (false) y la API real (true).
 
-## Skills (.agents/skills)
-
-- ui-ux-pro-max: úsala para revisar accesibilidad, áreas táctiles, contraste y
-  safe areas con `--stack react-native` y los dominios `ux` y `web`.
-  NO uses `--design-system` ni `--persist`. En Windows usa `python`, no `python3`.
-- ponytail: aplica siempre; lo mínimo que funcione, reutiliza antes de crear.
+- Las pantallas y el mock usan siempre la forma del contrato (campos en
+  español, UUID, estados del contrato). Lo que el backend envía o pide distinto
+  se adapta solo dentro de src/services/api/ y se anota en docs/discrepancias.md.
+- Las llamadas de red van solo en src/services/api/, por el cliente de http.ts,
+  y solo a endpoints del contrato.
+- Los mensajes de error para el usuario pasan por src/services/errores.ts.
+- Si una pantalla necesita un dato que el contrato no tiene, o el contrato exige
+  uno que la pantalla no recoge, avísalo en vez de inventarlo.
+- Nunca subas contraseñas ni tokens al repo (van en .env, que no se versiona).
 
 ## Principios
 
@@ -72,3 +77,14 @@ conocidas están en docs/discrepancias.md.
 - Botones táctiles de al menos 44x44 pt y buen contraste (uso en exteriores).
 - No agregues dependencias sin justificarlas.
 - Antes de dar una tarea por terminada ejecuta `npx tsc --noEmit`.
+
+## Reglas de trabajo
+
+- Una tarea por commit (convención de nombres tomada de
+  https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13), confirmaciones pequeñas.
+- No editar archivos compartidos (rutas raíz, tipos, tema, services) fuera de
+  tu tarea; si hace falta un cambio, descríbelo en el PR.
+- Antes de escribir código: proponer un plan y esperar confirmación.
+- Antes de dar algo por terminado: `npx tsc --noEmit` y `npx expo lint` sin
+  errores, y `npx tsx scripts/probar-servicios.ts` si tocaste src/services/.
+- No agregar dependencias sin avisar.
