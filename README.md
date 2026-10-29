@@ -37,21 +37,7 @@ La aplicación móvil consume servicios proporcionados por la infraestructura de
 
 ## 🚀 Cómo ejecutarla
 
-```bash
-npm install
-cp .env.example .env
-npx expo start -c
-```
-
-Luego se abre con **Expo Go** en el teléfono. Hoy la app funciona con datos simulados; estas variables de `.env` ayudan a probarla:
-
-| Variable                     | Para qué                                                              |
-| ---------------------------- | --------------------------------------------------------------------- |
-| `EXPO_PUBLIC_USE_API`        | `true` usa la API real (todavía no integrada)                         |
-| `EXPO_PUBLIC_MOCK_ERROR`     | Fuerza un error al enviar: `400`, `401`, `413` o `red`                |
-| `EXPO_PUBLIC_MOCK_RESULTADO` | Fuerza el resultado: `identificado`, `pendiente_experto` o `no_concluyente` |
-
-Antes de subir cambios: `npx tsc --noEmit` y `npx expo lint`.
+Descarga e instala el APK de la aplicación desde [Expo](https://expo.dev/accounts/m.avendano/projects/IdentiMar/builds/b7343aaa-d91f-464f-a8a3-76201ba5215c).
 
 ## 🎨 Diseño
 
@@ -75,7 +61,7 @@ Este proyecto corresponde a **Proyecto Integrador I — 2026-2** del programa de
 
 ## 🚧 Estado del proyecto
 
-En desarrollo, rumbo al MVP del 29 de octubre de 2026. El prototipo con datos simulados está casi completo; falta el trabajo sin internet (offline) y la integración con la API real. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
+La aplicación está integrada con la API del equipo 2 y el modelo de identificación del equipo 3. Se encuentra lista para la generación y distribución del APK del MVP del 29 de octubre de 2026. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
 
 ## 📄 Documentación
 
