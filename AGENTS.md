@@ -18,7 +18,7 @@ App móvil de registro e identificación de batoideos en el Urabá antioqueño
 - src/hooks/ hooks · src/types/ tipos y datos simulados con la forma del contrato
 - src/services/ solo cuando se integre el backend
 - docs/ contrato y mockup (solo lectura, fuera de la compilación)
-- No crees archivos en docs/ ni toques .agents/ salvo que se pida.
+- No crees archivos en docs/ salvo que se pida.
 
 ## Diseño (NO inventes otro)
 
@@ -58,12 +58,6 @@ misma forma que el contrato (campos en español, UUID, estados del contrato).
 Si una pantalla necesita un dato que el contrato no tiene, o el contrato exige
 uno que la pantalla no recoge, avísalo en vez de inventarlo. Las diferencias
 conocidas están en docs/discrepancias.md.
-
-## Skills (.agents/skills)
-
-- ui-ux-pro-max: úsala para revisar accesibilidad, áreas táctiles, contraste y
-  safe areas con `--stack react-native` y los dominios `ux` y `web`.
-  NO uses `--design-system` ni `--persist`. En Windows usa `python`, no `python3`.
 
 ## Principios
 
