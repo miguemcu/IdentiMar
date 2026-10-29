@@ -1,7 +1,8 @@
 # Plan de integración con el backend (H2)
 
-- **Creado:** 27 oct 2026 · **Actualizado:** 28 oct 2026 (cierre de la rama)
-- **Rama:** `feature/h2-integracion` (sale de `develop`; un commit por paso)
+- **Creado:** 27 oct 2026 · **Actualizado:** 28 oct 2026 (cerrado)
+- **Estado:** cerrado. La rama `feature/h2-integracion` se fusionó en `develop` (#19). Este documento queda como registro; lo vigente está en [`estado_actual.md`](estado_actual.md).
+- **Rama:** `feature/h2-integracion` (salió de `develop`; un commit por paso)
 - **Meta:** integración completa hoy; pruebas desde el 28 oct.
 - **Backend:** `https://identimar-backend.onrender.com/api/v1` (desplegado por el Equipo 3)
 
@@ -18,19 +19,16 @@
 | 5    | Observaciones                         | Hecho; probado desde el computador (2 observaciones reales) | `70e69ff`                              |
 | 6    | Validación experta                    | Hecho; probado desde el computador con `e1.experto`      | `1319186`, `15fd7fe`, `5d5c668`           |
 | 7    | Cola de envío con la API real         | Hecho; probado en Node con un servicio falso             | `dbf4e8b`                                 |
-| 8    | Cierre                                | Hecho: flujo en línea verificado en Expo Go; falta el caso sin red en el teléfono | `aac9068` y correcciones de las pruebas en el teléfono (`88ed498`, `465e4ff`) |
+| 8    | Cierre                                | Hecho: flujo en línea y caso sin red verificados en el teléfono; pruebas en `docs/pruebas/` | `aac9068` y correcciones de las pruebas en el teléfono (`88ed498`, `465e4ff`) |
 
 "Probado desde el computador" significa que el servicio se ejecutó con `npx tsx` contra el backend desplegado; falta recorrerlo en el teléfono.
 
-## Para continuar (si retomas el trabajo)
+## Para retomar
 
-1. `git checkout feature/h2-integracion && npm install` (usa el `.npmrc` del repo).
+1. `git checkout develop && npm install` (usa el `.npmrc` del repo).
 2. En `.env`: `EXPO_PUBLIC_USE_API=true` y `EXPO_PUBLIC_API_URL=https://identimar-backend.onrender.com/api/v1`. Arranca con `npm run start:tunel` (ngrok) o `npx expo start -c` en la misma red.
 3. Cuentas: `e1.usuario@ejemplo.co` (usuario) y `e1.experto@ejemplo.co` (experto). Las contraseñas no están en el repo; pídelas a quien las creó.
-4. Lo siguiente, en orden:
-   - **Recorrer en el teléfono** lo de los pasos 4 a 7 (envío, Resultado, Registros, detalle, Especies, ficha, "Por validar", validar y la cola sin señal) y marcarlo en `Dod.md`. Hay una observación `no_concluyente` de `e1.usuario` esperando en "Por validar" para probar la validación desde la app.
-   - **Paso 8:** cerrar el DoD y registrar las pruebas funcionales en `docs/pruebas/`.
-5. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado).
+4. Antes de cada commit: `npx tsc --noEmit`, `npx expo lint` y `npx tsx scripts/probar-servicios.ts` (modo simulado). Para los casos del DoD, ver los scripts `probar-casos-*` en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md).
 
 **Reglas de trabajo:**
 
@@ -120,17 +118,18 @@ Detalle en [`discrepancias.md`](discrepancias.md), sección 6. En resumen:
   - Con `500`: se reintenta solo a los 15 y a los 30 s.
   - Con la API en modo avión: queda "Pendiente de envío" y se envía una sola vez al volver la señal.
 
-### 8. Cierre · en curso
+### 8. Cierre · hecho
 
 - ~~Quitar `src/services/api/no-integrada.ts`.~~ Hecho.
 - ~~Revisar que solo se llamen endpoints del contrato.~~ Hecho: las 13 rutas están en el contrato.
-- Recorrer en Expo Go lo que solo se probó desde el computador o en Node (ver "Falta en Expo Go" en los pasos 4 a 7).
-- Marcar H2 en `Dod.md` y actualizar `estado_actual.md` con lo verificado.
-- Registrar las pruebas en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.
+- ~~Recorrer en el teléfono lo que solo se probó desde el computador o en Node.~~ Hecho, salvo lo que sigue en "Por verificar en el teléfono" de `estado_actual.md`.
+- ~~Marcar H2 en `Dod.md` y actualizar `estado_actual.md`.~~ Hecho.
+- ~~Registrar las pruebas en `docs/pruebas/pruebas-funcionales-2026-10-28.md`.~~ Hecho.
 
 ## Pendiente del Equipo 3
 
 - ~~Asignar el rol experto a `e1.experto@ejemplo.co`.~~ Hecho el 28 oct.
+- **Urgente:** con una foto sin raya, `POST /observaciones` responde 500 pero crea la observación, que se queda en `recibido` (`discrepancias.md`, fila 45).
 - **Confirmar el estado tras un rechazo:** se acordó `no_concluyente`, pero el backend lo deja en `corregido` sin especie (la app sigue al backend).
 - **Devolver un `refresh_token` nuevo** en cada renovación, como promete el contrato: hoy la sesión vence a los 7 días del último inicio de sesión.
 - Confirmar la versión del contrato (`info.version: "3"` frente a "v1.0").

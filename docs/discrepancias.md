@@ -82,6 +82,7 @@ Probado el 2026-10-27 contra `https://identimar-backend.onrender.com/api/v1`. Co
 | 44  | Opcionales nulos al crear una observación | `observaciones_usuario` y `precision_gps_metros` aceptan `null` | Rechaza `null` ("Expected string, received null", "debe ser número"): sin notas o con ubicación escrita a mano, el envío daba 400 | Omite los campos nulos | resuelto en la app |
 | 31  | Cuentas de prueba        | Ejemplo `ana.torres@ejemplo.co`                              | Esa cuenta no existe                                                                   | Cuentas propias del Equipo 1; el E3 asignó el rol experto a `e1.experto@ejemplo.co` (28 oct) | resuelto en la app |
 | 32  | Respuesta de `/auth/refresh` | `LoginResponse` (nuevo par de tokens y usuario)          | Solo `{access_token, expires_in}`                                                      | Conserva el `refresh_token` anterior y el usuario de la sesión. Límite: la sesión dura como máximo 7 días desde el último inicio de sesión, aunque se use la app a diario | pendiente          |
+| 45  | Foto sin raya            | `201` y la observación pasa a `no_concluyente` o `pendiente_experto` | Desde el 28 oct (noche) responde 500 (`ERROR_INTERNO`), pero **crea la observación**, que se queda en `recibido`. El 27 y 28 oct la misma foto quedaba `no_concluyente`. Ver `pruebas/pruebas-funcionales-2026-10-28.md`, caso A12 | Muestra "Algo falló de nuestro lado". Cada nuevo intento crea otra observación, y la cola de envío reintenta tras un 500 (hasta 3 copias). Posible ajuste: tratar el 500 del envío como un tiempo agotado y revisar si ya existe antes de reenviar | pendiente (E3)     |
 
 ## Preguntas para el Equipo 3
 
@@ -96,6 +97,7 @@ Respondidas:
 
 Abiertas:
 
+- **Urgente (antes de la demo):** con una foto sin raya, `POST /observaciones` responde 500 pero crea la observación, que se queda en `recibido` (fila 45). Debería quedar `no_concluyente`, como antes.
 - **Pedido:** que `/auth/refresh` devuelva también un `refresh_token` nuevo en cada renovación, como ya promete el contrato con `LoginResponse` (fila 32). Así la sesión se mantiene abierta mientras se use la app, en vez de vencer a los 7 días del último inicio de sesión.
 
 - ¿`info.version: "3"` es la versión vigente? La descripción dice "v1.0".

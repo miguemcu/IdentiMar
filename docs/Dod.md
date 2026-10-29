@@ -8,7 +8,7 @@
 
 Lo que el contrato no define no se implementa. Las limitaciones se registran en `docs/discrepancias.md`. La API no se modifica en este MVP.
 
-**Avance al 27 oct:** H0, H1 y el modo sin conexión (parte 1) están implementados con datos simulados y probados en Expo Go (Android; falta iOS). H2 avanza en `feature/h2-integracion`: cada casilla indica dónde se verificó. El detalle está en [`estado_actual.md`](estado_actual.md) y los pasos que faltan, en [`plan_integracion.md`](plan_integracion.md).
+**Avance al 28 oct:** H0, H1, H2, el visor de fotos y la APK están en `develop`, probados en Android (Expo Go y APK; falta iOS). Cada casilla indica dónde se verificó. Las pruebas funcionales están registradas en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad están planeadas en [`pruebas/usabilidad.md`](pruebas/usabilidad.md) y aún no se han hecho. El detalle está en [`estado_actual.md`](estado_actual.md).
 
 **Cambios en 1.1:** la validación experta entra al alcance, usando solo `GET /observaciones/pendientes` y `POST /observaciones/{id}/validacion`. La app no define etiquetas ni umbrales de certeza: muestra lo que entregue el backend.
 
@@ -179,20 +179,20 @@ Se ejecutan con el checklist de H1 y H2. Cada caso se registra con: fecha, perso
 
 **Casos mínimos**
 
-- [ ] Registro de sesión y cierre de sesión con cada rol (`usuario`, `experto`, `administrador`).
-- [ ] Observación con todos los campos válidos: se crea y muestra en Registros.
-- [ ] Observación con latitud fuera de rango: se bloquea antes de enviar.
-- [ ] Imagen menor a 1280 px: se rechaza con mensaje claro.
-- [ ] Imagen de formato no permitido: se rechaza con mensaje claro.
-- [ ] Respuesta 401 durante el envío: se redirige a login sin perder el borrador.
-- [ ] Respuesta 413: se muestra el mensaje correspondiente.
-- [ ] Resultado `no_concluyente`: se muestra mensaje y opción de volver a fotografiar.
-- [ ] Observación validada por experto después del envío: el detalle muestra la decisión sin recargar la app manualmente.
-- [ ] Experto confirma, corrige (eligiendo especie) y rechaza observaciones pendientes; cada decisión deja el estado y la validación esperados.
-- [ ] Usuario sin rol experto no ve la cola ni los controles de validación.
-- [ ] Sin red: la observación queda en cola y se envía al recuperar la conexión, en orden.
+- [x] Registro de sesión y cierre de sesión con cada rol (`usuario`, `experto`, `administrador`). *Usuario y experto con la API real (teléfono y computador). Administrador solo con datos simulados: no hay cuenta de administrador en el backend.*
+- [x] Observación con todos los campos válidos: se crea y muestra en Registros. *Teléfono y computador (A06).*
+- [x] Observación con latitud fuera de rango: se bloquea antes de enviar. *El formulario la marca; si llegara, el backend responde 400 (F04, A07).*
+- [x] Imagen de menos de 32 px por lado o de más de 10 MB: se rechaza con mensaje claro. *Antes decía 1280 px (cambiado el 28 oct, fila 43). F05; el backend responde 413 por encima de 10 MB (A08).*
+- [x] Imagen de formato no permitido: se rechaza con mensaje claro. *F05 y A09.*
+- [x] Respuesta 401 durante el envío: se redirige a login sin perder el borrador. *Teléfono con datos simulados; A13 con la API.*
+- [x] Respuesta 413: se muestra el mensaje correspondiente. *Teléfono con datos simulados; A08 con la API.*
+- [x] Resultado `no_concluyente`: se muestra mensaje y opción de volver a fotografiar. *Teléfono con la API. Ojo: desde el 28 oct (noche), una foto sin raya da 500 en el backend (A12, fila 45 de `discrepancias.md`).*
+- [x] Observación validada por experto después del envío: el detalle muestra la decisión sin recargar la app manualmente. *Teléfono con la API.*
+- [x] Experto confirma, corrige (eligiendo especie) y rechaza observaciones pendientes; cada decisión deja el estado y la validación esperados. *Las tres con datos simulados (F10). Con la API: corregir en el teléfono y en el computador (A15), rechazar en el computador (27 oct). Falta confirmar una predicción con la API: el modelo no ha dejado ninguna `pendiente_experto`.*
+- [x] Usuario sin rol experto no ve la cola ni los controles de validación. *Teléfono; el backend responde 403 si lo intenta (A10, A11).*
+- [x] Sin red: la observación queda en cola y se envía al recuperar la conexión, en orden. *Teléfono. Requisito: haber entrado al menos una vez con conexión.*
 
-**Registro de resultados:** se guarda en `docs/pruebas/` con el nombre `pruebas-funcionales-AAAA-MM-DD.md`.
+**Registro de resultados:** [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md).
 
 ---
 
@@ -219,6 +219,8 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Registro:** tabla con las métricas por persona y por tarea, en `docs/pruebas/usabilidad-AAAA-MM-DD.md`. Sin datos personales identificables; se usan códigos (P1, P2…).
 
+**Estado (28 oct):** pendiente. El guion, la preparación y la tabla para llenar están en [`pruebas/usabilidad.md`](pruebas/usabilidad.md).
+
 ---
 
 ## H2. Integración con la API real
@@ -238,7 +240,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 - [x] `api` implementa login, registro, refresh y perfil. *Verificado en Expo Go: registro, inicio de sesión, perfil y cierre de sesión. El backend responde `{"usuario": …}` en registro y perfil, y rechaza `telefono: null`: la app se adapta (`discrepancias.md`, filas 27 y 33).*
 - [x] El token se guarda con `expo-secure-store`. *Verificado en Expo Go: la sesión sigue abierta al cerrar y reabrir la app.*
-- [x] Ante un 401 se renueva el token automáticamente. Si falla, se cierra la sesión y se limpia la caché. *Probado desde el computador (token alterado: renueva y repite; renovación rechazada: avisa una vez). Falta forzarlo en Expo Go. La sesión dura como máximo 7 días: el backend no entrega un `refresh_token` nuevo (fila 32).*
+- [x] Ante un 401 se renueva el token automáticamente. Si falla, se cierra la sesión y se limpia la caché. *Probado desde el computador (token alterado: renueva y repite; renovación rechazada: avisa una vez; A04 el 28 oct). Falta forzarlo en el teléfono. La sesión dura como máximo 7 días: el backend no entrega un `refresh_token` nuevo (fila 32).*
 
 **Validación experta**
 
@@ -248,7 +250,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 **Observaciones**
 
 - [x] Envío con `multipart/form-data`: `datos` (JSON) e `imagen`. *Verificado en Expo Go. Con SDK 58 el `fetch` global es el de Expo, que no acepta archivos como `{ uri }`: la foto se adjunta con `bytes()`. El backend pide `tipo_ambiente_codigo` y `condicion_organismo_codigo` y rechaza opcionales en `null`: la app se adapta (filas 34 y 44).*
-- [x] Manejo de 201, 400, 401 y 413. *201 verificado en Expo Go; 400 en Expo Go y desde el computador; 401 cubierto por la renovación. 413 sin probar con el backend.*
+- [x] Manejo de 201, 400, 401 y 413. *201 verificado en Expo Go; 400 en Expo Go y desde el computador; 401 cubierto por la renovación. 413 desde el computador (A08).*
 - [x] Como no hay notificaciones, el estado se consulta con polling a `GET /observaciones/{id}` mientras esté en `recibido` o `procesando`. Con backoff, y se detiene al llegar a otro estado. *En el backend el envío espera la inferencia (≈30 s) y responde con el estado final, así que el seguimiento se detiene en la primera consulta (fila 36).*
 - [x] Listado paginado y detalle reales. *Verificado en Expo Go, con fotos en las tarjetas (el listado del backend no las trae: cada tarjeta pide el detalle, fila 37). `adaptadores.ts` pasa la forma del backend a la del contrato (fila 35).*
 
@@ -258,7 +260,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Offline (parte 2: sincronización real)**
 
-- [x] La cola usa la API real y respeta el orden de creación. *Usa el mismo servicio que el envío. Tras un tiempo agotado no duplica: antes de reenviar busca la observación en `GET /observaciones`. Probado en Node con un servicio falso; falta verificarlo en Expo Go (con la API en modo avión, y con `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado`).*
+- [x] La cola usa la API real y respeta el orden de creación. *Usa el mismo servicio que el envío. Tras un tiempo agotado no duplica: antes de reenviar busca la observación en `GET /observaciones`. Probado en Node con un servicio falso y en el teléfono sin red (28 oct). Falta forzar en el teléfono el tiempo agotado (`EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado`).*
 - [x] Reintentos con backoff. Un 400 no se reintenta: la observación se marca para revisión. *Tras un 500 espera 15 s y luego 30 s (se reintenta solo); al tercer fallo pasa a revisión. "Enviar ahora" no espera. Probado en Node; falta en Expo Go con `EXPO_PUBLIC_MOCK_ERROR=500`.*
 - [ ] Si el token expiró sin red, la cola se mantiene y se envía al renovar la sesión. *En código: sin red no se intenta enviar, la sesión guardada permite entrar y, al volver la señal, el cliente HTTP renueva el token antes de enviar. Falta verificarlo.*
 
@@ -274,7 +276,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 ### Criterio de cierre de H2
 
-- [ ] La app funciona de extremo a extremo con el backend real, incluido el caso sin red. *En línea: verificado en Expo Go. Falta verificar en el teléfono el caso sin red con la API (modo avión y reenvío sin duplicados).*
+- [x] La app funciona de extremo a extremo con el backend real, incluido el caso sin red. *En línea: verificado en Expo Go. Sin red: verificado en el teléfono el 28 oct, tras entrar una vez con conexión.*
 
 ---
 
@@ -292,7 +294,7 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 - **Validación experta en la app:** amplía el alcance de la versión 1.0. Usa solo endpoints del contrato, pero depende de que el backend tenga cuentas con rol `experto`. *Resuelto: `e1.experto@ejemplo.co` tiene el rol (28 oct).*
 - **Estado tras `rechazada`:** el contrato no dice a qué estado pasa la observación. *Se acordó `no_concluyente`, pero el backend la deja en `corregido` sin especie; la app y el mock siguen al backend. Confirmar con el Equipo 3.*
-- **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe. *Más probable de lo previsto: el envío espera la inferencia (≈30 s) y con Render dormido puede pasar de 90 s.*
+- **Duplicados al reintentar:** el contrato no tiene idempotencia. Mitigación: no reintentar un POST hasta confirmar con `GET /observaciones` si la observación ya existe. *Más probable de lo previsto: el envío espera la inferencia (≈30 s) y con Render dormido puede pasar de 90 s. Además, desde el 28 oct (noche) el backend responde 500 a una foto sin raya pero crea la observación (fila 45): cada reintento la duplica.*
 - **Registro requiere sesión:** `POST /observaciones` exige token. El modo offline solo funciona con una sesión previa, por lo que podríamos considerar que una vez iniciado sesión, no sea necesario volver a hacerlo cada que se abre la app, solo si expira el token. Adicional: Añadir una nota en la pantalla inicial: si el pescador no tiene conexión, puede tomar la foto con su cámara y al llegar a un lugar con internet (por ser más amigables), la sube de la galería. _(Hecho: nota en Inicio y sesión guardada con la API, hasta 7 días.)_
 - **`pendiente_envio` es local:** no pertenece a `EstadoObservacion` ni aparece en el contrato.
 - **Servidor dormido:** Render (plan gratuito) y el servicio de visión tardan en despertar. Conviene despertarlos antes de las pruebas de usabilidad y de la demo (abrir la app y enviar una observación de prueba).
