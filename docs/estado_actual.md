@@ -1,13 +1,16 @@
-# Estado actual de la app (28 oct 2026)
+# Estado actual de la app (28 oct 2026, noche)
 
-Resumen de cómo está IdentiMar en `develop` (con la integración H2, #19) y en la rama **`feature/foto-zoom`**, que agrega el visor de fotos. El avance contra el DoD está marcado en [`Dod.md`](Dod.md); los pasos de la integración, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
+Resumen de cómo está IdentiMar en `develop`: integración con la API (H2, #19), visor de fotos (#20) y APK (#21). El avance contra el DoD está marcado en [`Dod.md`](Dod.md); las pruebas, en [`pruebas/`](pruebas/); los pasos de la integración, en [`plan_integracion.md`](plan_integracion.md); las diferencias con el contrato y con el backend, en [`discrepancias.md`](discrepancias.md).
+
+**Equipos:** la API la hace el Equipo 3 y el modelo de identificación el Equipo 2.
 
 - **Datos:** la app funciona con dos modos, que se eligen con `EXPO_PUBLIC_USE_API`:
   - `false` (por defecto): datos simulados (mock), como hasta H1.
-  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. Verificado en Expo Go el flujo en línea completo; **falta** verificar en el teléfono el caso sin red con la API.
+  - `true`: API real en `https://identimar-backend.onrender.com/api/v1`. Integrados: autenticación, catálogos, observaciones, validación experta y cola de envío. Verificado en el teléfono el flujo en línea completo y el caso sin red (tras entrar una vez con conexión).
 - **SDK:** Expo SDK 58 (React Native 0.88) desde el 27 oct. La app se revisó en Expo Go (Android) con SDK 58 y se ve bien.
-- **Verificado en:** Expo Go en Android. Falta probar en iOS.
-- **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila.
+- **APK:** se compila con EAS Build (perfil `preview` de `eas.json`, que ya usa la API real). El enlace de descarga está en el [README](../README.md).
+- **Verificado en:** Expo Go y la APK en Android. Falta probar en iOS.
+- **Calidad:** `npx tsc --noEmit`, `npx expo lint` y `npx expo-doctor` sin errores; `scripts/probar-servicios.ts` pasa con `EXPO_PUBLIC_MOCK_ERROR` vacío; el bundle de Android (`expo export`) compila. Los casos del DoD pasan 20 de 20 con datos simulados y 16 de 19 con la API real; el fallido es un error del backend (ver abajo). Detalle en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md).
 
 ---
 
@@ -22,8 +25,8 @@ Resumen de cómo está IdentiMar en `develop` (con la integración H2, #19) y en
 | Enviar observación, Resultado, Registros (con fotos), filtro, detalle | **Verificado en Expo Go (Android)**, con respuesta del modelo                  |
 | Aviso "Esto está tardando un poco" (a los 10 s)             | En código; aparece si el envío o una carga pasa de 10 s                                 |
 | Cola "Por validar"                                          | **Verificado en Expo Go (Android)**: la observación no concluyente aparece y sale al validarla |
-| Validación experta (confirmar, corregir, rechazar)          | **Verificado en Expo Go** corregir. Desde el computador: rechazar y los errores 400, 403, 404 y 409. Falta confirmar una predicción |
-| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node; **falta en el teléfono** |
+| Validación experta (confirmar, corregir, rechazar)          | **Verificado en Expo Go** corregir. Desde el computador: corregir, rechazar y los errores 400, 403, 404 y 409. Falta confirmar una predicción |
+| Cola de envío sin señal                                      | Usa la API real; tras un tiempo agotado revisa si la observación ya llegó antes de reenviarla, y tras un 500 reintenta a los 15 y 30 s. Probado en Node y **verificado en el teléfono** sin red (28 oct) |
 | Rechazo del experto                                          | Se muestra "No identificable" y la nota "Un experto revisó esta foto, pero no pudo identificar la especie" |
 
 **Cuentas de prueba en el backend** (las contraseñas no van en el repo; pedirlas a quien las creó):
@@ -36,6 +39,7 @@ Resumen de cómo está IdentiMar en `develop` (con la integración H2, #19) y en
 **Cómo se comporta con el backend real:**
 
 - **El envío tarda ≈30 s:** el backend espera a que el modelo termine antes de responder, y Resultado llega con el estado final.
+- **Foto sin raya (desde el 28 oct, noche):** el backend responde 500 pero crea la observación, que se queda en `recibido`. La persona ve "Algo falló de nuestro lado" y, si lo intenta de nuevo, se crea otra copia; desde la cola de envío pueden quedar hasta 3. Antes quedaba `no_concluyente`. Pedido al Equipo 3 (`discrepancias.md`, fila 45).
 - **Servicio de visión dormido:** se duerme con frecuencia, y entonces la observación queda "No se pudo identificar" ("Servicio de visión no disponible" en el historial). Conviene despertarlo antes de una prueba o demo.
 - **Rechazo del experto:** la observación queda `corregido` sin especie (se había acordado `no_concluyente`; se decidió dejarlo como lo hace el backend). Para que nadie crea que ya se identificó, la app muestra la etiqueta "No identificable" en vez de "Corregido", con la nota "Un experto revisó esta foto, pero no pudo identificar la especie", y no la cuenta como identificada.
 - **Render tarda en despertar:** el tiempo máximo de espera es de 90 s, y a los 10 s aparece el aviso amigable.
@@ -59,13 +63,14 @@ Resumen de cómo está IdentiMar en `develop` (con la integración H2, #19) y en
    - **No se pudo identificar:** con opción de tomar otra foto.
 5. **Consultar sus registros**, filtrar por estado y abrir el detalle: foto, datos, sugerencia de la app (con versión del modelo), validación del experto (si la hay) e historial. Si la foto no carga, el detalle se vuelve a pedir una vez y, si sigue fallando, se ofrece reintentar.
 6. **Consultar el catálogo de especies** (solo rayas; hoy las 4 que reconoce el modelo) con buscador y ficha con imagen de referencia, descripción, código y familia.
-7. **Ver una foto en grande:** al tocar la foto del detalle de un registro o de la ficha de una especie se abre a pantalla completa. Se puede pellizcar para acercar (hasta 5×), arrastrar para recorrerla y tocar dos veces para acercar o volver. Desde ahí se puede **guardar en el teléfono** o **compartir** (guardar en Fotos, WhatsApp, correo). En Android, Expo Go no tiene acceso completo a la galería: "Guardar en el teléfono" puede fallar ahí y sugiere usar "Compartir"; en la app instalada (APK) funciona. *Verificado en Expo Go (Android): zoom, arrastre, doble toque y compartir.*
+7. **Ver una foto en grande:** al tocar la foto del detalle de un registro o de la ficha de una especie se abre a pantalla completa. Se puede pellizcar para acercar (hasta 5×), arrastrar para recorrerla y tocar dos veces para acercar o volver. Desde ahí se puede **guardar en el teléfono** o **compartir** (guardar en Fotos, WhatsApp, correo). En Android, Expo Go no tiene acceso completo a la galería: "Guardar en el teléfono" puede fallar ahí y sugiere usar "Compartir"; en la app instalada (APK) funciona. *Verificado en Expo Go (Android): zoom, arrastre, doble toque y compartir. Verificado en la APK: guardar en el teléfono.*
 8. **Perfil:** datos (desde `GET /auth/perfil`; si falla, los de la sesión), rol, cifras, nota para certificarse como experto y cerrar sesión. Si el rol cambió en el servidor (por ejemplo, ahora es experto), la app lo usa sin volver a entrar.
 9. **Usar la app sin señal.**
    - **Borrador:** el formulario a medias se guarda en el teléfono (uno por cuenta) y se recupera al volver a entrar, incluso tras cerrar la app. Se borra al enviar, con "Empezar de nuevo" o al cerrar sesión a mano; si la sesión vence, se conserva.
    - **Foto:** se copia a la carpeta de la app al elegirla. Si la copia falla, aparece un aviso y el flujo sigue. De las fotos enviadas se conservan las 20 más recientes.
    - **Cola de envío:** sin red, la observación queda "Pendiente de envío" en Registros y se envía sola, en orden, al entrar, al volver la señal o al volver a la app (o con "Enviar ahora"). Con 400, 413 o sin foto pasa a "Requiere revisión"; con 500 u otros errores reintenta solo a los 15 y 30 s y, al tercer intento, pasa a revisión. Si el envío se cortó porque el servidor tardó, revisa si la observación ya llegó antes de reenviarla. Si la sesión venció, vuelve a inicio de sesión y la cola se envía al volver a entrar.
    - **Sin conexión:** Inicio, Registros, Especies, la ficha y el paso 3 del formulario muestran lo último guardado con la franja "Sin conexión" y se recargan solos al volver la señal.
+   - **Requisito:** haber entrado al menos una vez con conexión. En ese ingreso se guardan la sesión y los catálogos.
 
 Si la sesión vence (401) y no se puede renovar, la app vuelve a inicio de sesión con el aviso "Tu sesión venció, vuelve a entrar."
 
@@ -106,7 +111,16 @@ Valores de `EXPO_PUBLIC_MOCK_ERROR` (uno a la vez; reiniciar con `-c` al cambiar
 
 Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, se cambia a **Experto** en Perfil y se valida desde el detalle. Los datos simulados viven en memoria: al recargar la app se pierden las observaciones nuevas y la sesión (con la API, la sesión sí se conserva).
 
-**Probar la capa API desde el computador** (sin teléfono): los servicios `src/services/api/*` se pueden ejecutar con `npx tsx` contra el backend. `expo-secure-store` y `expo-file-system` no cargan en Node, así que hay que reemplazarlos por versiones en memoria (con `--require` para `require` y con un cargador ESM para los `import()` dinámicos). Así se probó todo lo marcado "desde el computador".
+**Probar desde el computador** (sin teléfono): los scripts ejecutan los servicios de la app en Node. `scripts/node/preparar.mjs` reemplaza `expo-file-system` y `expo-secure-store` y arma el envío de la foto como el `fetch` de Expo.
+
+```bash
+# Flujo completo con datos simulados
+npx tsx scripts/probar-servicios.ts
+# Casos del DoD con datos simulados
+npx tsx --import ./scripts/node/preparar.mjs scripts/probar-casos-mock.ts
+# Casos del DoD con la API real (crea observaciones de prueba en e1.usuario)
+E1_USUARIO_CLAVE=... E1_EXPERTO_CLAVE=... FOTO_RAYA=raya.jpg FOTO_NO_RAYA=otra.jpg   npx tsx --import ./scripts/node/preparar.mjs scripts/probar-casos-api.ts
+```
 
 **Ver el flujo en Metro:** solo en desarrollo (`__DEV__`), el cliente HTTP escribe una línea por petición, por ejemplo `[IdentiMar] POST /observaciones → 201`, o con el código y los campos si falla. Si `fetch` falla antes de salir del teléfono, escribe `[IdentiMar] fetch falló: …`. No escribe valores, tokens ni coordenadas, y en un build de producción (APK de release) no se ejecuta. Con `j` en la terminal de Metro se abren las herramientas de React Native.
 
@@ -137,19 +151,25 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 ## Pendiente
 
-**H2** (detalle en [`plan_integracion.md`](plan_integracion.md))
+**Antes de la demo (29 oct)**
 
-- **Sin red con la API, en el teléfono:** modo avión al enviar → "Pendiente de envío" → se envía una sola vez al volver la señal.
-- **Con el mock, en el teléfono:** `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
+- **Foto sin raya da 500** (fila 45 de `discrepancias.md`): pedirle al Equipo 3 que la deje `no_concluyente` como antes. Mientras tanto, en la demo usar una foto de raya para el caso identificado. Para mostrar el caso no concluyente, usar una observación que ya lo esté. Si se quiere evitar las copias desde la app, el ajuste sería tratar el 500 del envío como un tiempo agotado (revisar si ya existe antes de reenviar).
+- **Despertar Render y el servicio de visión** unos minutos antes: abrir la app y enviar una observación de prueba.
+- ~~**Pruebas de usabilidad**~~: hechas el 29 oct con 5 personas; pasan los tres criterios del DoD ([`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md)).
+
+**Por verificar en el teléfono**
+
 - **Validación:** confirmar una predicción (necesita una `pendiente_experto` con predicción) y rechazar desde el teléfono.
-- Pruebas que no se pueden forzar con el mock y ahora sí con la API: 401 del inicio de sesión (contraseña equivocada), 413 (foto muy pesada), renovación del token (esperar 1 hora o alterar el token) y el 409 real de la validación.
-- Registrar las pruebas funcionales en `docs/pruebas/`.
+- Renovación del token pasada una hora y token vencido sin red (la cola debe esperar y enviarse al renovar).
+- Con datos simulados: `EXPO_PUBLIC_MOCK_ERROR=tiempo-agotado` (la observación aparece una sola vez tras "Enviar ahora") y `500` (reintenta solo a los 15 y 30 s).
+- iOS: no se ha probado en ningún iPhone.
 
-**Siguiente rama (propuesta)**
+**Mejoras después del MVP**
 
-- ~~**Ver la foto en grande**~~ con zoom, guardar y compartir: hecho en `feature/foto-zoom` y verificado en Expo Go.
-- **Pulir el zoom al pellizcar** (`src/components/visor-foto/visor-foto.tsx`): funciona, pero todavía no se siente tan fluido como la galería del teléfono; al soltar, la vista a veces se mueve un poco. Para un MVP queda así. Si se retoma, una opción es probar una librería dedicada (por ejemplo, `@likashefqet/react-native-image-zoom`), revisando antes que sea compatible con Gesture Handler 3.
-- **APK:** definir cómo se compila e instala (EAS Build, perfil de vista previa o de producción) y el ícono de la app (otro compañero trabaja en el logo).
+- **Pulir el zoom al pellizcar** (`src/components/visor-foto/visor-foto.tsx`): funciona, pero todavía no se siente tan fluido como la galería del teléfono; al soltar, la vista a veces se mueve un poco. Si se retoma, una opción es probar una librería dedicada (por ejemplo, `@likashefqet/react-native-image-zoom`), revisando antes que sea compatible con Gesture Handler 3.
+- Pruebas automáticas con un ejecutor de pruebas (Jest) en vez de scripts.
+- **Moderación con el rol administrador:** que una o varias personas revisen las observaciones de cualquier usuario y quiten las que no sirvan (pruebas, fotos sin raya, duplicadas). El contrato ya deja que el administrador vea todas en `GET /observaciones`, pero no tiene forma de borrarlas ni ocultarlas: hace falta un endpoint nuevo del Equipo 3.
+- **Primer ingreso** (de la prueba de usabilidad): a las personas de mayor edad hubo que explicarles cómo crear la cuenta y entrar. Una línea en la pantalla de entrada que explique para qué es la cuenta y que solo se pide una vez ayudaría.
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
 
@@ -169,7 +189,7 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 - Las URLs firmadas de las fotos vencen en 1 hora; si el detalle trae una vencida, se vuelve a pedir.
 - Registros se recarga al cambiar de cuenta o de rol de prueba.
 
-**Pruebas:** las pruebas funcionales y de usabilidad del DoD aún no se han registrado en `docs/pruebas/`.
+**Pruebas:** las funcionales están en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad, en [`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md).
 
 <details>
 <summary>Historial de H0, H1 y modo sin conexión (parte 1)</summary>
@@ -184,4 +204,4 @@ Con `EXPO_PUBLIC_MOCK_RESULTADO=pendiente_experto`, se envía una observación, 
 
 ## Preguntas para el Equipo 3
 
-Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3). El 28 oct asignaron el rol experto. Pedidos abiertos: confirmar el estado tras un rechazo (`corregido` en el backend), devolver un `refresh_token` nuevo al renovar y confirmar la versión del contrato.
+Las respondidas y las abiertas están en [`discrepancias.md`](discrepancias.md#preguntas-para-el-equipo-3). Respondidas el 27 oct: códigos de los catálogos, estado tras `rechazada` (`no_concluyente`), formato de error (la app lo toma tal cual) y cuenta experto (la asigna el Equipo 3). El 28 oct asignaron el rol experto. Pedidos abiertos: **corregir el 500 con una foto sin raya (urgente)**, confirmar el estado tras un rechazo (`corregido` en el backend), devolver un `refresh_token` nuevo al renovar y confirmar la versión del contrato.

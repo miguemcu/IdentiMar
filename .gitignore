@@ -45,6 +45,9 @@ yarn-debug.*
 yarn-error.*
 lerna-debug.*
 
+# Editor
+.vscode/
+
 # macOS & Windows
 .DS_Store
 *.pem

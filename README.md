@@ -25,6 +25,8 @@ Desarrollar una herramienta móvil que facilite la recopilación y gestión de r
 * Catálogo de especies de rayas con buscador y ficha.
 * Perfil del usuario con sus cifras y una nota para certificarse como experto.
 * Validación de las observaciones que la app no pudo reconocer, por parte de usuarios expertos.
+* Uso sin señal: borrador guardado y cola de envío que se envía sola al volver la conexión (requiere haber entrado una vez con conexión).
+* Visor de fotos con zoom, para guardarlas en el teléfono o compartirlas.
 
 ## 🛠️ Tecnologías
 
@@ -33,25 +35,21 @@ Desarrollar una herramienta móvil que facilite la recopilación y gestión de r
 * **NativeWind** (Tailwind para React Native)
 * **Git / GitHub**
 
-La aplicación móvil consume servicios proporcionados por la infraestructura del proyecto para el procesamiento y gestión de las observaciones.
+La aplicación consume la API del **Equipo 3**, que a su vez usa el modelo de identificación del **Equipo 2**.
 
 ## 🚀 Cómo ejecutarla
 
+Descarga e instala el APK de la aplicación desde [Expo](https://expo.dev/accounts/m.avendano/projects/IdentiMar/builds/b7343aaa-d91f-464f-a8a3-76201ba5215c) (Android).
+
+### Para desarrollar
+
 ```bash
 npm install
-cp .env.example .env
-npx expo start -c
+cp .env.example .env   # EXPO_PUBLIC_USE_API=true para usar la API real
+npm run start:tunel    # abre en Expo Go desde cualquier red
 ```
 
-Luego se abre con **Expo Go** en el teléfono. Hoy la app funciona con datos simulados; estas variables de `.env` ayudan a probarla:
-
-| Variable                     | Para qué                                                              |
-| ---------------------------- | --------------------------------------------------------------------- |
-| `EXPO_PUBLIC_USE_API`        | `true` usa la API real (todavía no integrada)                         |
-| `EXPO_PUBLIC_MOCK_ERROR`     | Fuerza un error al enviar: `400`, `401`, `413` o `red`                |
-| `EXPO_PUBLIC_MOCK_RESULTADO` | Fuerza el resultado: `identificado`, `pendiente_experto` o `no_concluyente` |
-
-Antes de subir cambios: `npx tsc --noEmit` y `npx expo lint`.
+Antes de cada commit: `npx tsc --noEmit` y `npx expo lint`. Las variables, las pruebas desde el computador y la organización del código están en [`docs/estado_actual.md`](docs/estado_actual.md).
 
 ## 🎨 Diseño
 
@@ -75,12 +73,14 @@ Este proyecto corresponde a **Proyecto Integrador I — 2026-2** del programa de
 
 ## 🚧 Estado del proyecto
 
-En desarrollo, rumbo al MVP del 29 de octubre de 2026. El prototipo con datos simulados está casi completo; falta el trabajo sin internet (offline) y la integración con la API real. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
+La aplicación está integrada con la API del Equipo 3 y el modelo de identificación del Equipo 2, y el APK del MVP (29 de octubre de 2026) ya está disponible. Las pruebas funcionales y las de usabilidad (5 personas, tiempo mediano de 41 s para registrar una raya) están registradas. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
 
 ## 📄 Documentación
 
 * [`docs/estado_actual.md`](docs/estado_actual.md): cómo va la app hoy y qué falta.
 * [`docs/Dod.md`](docs/Dod.md): criterios de terminado (Definition of Done) del MVP.
-* [`docs/contrato_integracion.yaml`](docs/contrato_integracion.yaml): contrato OpenAPI con el backend (Equipo 3).
-* [`docs/discrepancias.md`](docs/discrepancias.md): diferencias entre el mockup y el contrato.
+* [`docs/pruebas/`](docs/pruebas/): pruebas funcionales y de usabilidad.
+* [`docs/plan_integracion.md`](docs/plan_integracion.md): registro de la integración con el backend (cerrado).
+* [`docs/contrato_integracion.yaml`](docs/contrato_integracion.yaml): contrato OpenAPI con la API (Equipo 3).
+* [`docs/discrepancias.md`](docs/discrepancias.md): diferencias entre el mockup, el contrato y el backend desplegado.
 * [`AGENTS.md`](AGENTS.md): reglas de trabajo y del sistema de diseño.
