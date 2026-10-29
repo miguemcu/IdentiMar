@@ -2,7 +2,7 @@
 
 Plan y registro de las sesiones de usabilidad del MVP, según la sección "Métricas de usabilidad" de [`Dod.md`](../Dod.md).
 
-- **Estado:** pendiente. Aún no se han hecho sesiones.
+- **Estado:** hecho el 29 oct con 5 personas. Resultados en [`usabilidad-2026-10-29.md`](usabilidad-2026-10-29.md).
 - **Cuando se hagan:** copiar la sección "Registro" a `usabilidad-AAAA-MM-DD.md` con la fecha de la sesión y llenarla.
 
 ## Qué se busca

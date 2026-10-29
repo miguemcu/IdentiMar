@@ -155,7 +155,7 @@ E1_USUARIO_CLAVE=... E1_EXPERTO_CLAVE=... FOTO_RAYA=raya.jpg FOTO_NO_RAYA=otra.j
 
 - **Foto sin raya da 500** (fila 45 de `discrepancias.md`): pedirle al Equipo 3 que la deje `no_concluyente` como antes. Mientras tanto, en la demo usar una foto de raya para el caso identificado. Para mostrar el caso no concluyente, usar una observación que ya lo esté. Si se quiere evitar las copias desde la app, el ajuste sería tratar el 500 del envío como un tiempo agotado (revisar si ya existe antes de reenviar).
 - **Despertar Render y el servicio de visión** unos minutos antes: abrir la app y enviar una observación de prueba.
-- **Pruebas de usabilidad:** planeadas en [`pruebas/usabilidad.md`](pruebas/usabilidad.md); aún no se han hecho.
+- ~~**Pruebas de usabilidad**~~: hechas el 29 oct con 5 personas; pasan los tres criterios del DoD ([`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md)).
 
 **Por verificar en el teléfono**
 
@@ -168,6 +168,7 @@ E1_USUARIO_CLAVE=... E1_EXPERTO_CLAVE=... FOTO_RAYA=raya.jpg FOTO_NO_RAYA=otra.j
 
 - **Pulir el zoom al pellizcar** (`src/components/visor-foto/visor-foto.tsx`): funciona, pero todavía no se siente tan fluido como la galería del teléfono; al soltar, la vista a veces se mueve un poco. Si se retoma, una opción es probar una librería dedicada (por ejemplo, `@likashefqet/react-native-image-zoom`), revisando antes que sea compatible con Gesture Handler 3.
 - Pruebas automáticas con un ejecutor de pruebas (Jest) en vez de scripts.
+- **Primer ingreso** (de la prueba de usabilidad): a las personas de mayor edad hubo que explicarles cómo crear la cuenta y entrar. Una línea en la pantalla de entrada que explique para qué es la cuenta y que solo se pide una vez ayudaría.
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
 
@@ -187,7 +188,7 @@ E1_USUARIO_CLAVE=... E1_EXPERTO_CLAVE=... FOTO_RAYA=raya.jpg FOTO_NO_RAYA=otra.j
 - Las URLs firmadas de las fotos vencen en 1 hora; si el detalle trae una vencida, se vuelve a pedir.
 - Registros se recarga al cambiar de cuenta o de rol de prueba.
 
-**Pruebas:** las funcionales están en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad, planeadas en [`pruebas/usabilidad.md`](pruebas/usabilidad.md).
+**Pruebas:** las funcionales están en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad, en [`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md).
 
 <details>
 <summary>Historial de H0, H1 y modo sin conexión (parte 1)</summary>

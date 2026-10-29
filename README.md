@@ -73,13 +73,13 @@ Este proyecto corresponde a **Proyecto Integrador I — 2026-2** del programa de
 
 ## 🚧 Estado del proyecto
 
-La aplicación está integrada con la API del Equipo 3 y el modelo de identificación del Equipo 2, y el APK del MVP (29 de octubre de 2026) ya está disponible. Las pruebas funcionales están registradas; las de usabilidad están planeadas. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
+La aplicación está integrada con la API del Equipo 3 y el modelo de identificación del Equipo 2, y el APK del MVP (29 de octubre de 2026) ya está disponible. Las pruebas funcionales y las de usabilidad (5 personas, tiempo mediano de 41 s para registrar una raya) están registradas. El detalle está en [`docs/estado_actual.md`](docs/estado_actual.md).
 
 ## 📄 Documentación
 
 * [`docs/estado_actual.md`](docs/estado_actual.md): cómo va la app hoy y qué falta.
 * [`docs/Dod.md`](docs/Dod.md): criterios de terminado (Definition of Done) del MVP.
-* [`docs/pruebas/`](docs/pruebas/): pruebas funcionales y plan de usabilidad.
+* [`docs/pruebas/`](docs/pruebas/): pruebas funcionales y de usabilidad.
 * [`docs/plan_integracion.md`](docs/plan_integracion.md): registro de la integración con el backend (cerrado).
 * [`docs/contrato_integracion.yaml`](docs/contrato_integracion.yaml): contrato OpenAPI con la API (Equipo 3).
 * [`docs/discrepancias.md`](docs/discrepancias.md): diferencias entre el mockup, el contrato y el backend desplegado.

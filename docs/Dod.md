@@ -8,7 +8,7 @@
 
 Lo que el contrato no define no se implementa. Las limitaciones se registran en `docs/discrepancias.md`. La API no se modifica en este MVP.
 
-**Avance al 28 oct:** H0, H1, H2, el visor de fotos y la APK están en `develop`, probados en Android (Expo Go y APK; falta iOS). Cada casilla indica dónde se verificó. Las pruebas funcionales están registradas en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad están planeadas en [`pruebas/usabilidad.md`](pruebas/usabilidad.md) y aún no se han hecho. El detalle está en [`estado_actual.md`](estado_actual.md).
+**Avance al 28 oct:** H0, H1, H2, el visor de fotos y la APK están en `develop`, probados en Android (Expo Go y APK; falta iOS). Cada casilla indica dónde se verificó. Las pruebas funcionales están registradas en [`pruebas/pruebas-funcionales-2026-10-28.md`](pruebas/pruebas-funcionales-2026-10-28.md); las de usabilidad (29 oct), en [`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md). El detalle está en [`estado_actual.md`](estado_actual.md).
 
 **Cambios en 1.1:** la validación experta entra al alcance, usando solo `GET /observaciones/pendientes` y `POST /observaciones/{id}/validacion`. La app no define etiquetas ni umbrales de certeza: muestra lo que entregue el backend.
 
@@ -213,13 +213,13 @@ Sesiones con 3 a 5 personas ajenas al desarrollo, que no hayan visto la app ante
 
 **Criterios de aceptación**
 
-- [ ] Al menos 3 de 5 personas completan la tarea 1 sin ayuda.
-- [ ] El tiempo mediano para la tarea 1 es menor o igual a 3 minutos.
-- [ ] Ningún error bloqueante sin resolver al cierre de la sesión.
+- [x] Al menos 3 de 5 personas completan la tarea 1 sin ayuda. *5 de 5.*
+- [x] El tiempo mediano para la tarea 1 es menor o igual a 3 minutos. *41 s (de 27 a 95 s), contado desde Inicio con la sesión ya iniciada.*
+- [x] Ningún error bloqueante sin resolver al cierre de la sesión. *A dos personas de mayor edad hubo que explicarles cómo crear la cuenta y entrar, antes de empezar.*
 
 **Registro:** tabla con las métricas por persona y por tarea, en `docs/pruebas/usabilidad-AAAA-MM-DD.md`. Sin datos personales identificables; se usan códigos (P1, P2…).
 
-**Estado (28 oct):** pendiente. El guion, la preparación y la tabla para llenar están en [`pruebas/usabilidad.md`](pruebas/usabilidad.md).
+**Resultado (29 oct):** [`pruebas/usabilidad-2026-10-29.md`](pruebas/usabilidad-2026-10-29.md). Las 5 personas calificaron la facilidad con 5 de 5. El plan está en [`pruebas/usabilidad.md`](pruebas/usabilidad.md).
 
 ---
 
