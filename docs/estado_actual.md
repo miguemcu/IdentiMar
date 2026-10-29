@@ -168,6 +168,7 @@ E1_USUARIO_CLAVE=... E1_EXPERTO_CLAVE=... FOTO_RAYA=raya.jpg FOTO_NO_RAYA=otra.j
 
 - **Pulir el zoom al pellizcar** (`src/components/visor-foto/visor-foto.tsx`): funciona, pero todavía no se siente tan fluido como la galería del teléfono; al soltar, la vista a veces se mueve un poco. Si se retoma, una opción es probar una librería dedicada (por ejemplo, `@likashefqet/react-native-image-zoom`), revisando antes que sea compatible con Gesture Handler 3.
 - Pruebas automáticas con un ejecutor de pruebas (Jest) en vez de scripts.
+- **Moderación con el rol administrador:** que una o varias personas revisen las observaciones de cualquier usuario y quiten las que no sirvan (pruebas, fotos sin raya, duplicadas). El contrato ya deja que el administrador vea todas en `GET /observaciones`, pero no tiene forma de borrarlas ni ocultarlas: hace falta un endpoint nuevo del Equipo 3.
 - **Primer ingreso** (de la prueba de usabilidad): a las personas de mayor edad hubo que explicarles cómo crear la cuenta y entrar. Una línea en la pantalla de entrada que explique para qué es la cuenta y que solo se pide una vez ayudaría.
 
 **Por revisar del modo simulado y sin conexión** (sin marcar como hecho)
